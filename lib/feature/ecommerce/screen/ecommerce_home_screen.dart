@@ -1,21 +1,26 @@
+import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:untitled/feature/ecommerce/screen/local_shop_screen.dart';
-import 'package:untitled/feature/ecommerce/screen/product_details_screen.dart';
-import 'package:untitled/feature/ecommerce/screen/service_category_screen.dart';
+import 'package:untitled/feature/ecommerce/screen/ecommerce_local_shop_screen.dart';
+import 'package:untitled/feature/ecommerce/screen/ecommerce_details_screen.dart';
+import 'package:untitled/feature/ecommerce/screen/ecommerce_category_screen.dart';
 
-class EcommerceScreen extends StatefulWidget {
-  const EcommerceScreen({super.key});
+class EcommerceHomeScreen extends StatefulWidget {
+  const EcommerceHomeScreen({super.key});
 
   @override
-  State<EcommerceScreen> createState() => _EcommerceScreenState();
+  State<EcommerceHomeScreen> createState() => _EcommerceHomeScreenState();
 }
 
-class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProviderStateMixin {
+class _EcommerceHomeScreenState extends State<EcommerceHomeScreen> with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
   bool _isCollapsed = false;
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  // Banner carousel controller
+  final CarouselSliderController _carouselController = CarouselSliderController();
+  int _currentBannerIndex = 0;
 
   @override
   void initState() {
@@ -205,6 +210,299 @@ class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProv
     }
   }
 
+  // ==================== BANNER CAROUSEL METHOD ====================
+  Widget _buildBannerCarousel() {
+    final List<Map<String, dynamic>> banners = [
+      {
+        'image': 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?q=80&w=400',
+        'title': 'Fresh Groceries',
+        'subtitle': 'Up to 40% off on organic items',
+        'color': const Color(0xFF10B981),
+        'tag': '⚡ Special Offer',
+      },
+      {
+        'image': 'https://images.unsplash.com/photo-1607083206968-1366d8b9f4a1?q=80&w=400',
+        'title': 'Electronics Sale',
+        'subtitle': 'Best deals on gadgets & accessories',
+        'color': const Color(0xFF0EA5E9),
+        'tag': '🔥 Hot Deals',
+      },
+      {
+        'image': 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=400',
+        'title': 'Fashion Week',
+        'subtitle': 'New arrivals at amazing prices',
+        'color': const Color(0xFF6366F1),
+        'tag': '👗 New Collection',
+      },
+      {
+        'image': 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?q=80&w=400',
+        'title': 'Pharmacy Care',
+        'subtitle': 'Essential medicines at your doorstep',
+        'color': const Color(0xFFF43F5E),
+        'tag': '💊 Health First',
+      },
+    ];
+
+    return Stack(
+      children: [
+        CarouselSlider(
+          controller: _carouselController,
+          options: CarouselOptions(
+            height: 330,
+            viewportFraction: 1.0,
+            enableInfiniteScroll: true,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 4),
+            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+            autoPlayCurve: Curves.easeInOut,
+            pauseAutoPlayOnTouch: true,
+            enlargeCenterPage: false,
+            scrollDirection: Axis.horizontal,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _currentBannerIndex = index;
+              });
+            },
+          ),
+          items: banners.map((banner) {
+            return GestureDetector(
+              onTap: () {
+                // Handle banner tap
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Banner tapped: ${banner['title']}'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      (banner['color'] as Color).withOpacity(0.9),
+                      (banner['color'] as Color).withOpacity(0.7),
+                    ],
+                  ),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background image with error handling
+                    Image.network(
+                      banner['image'] as String,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: (banner['color'] as Color).withOpacity(0.3),
+                          child: Icon(
+                            Icons.image_not_supported_rounded,
+                            color: (banner['color'] as Color),
+                            size: 60,
+                          ),
+                        );
+                      },
+                    ),
+                    // Dark overlay for text readability
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.2),
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Content
+                    Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              banner['tag'] as String,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            banner['title'] as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            banner['subtitle'] as String,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.95),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              shadows: [
+                                const Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Shop Now →',
+                              style: TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        // Custom indicator dots
+        Positioned(
+          bottom: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: banners.asMap().entries.map((entry) {
+                  return Container(
+                    width: _currentBannerIndex == entry.key ? 20 : 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: _currentBannerIndex == entry.key
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.4),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+        // Navigation arrows (optional)
+        Positioned(
+          left: 8,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                _carouselController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chevron_left_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 8,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                _carouselController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== HOME TAB ====================
   Widget _buildHomeTab(
       List<Map<String, dynamic>> categories,
       List<Map<String, dynamic>> premiumStores,
@@ -289,52 +587,7 @@ class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProv
             ),
           ),
           flexibleSpace: FlexibleSpaceBar(
-            background: Padding(
-              padding: const EdgeInsets.only(bottom: 50.0),
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF4338CA)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "30% OFF",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const Text(
-                      "On your first order today!",
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Use Code: FIRST30',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            background: _buildBannerCarousel(),
           ),
         ),
         SliverToBoxAdapter(
@@ -393,7 +646,7 @@ class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProv
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ServiceCategoryScreen(initialIndex: index),
+                                builder: (context) => EcommerceCategoryScreen(initialIndex: index),
                               ),
                             );
                           },
@@ -662,7 +915,7 @@ class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProv
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProductDetailsScreen(
+                        builder: (context) => EcommerceDetailsScreen(
                           product: product,
                         ),
                       ),
@@ -911,7 +1164,7 @@ class _EcommerceScreenState extends State<EcommerceScreen> with SingleTickerProv
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ServiceCategoryScreen(
+                            builder: (context) => EcommerceCategoryScreen(
                               initialIndex: index % categories.length,
                             ),
                           ),

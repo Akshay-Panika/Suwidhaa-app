@@ -3,7 +3,8 @@ import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import '../../../core/utils/app_color.dart';
 import '../../collage/screen/collage_dashboard_screen.dart';
 import '../../collage/screen/collage_home_screen.dart';
-import '../../ecommerce/screen/ecommerce_screen.dart';
+import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
+import '../../ecommerce/screen/ecommerce_home_screen.dart';
 import '../../it_service/screen/it_service_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
 import '../../ngo/screen/ngo_home_screen.dart';
@@ -77,7 +78,7 @@ class _ModuleScreenState extends State<ModuleScreen>
         'subtitle': 'Shopping',
         'icon': Icons.shopping_bag_rounded,
         'color': AppColors.ecommerce,
-        'targetScreen': const EcommerceScreen(),
+        'targetScreen':  EcommerceDashboardScreen(),
         'gradient': [AppColors.ecommerce, AppColors.ecommerce.withOpacity(0.3)],
       },
       {
@@ -133,7 +134,7 @@ class _ModuleScreenState extends State<ModuleScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        'targetScreen': const EcommerceScreen(),
+        'targetScreen': const EcommerceHomeScreen(),
       },
       {
         'headline': '💻 ON-DEMAND TECHS',

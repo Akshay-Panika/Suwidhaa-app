@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/feature/ecommerce/screen/product_details_screen.dart';
+import 'package:untitled/feature/ecommerce/screen/ecommerce_details_screen.dart';
 
-class ServiceCategoryScreen extends StatefulWidget {
+class EcommerceCategoryScreen extends StatefulWidget {
   final int initialIndex; // Parameter accept karne ke liye variable
 
-  const ServiceCategoryScreen({super.key, required this.initialIndex});
+  const EcommerceCategoryScreen({super.key, required this.initialIndex});
 
   @override
-  State<ServiceCategoryScreen> createState() => _ServiceCategoryScreenState();
+  State<EcommerceCategoryScreen> createState() => _EcommerceCategoryScreenState();
 }
 
-class _ServiceCategoryScreenState extends State<ServiceCategoryScreen> {
+class _EcommerceCategoryScreenState extends State<EcommerceCategoryScreen> {
   late int _selectedCategoryIndex; // State variable
 
   @override
@@ -194,7 +194,7 @@ class _ServiceCategoryScreenState extends State<ServiceCategoryScreen> {
               itemBuilder: (context, index) {
                 final item = currentProducts[index];
                 return InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProductDetailsScreen(product: item,),)),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => EcommerceDetailsScreen(product: item,),)),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,

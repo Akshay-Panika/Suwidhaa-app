@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/feature/ecommerce/screen/product_details_screen.dart';
+import 'package:untitled/feature/ecommerce/screen/ecommerce_details_screen.dart';
 
 class LocalShopScreen extends StatefulWidget {
   final Map<String, dynamic>? store;
@@ -264,7 +264,7 @@ class _LocalShopScreenState extends State<LocalShopScreen> {
         return InkWell(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ProductDetailsScreen(product: product)),
+            MaterialPageRoute(builder: (context) => EcommerceDetailsScreen(product: product)),
           ),
           child: Container(
             decoration: BoxDecoration(

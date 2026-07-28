@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-class ProductDetailsScreen extends StatefulWidget {
+class EcommerceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
 
   // Hamein pichli screen se product details milengi
-  const ProductDetailsScreen({super.key, required this.product});
+  const EcommerceDetailsScreen({super.key, required this.product});
 
   @override
-  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+  State<EcommerceDetailsScreen> createState() => _EcommerceDetailsScreenState();
 }
 
-class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+class _EcommerceDetailsScreenState extends State<EcommerceDetailsScreen> {
   int _productCount = 1; // Product quantity counter
   bool _isFavorite = false; // Wishlist state
 

@@ -44,6 +44,7 @@ dependencies:
   youtube_player_iframe: ^6.0.2
   flutter_rating_bar: ^4.0.1
   cached_network_image: ^3.3.0
+  font_awesome_flutter: ^11.0.0
 
 
 dev_dependencies:
