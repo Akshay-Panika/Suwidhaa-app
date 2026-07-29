@@ -134,7 +134,7 @@ class _ModuleScreenState extends State<ModuleScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        'targetScreen': const EcommerceHomeScreen(),
+        'targetScreen': const EcommerceDashboardScreen(),
       },
       {
         'headline': '💻 ON-DEMAND TECHS',
