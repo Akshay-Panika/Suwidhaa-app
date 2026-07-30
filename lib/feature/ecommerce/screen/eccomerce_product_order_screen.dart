@@ -132,6 +132,7 @@ class _EcommerceProductOrderScreenState extends State<EcommerceProductOrderScree
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         surfaceTintColor: Colors.white,
+        automaticallyImplyLeading: false,
         title: const Text(
           'My Orders',
           style: TextStyle(
@@ -141,16 +142,7 @@ class _EcommerceProductOrderScreenState extends State<EcommerceProductOrderScree
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () {},
-          ),
           IconButton(
             icon: const Icon(Icons.more_vert_rounded),
             onPressed: () {},

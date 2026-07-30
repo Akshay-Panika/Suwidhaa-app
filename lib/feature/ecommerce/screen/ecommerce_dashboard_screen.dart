@@ -99,9 +99,9 @@ class _EcommerceDashboardScreenState extends State<EcommerceDashboardScreen> {
               label: 'Categories',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border_rounded),
-              activeIcon: Icon(Icons.favorite_rounded),
-              label: 'Wishlist',
+              icon: Icon(Icons.shopping_cart_outlined),
+              activeIcon: Icon(Icons.shopping_cart),
+              label: 'Order',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),

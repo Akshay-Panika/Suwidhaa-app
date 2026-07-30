@@ -411,10 +411,7 @@ class _EcommerceCategoryScreenState extends State<EcommerceCategoryScreen> {
           style: TextStyle(fontSize: 18,fontWeight: FontWeight.w700),
         ),
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+
       ),
       body: Row(
         children: [
