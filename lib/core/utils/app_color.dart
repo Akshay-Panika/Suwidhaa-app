@@ -1,3 +1,4 @@
+// lib/core/utils/app_colors.dart
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -24,4 +25,22 @@ class AppColors {
   static const Color textMain = Color(0xFF1E293B);   // Dark Slate
   static const Color textSecondary = Color(0xFF64748B);
   static const Color white = Color(0xFFFFFFFF);
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color shadow = Color(0x1A000000);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
+
+  // --- Gradients ---
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [primary, accent],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient itGradient = LinearGradient(
+    colors: [itServices, Color(0xFF7C3AED)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }

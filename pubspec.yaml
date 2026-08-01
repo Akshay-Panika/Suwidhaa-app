@@ -45,6 +45,7 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   cached_network_image: ^3.3.0
   font_awesome_flutter: ^11.0.0
+  chewie: ^1.7.1
 
 
 dev_dependencies:

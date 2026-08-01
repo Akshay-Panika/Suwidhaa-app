@@ -1,8 +1,6 @@
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:untitled/feature/ecommerce/screen/ecommerce_category_screen.dart';
 import '../../../core/utils/app_color.dart';
-import 'ecommerce_dashboard_screen.dart';
 import 'ecommerce_details_screen.dart';
 import 'ecommerce_local_shop_screen.dart';
 

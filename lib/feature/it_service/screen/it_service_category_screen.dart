@@ -1,376 +1,310 @@
+// lib/screens/dashboard/it_service_category_screen.dart
 import 'package:flutter/material.dart';
+import '../../../core/utils/app_color.dart';
 import 'it_service_details_screen.dart';
 
 class ItServiceCategoryScreen extends StatefulWidget {
-  final int initialIndex;
+  final String? initialCategory;
 
-  const ItServiceCategoryScreen({super.key, this.initialIndex = 0});
+  const ItServiceCategoryScreen({super.key, this.initialCategory});
 
   @override
   State<ItServiceCategoryScreen> createState() => _ItServiceCategoryScreenState();
 }
 
 class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
-  late int _selectedCategoryIndex;
-
-  final List<Map<String, dynamic>> categories = [
-    {'name': 'Development', 'icon': Icons.code_rounded, 'color': const Color(0xFF6366F1)},
-    {'name': 'Design', 'icon': Icons.design_services_rounded, 'color': const Color(0xFF0EA5E9)},
-    {'name': 'Marketing', 'icon': Icons.trending_up_rounded, 'color': const Color(0xFF10B981)},
-    {'name': 'Consulting', 'icon': Icons.psychology_rounded, 'color': const Color(0xFFF43F5E)},
-    {'name': 'DevOps', 'icon': Icons.build_rounded, 'color': const Color(0xFF8B5CF6)},
-    {'name': 'Support', 'icon': Icons.support_agent_rounded, 'color': const Color(0xFFF59E0B)},
-  ];
-
-  final Map<int, List<Map<String, dynamic>>> servicesByCategory = {
-    0: [
-      {
-        'title': 'Mobile App Development',
-        'desc': 'Native & cross-platform apps for iOS and Android with stunning UI.',
-        'imageUrl': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
-        'tag': 'Premium',
-        'color': const Color(0xFF6366F1),
-        'rating': 4.9,
-        'reviews': 128,
-        'price': '₹15,000',
-      },
-      {
-        'title': 'Web Development',
-        'desc': 'Full-stack web applications with modern frameworks and cloud integration.',
-        'imageUrl': 'https://images.unsplash.com/photo-1547658719-da2b81166b58?w=400&q=80',
-        'tag': 'Trending',
-        'color': const Color(0xFF6366F1),
-        'rating': 4.8,
-        'reviews': 96,
-        'price': '₹12,000',
-      },
-      {
-        'title': 'IoT Solutions',
-        'desc': 'Smart device integration and automation for industrial applications.',
-        'imageUrl': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80',
-        'tag': 'Next-Gen',
-        'color': const Color(0xFF6366F1),
-        'rating': 4.7,
-        'reviews': 45,
-        'price': '₹20,000',
-      },
-      {
-        'title': 'Blockchain Development',
-        'desc': 'Smart contracts, DApps, and decentralized solutions.',
-        'imageUrl': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&q=80',
-        'tag': 'New',
-        'color': const Color(0xFF6366F1),
-        'rating': 4.6,
-        'reviews': 34,
-        'price': '₹25,000',
-      },
-      {
-        'title': 'AI/ML Solutions',
-        'desc': 'Machine learning models, AI chatbots, and predictive analytics.',
-        'imageUrl': 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=400&q=80',
-        'tag': 'AI Powered',
-        'color': const Color(0xFF6366F1),
-        'rating': 4.9,
-        'reviews': 56,
-        'price': '₹22,000',
-      },
-    ],
-    1: [
-      {
-        'title': 'UI/UX Design',
-        'desc': 'User-centric designs with interactive prototypes and wireframes.',
-        'imageUrl': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&q=80',
-        'tag': 'Top Rated',
-        'color': const Color(0xFF0EA5E9),
-        'rating': 4.9,
-        'reviews': 156,
-        'price': '₹10,000',
-      },
-      {
-        'title': 'Graphic Design',
-        'desc': 'Corporate branding, logo design, and visual communication.',
-        'imageUrl': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&q=80',
-        'tag': 'Creative',
-        'color': const Color(0xFF0EA5E9),
-        'rating': 4.8,
-        'reviews': 89,
-        'price': '₹8,000',
-      },
-      {
-        'title': 'Motion Graphics',
-        'desc': 'Animated videos, explainers, and motion design for marketing.',
-        'imageUrl': 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=400&q=80',
-        'tag': 'Popular',
-        'color': const Color(0xFF0EA5E9),
-        'rating': 4.6,
-        'reviews': 67,
-        'price': '₹12,000',
-      },
-      {
-        'title': 'Product Design',
-        'desc': 'End-to-end product design from concept to prototype.',
-        'imageUrl': 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400&q=80',
-        'tag': 'Expert',
-        'color': const Color(0xFF0EA5E9),
-        'rating': 4.7,
-        'reviews': 45,
-        'price': '₹14,000',
-      },
-    ],
-    2: [
-      {
-        'title': 'Digital Marketing',
-        'desc': 'SEO, PPC, social media marketing, and analytics.',
-        'imageUrl': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80',
-        'tag': 'Growth',
-        'color': const Color(0xFF10B981),
-        'rating': 4.7,
-        'reviews': 112,
-        'price': '₹9,000',
-      },
-      {
-        'title': 'Content Marketing',
-        'desc': 'Blog writing, copywriting, and content strategy.',
-        'imageUrl': 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&q=80',
-        'tag': 'Engaging',
-        'color': const Color(0xFF10B981),
-        'rating': 4.5,
-        'reviews': 78,
-        'price': '₹7,000',
-      },
-      {
-        'title': 'Social Media Management',
-        'desc': 'Complete social media strategy, content creation, and engagement.',
-        'imageUrl': 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80',
-        'tag': 'Popular',
-        'color': const Color(0xFF10B981),
-        'rating': 4.6,
-        'reviews': 92,
-        'price': '₹6,000',
-      },
-      {
-        'title': 'Email Marketing',
-        'desc': 'Campaign design, automation, and analytics for email marketing.',
-        'imageUrl': 'https://images.unsplash.com/photo-1557200134-90327ee9febe?w=400&q=80',
-        'tag': 'Effective',
-        'color': const Color(0xFF10B981),
-        'rating': 4.4,
-        'reviews': 56,
-        'price': '₹5,000',
-      },
-    ],
-    3: [
-      {
-        'title': 'IT Consulting',
-        'desc': 'Strategic technology planning and digital transformation.',
-        'imageUrl': 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&q=80',
-        'tag': 'Expert',
-        'color': const Color(0xFFF43F5E),
-        'rating': 4.9,
-        'reviews': 45,
-        'price': '₹25,000',
-      },
-      {
-        'title': 'Cloud Services',
-        'desc': 'AWS, Azure, and GCP implementation and management.',
-        'imageUrl': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80',
-        'tag': 'Enterprise',
-        'color': const Color(0xFFF43F5E),
-        'rating': 4.8,
-        'reviews': 34,
-        'price': '₹18,000',
-      },
-      {
-        'title': 'Cybersecurity',
-        'desc': 'Security audits, penetration testing, and compliance solutions.',
-        'imageUrl': 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=400&q=80',
-        'tag': 'Secure',
-        'color': const Color(0xFFF43F5E),
-        'rating': 4.7,
-        'reviews': 28,
-        'price': '₹20,000',
-      },
-      {
-        'title': 'Data Analytics',
-        'desc': 'Business intelligence, data visualization, and predictive modeling.',
-        'imageUrl': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
-        'tag': 'Insightful',
-        'color': const Color(0xFFF43F5E),
-        'rating': 4.6,
-        'reviews': 39,
-        'price': '₹16,000',
-      },
-    ],
-    4: [
-      {
-        'title': 'CI/CD Pipeline Setup',
-        'desc': 'Automated deployment pipelines with Jenkins, GitLab CI, and GitHub Actions.',
-        'imageUrl': 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400&q=80',
-        'tag': 'Automation',
-        'color': const Color(0xFF8B5CF6),
-        'rating': 4.8,
-        'reviews': 56,
-        'price': '₹15,000',
-      },
-      {
-        'title': 'Kubernetes & Docker',
-        'desc': 'Container orchestration with Kubernetes and Docker implementation.',
-        'imageUrl': 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400&q=80',
-        'tag': 'Enterprise',
-        'color': const Color(0xFF8B5CF6),
-        'rating': 4.9,
-        'reviews': 78,
-        'price': '₹18,000',
-      },
-      {
-        'title': 'AWS Cloud Services',
-        'desc': 'AWS infrastructure setup, management, and optimization.',
-        'imageUrl': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80',
-        'tag': 'Cloud',
-        'color': const Color(0xFF8B5CF6),
-        'rating': 4.7,
-        'reviews': 92,
-        'price': '₹20,000',
-      },
-      {
-        'title': 'Infrastructure as Code',
-        'desc': 'Terraform, Ansible, and CloudFormation for infrastructure automation.',
-        'imageUrl': 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400&q=80',
-        'tag': 'Automation',
-        'color': const Color(0xFF8B5CF6),
-        'rating': 4.6,
-        'reviews': 45,
-        'price': '₹14,000',
-      },
-      {
-        'title': 'Monitoring & Logging',
-        'desc': 'Prometheus, Grafana, ELK stack for monitoring and logging.',
-        'imageUrl': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80',
-        'tag': 'Observability',
-        'color': const Color(0xFF8B5CF6),
-        'rating': 4.5,
-        'reviews': 34,
-        'price': '₹12,000',
-      },
-    ],
-    5: [
-      {
-        'title': '24/7 Technical Support',
-        'desc': 'Round-the-clock technical support for your IT infrastructure.',
-        'imageUrl': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80',
-        'tag': '24/7',
-        'color': const Color(0xFFF59E0B),
-        'rating': 4.9,
-        'reviews': 156,
-        'price': '₹10,000',
-      },
-      {
-        'title': 'Help Desk Services',
-        'desc': 'Professional help desk support for all your IT queries.',
-        'imageUrl': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80',
-        'tag': 'Responsive',
-        'color': const Color(0xFFF59E0B),
-        'rating': 4.7,
-        'reviews': 89,
-        'price': '₹8,000',
-      },
-      {
-        'title': 'Server Maintenance',
-        'desc': 'Regular server maintenance, updates, and security patches.',
-        'imageUrl': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80',
-        'tag': 'Reliable',
-        'color': const Color(0xFFF59E0B),
-        'rating': 4.8,
-        'reviews': 67,
-        'price': '₹12,000',
-      },
-      {
-        'title': 'Data Backup & Recovery',
-        'desc': 'Automated data backup solutions and disaster recovery plans.',
-        'imageUrl': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80',
-        'tag': 'Secure',
-        'color': const Color(0xFFF59E0B),
-        'rating': 4.6,
-        'reviews': 78,
-        'price': '₹9,000',
-      },
-      {
-        'title': 'Network Support',
-        'desc': 'Network setup, troubleshooting, and performance optimization.',
-        'imageUrl': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80',
-        'tag': 'Expert',
-        'color': const Color(0xFFF59E0B),
-        'rating': 4.5,
-        'reviews': 56,
-        'price': '₹11,000',
-      },
-    ],
-  };
+  late String _selectedCategory;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // Ensure the initial index is valid
-    _selectedCategoryIndex = widget.initialIndex.clamp(0, categories.length - 1);
+    _selectedCategory = widget.initialCategory ?? 'All';
+  }
+
+  final List<Map<String, dynamic>> categories = [
+    {'name': 'All', 'icon': Icons.dashboard, 'color': AppColors.itServices},
+    {'name': 'App Development', 'icon': Icons.mobile_friendly_rounded, 'color': AppColors.ecommerce},
+    {'name': 'Web Development', 'icon': Icons.web_rounded, 'color': AppColors.primary},
+    {'name': 'Web Application', 'icon': Icons.web_asset_rounded, 'color': AppColors.itServices},
+    {'name': 'IoT & Robotics', 'icon': Icons.smart_toy_rounded, 'color': AppColors.ngo},
+    {'name': 'Game Development', 'icon': Icons.sports_esports_rounded, 'color': AppColors.school},
+    {'name': 'AI & ML', 'icon': Icons.psychology_rounded, 'color': AppColors.itServicesTint},
+    {'name': 'Cloud Computing', 'icon': Icons.cloud_rounded, 'color': AppColors.primary},
+    {'name': 'DevOps', 'icon': Icons.settings_rounded, 'color': AppColors.ecommerce},
+    {'name': 'AR/VR', 'icon': Icons.circle, 'color': AppColors.ott},
+    {'name': 'Blockchain', 'icon': Icons.link_rounded, 'color': AppColors.school},
+    {'name': 'Cybersecurity', 'icon': Icons.security_rounded, 'color': AppColors.ngo},
+    {'name': 'Data Science', 'icon': Icons.data_usage_rounded, 'color': AppColors.primary},
+  ];
+
+  final List<Map<String, dynamic>> allProjects = [
+    // App Development Projects
+    {
+      'title': 'E-Commerce Mobile App',
+      'price': '₹1,50,000',
+      'oldPrice': '₹2,00,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1551650975-87deedd944c3?q=80&w=200',
+      'category': 'App Development',
+      'rating': 4.9,
+      'reviews': 89,
+      'badge': 'Trending',
+      'color': AppColors.ecommerce,
+      'provider': 'CodeCraft Studios',
+      'description': 'Full-featured e-commerce mobile app with payment integration, user authentication, and real-time inventory management.',
+    },
+    {
+      'title': 'Social Media App',
+      'price': '₹2,00,000',
+      'oldPrice': '₹2,80,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=200',
+      'category': 'App Development',
+      'rating': 4.8,
+      'reviews': 67,
+      'badge': 'Popular',
+      'color': AppColors.ecommerce,
+      'provider': 'AppForge Solutions',
+      'description': 'Social media platform with real-time chat, post sharing, and user profile management.',
+    },
+    {
+      'title': 'Health & Fitness App',
+      'price': '₹1,80,000',
+      'oldPrice': '₹2,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=200',
+      'category': 'App Development',
+      'rating': 4.7,
+      'reviews': 45,
+      'badge': 'New',
+      'color': AppColors.ecommerce,
+      'provider': 'CodeCraft Studios',
+      'description': 'Health tracking app with workout plans, nutrition tracking, and progress monitoring.',
+    },
+    // Web Development Projects
+    {
+      'title': 'Corporate Website',
+      'price': '₹80,000',
+      'oldPrice': '₹1,20,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1547658719-da2b51169166?q=80&w=200',
+      'category': 'Web Development',
+      'rating': 4.6,
+      'reviews': 56,
+      'badge': 'Popular',
+      'color': AppColors.primary,
+      'provider': 'WebWizards Inc',
+      'description': 'Professional corporate website with custom design, SEO optimization, and responsive layout.',
+    },
+    {
+      'title': 'Portfolio Website',
+      'price': '₹50,000',
+      'oldPrice': '₹75,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=200',
+      'category': 'Web Development',
+      'rating': 4.5,
+      'reviews': 34,
+      'badge': 'Trending',
+      'color': AppColors.primary,
+      'provider': 'WebWizards Inc',
+      'description': 'Creative portfolio website for showcasing work, with animated elements and contact forms.',
+    },
+    {
+      'title': 'Blog Platform',
+      'price': '₹60,000',
+      'oldPrice': '₹90,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=200',
+      'category': 'Web Development',
+      'rating': 4.4,
+      'reviews': 28,
+      'badge': 'Best',
+      'color': AppColors.primary,
+      'provider': 'WebWizards Inc',
+      'description': 'Full-featured blog platform with content management, user comments, and social sharing.',
+    },
+    // Web Application Development
+    {
+      'title': 'SaaS Dashboard',
+      'price': '₹2,00,000',
+      'oldPrice': '₹2,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=200',
+      'category': 'Web Application',
+      'rating': 4.8,
+      'reviews': 78,
+      'badge': 'New',
+      'color': AppColors.itServices,
+      'provider': 'WebApp Masters',
+      'description': 'Comprehensive SaaS dashboard with analytics, user management, and real-time data visualization.',
+    },
+    {
+      'title': 'API Development',
+      'price': '₹80,000',
+      'oldPrice': '₹1,20,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=200',
+      'category': 'Web Application',
+      'rating': 4.7,
+      'reviews': 56,
+      'badge': 'Popular',
+      'color': AppColors.itServices,
+      'provider': 'WebApp Masters',
+      'description': 'Custom REST API development with authentication, rate limiting, and comprehensive documentation.',
+    },
+    {
+      'title': 'E-Learning Platform',
+      'price': '₹2,50,000',
+      'oldPrice': '₹3,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=200',
+      'category': 'Web Application',
+      'rating': 4.9,
+      'reviews': 89,
+      'badge': 'Trending',
+      'color': AppColors.itServices,
+      'provider': 'WebApp Masters',
+      'description': 'Complete e-learning platform with video streaming, quizzes, and student progress tracking.',
+    },
+    // IoT & Robotics
+    {
+      'title': 'Smart Home System',
+      'price': '₹2,00,000',
+      'oldPrice': '₹2,80,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=200',
+      'category': 'IoT & Robotics',
+      'rating': 4.9,
+      'reviews': 45,
+      'badge': 'IoT',
+      'color': AppColors.ngo,
+      'provider': 'RoboTech Innovations',
+      'description': 'Complete smart home automation system with voice control, sensors, and mobile app integration.',
+    },
+    {
+      'title': 'Industrial Automation',
+      'price': '₹3,50,000',
+      'oldPrice': '₹4,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=200',
+      'category': 'IoT & Robotics',
+      'rating': 4.8,
+      'reviews': 34,
+      'badge': 'Industrial',
+      'color': AppColors.ngo,
+      'provider': 'RoboTech Innovations',
+      'description': 'Industrial automation system with PLC integration, remote monitoring, and predictive maintenance.',
+    },
+    {
+      'title': 'Robotics Kit',
+      'price': '₹1,50,000',
+      'oldPrice': '₹2,00,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1535378917042-10a22c95931a?q=80&w=200',
+      'category': 'IoT & Robotics',
+      'rating': 4.7,
+      'reviews': 28,
+      'badge': 'New',
+      'color': AppColors.ngo,
+      'provider': 'RoboTech Innovations',
+      'description': 'Educational robotics kit with sensors, actuators, and programming interface.',
+    },
+    // Game Development
+    {
+      'title': '3D Adventure Game',
+      'price': '₹4,00,000',
+      'oldPrice': '₹5,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=200',
+      'category': 'Game Development',
+      'rating': 4.8,
+      'reviews': 67,
+      'badge': 'Trending',
+      'color': AppColors.school,
+      'provider': 'GameForge Studios',
+      'description': 'Immersive 3D adventure game with realistic graphics, story-driven gameplay, and multiplayer support.',
+    },
+    {
+      'title': 'Mobile Game',
+      'price': '₹2,50,000',
+      'oldPrice': '₹3,50,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?q=80&w=200',
+      'category': 'Game Development',
+      'rating': 4.6,
+      'reviews': 45,
+      'badge': 'Popular',
+      'color': AppColors.school,
+      'provider': 'GameForge Studios',
+      'description': 'Casual mobile game with addictive gameplay, leaderboards, and in-app purchases.',
+    },
+    {
+      'title': 'AR/VR Game',
+      'price': '₹5,00,000',
+      'oldPrice': '₹7,00,000',
+      'imageUrl': 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=200',
+      'category': 'Game Development',
+      'rating': 4.9,
+      'reviews': 34,
+      'badge': 'AR/VR',
+      'color': AppColors.ott,
+      'provider': 'GameForge Studios',
+      'description': 'Cutting-edge AR/VR game with immersive experiences, gesture controls, and 3D environments.',
+    },
+  ];
+
+  List<Map<String, dynamic>> get filteredProjects {
+    if (_selectedCategory == 'All') {
+      return allProjects;
+    }
+    return allProjects.where((project) =>
+    project['category'] == _selectedCategory
+    ).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentServices = servicesByCategory[_selectedCategoryIndex] ?? [];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          categories[_selectedCategoryIndex]['name'],
-          style: const TextStyle(
-            color: Color(0xFF1E293B),
+        automaticallyImplyLeading: false,
+        surfaceTintColor: Colors.white,
+        title: const Text(
+          'IT Services',
+          style: TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            color: AppColors.textMain,
+            letterSpacing: -0.5,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.filter_list_rounded, color: Color(0xFF64748B)),
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: AppColors.border,
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search_rounded, color: Color(0xFF64748B)),
-          ),
-        ],
+        ),
       ),
       body: Row(
         children: [
-          // Sidebar
+          // ====== CATEGORY LIST ======
           Container(
-            width: 80,
-            color: Colors.white,
+            width: 100,
+            color: AppColors.white,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: categories.length,
               itemBuilder: (context, index) {
-                final cat = categories[index];
-                bool isSelected = _selectedCategoryIndex == index;
-                final Color color = cat['color'] as Color;
-
+                final category = categories[index];
+                final isSelected = _selectedCategory == category['name'];
                 return InkWell(
-                  onTap: () => setState(() => _selectedCategoryIndex = index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = category['name'];
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFF1F5F9) : Colors.transparent,
+                      color: isSelected
+                          ? AppColors.itServices.withOpacity(0.08)
+                          : Colors.transparent,
                       border: Border(
                         left: BorderSide(
-                          color: isSelected ? color : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.itServices
+                              : Colors.transparent,
                           width: 3,
                         ),
                       ),
@@ -378,31 +312,52 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                        // Removed AnimatedContainer - using normal Container
+                        Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: isSelected ? color.withOpacity(0.15) : Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? color.withOpacity(0.3) : Colors.transparent,
-                            ),
+                            gradient: isSelected
+                                ? LinearGradient(
+                              colors: [AppColors.itServices, AppColors.itServices.withOpacity(0.6)],
+                            )
+                                : null,
+                            color: isSelected
+                                ? null
+                                : category['color'].withOpacity(0.12),
+                            shape: BoxShape.circle,
+                            boxShadow: isSelected
+                                ? [
+                              BoxShadow(
+                                color: AppColors.itServices.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                                : null,
                           ),
                           child: Icon(
-                            cat['icon'] as IconData,
-                            color: isSelected ? color : Colors.grey[500],
+                            category['icon'],
+                            color: isSelected
+                                ? AppColors.white
+                                : category['color'],
                             size: 24,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          cat['name'],
-                          textAlign: TextAlign.center,
+                          category['name'],
                           style: TextStyle(
                             fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected ? color : Colors.grey[500],
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? AppColors.itServices
+                                : AppColors.textSecondary,
                           ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -412,29 +367,84 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
             ),
           ),
 
-          // Service List
+          // ====== PROJECT GRID ======
           Expanded(
-            child: currentServices.isEmpty
-                ? const Center(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: Color(0xFF64748B)),
-                  SizedBox(height: 12),
-                  Text(
-                    "No services found",
-                    style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedCategory,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textMain,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${filteredProjects.length} projects',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: filteredProjects.isEmpty
+                        ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 64,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No projects in this category',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                        : GridView.builder(
+                      padding: const EdgeInsets.all(4),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1,
+                        childAspectRatio: 1.3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: filteredProjects.length,
+                      itemBuilder: (context, index) {
+                        final project = filteredProjects[index];
+                        return _buildEnhancedProjectCard(project);
+                      },
+                    ),
                   ),
                 ],
               ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: currentServices.length,
-              itemBuilder: (context, index) {
-                final service = currentServices[index];
-                return _buildServiceCard(context, service);
-              },
             ),
           ),
         ],
@@ -442,172 +452,204 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
     );
   }
 
-  Widget _buildServiceCard(BuildContext context, Map<String, dynamic> service) {
-    final Color color = service['color'] as Color;
-    final double rating = service['rating'] ?? 4.5;
-    final int reviews = service['reviews'] ?? 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildEnhancedProjectCard(Map<String, dynamic> project) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItServiceDetailsScreen(
+              project: project,
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              service['imageUrl'],
-              width: double.infinity,
-              height: 120,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Container(
-                  height: 120,
-                  color: Colors.grey[100],
-                  child: const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      project['imageUrl'] ?? '',
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.background,
+                        child: const Icon(
+                          Icons.image_not_supported_rounded,
+                          size: 40,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 120,
-                color: Colors.grey[100],
-                child: Icon(Icons.image_outlined, color: Colors.grey[400], size: 40),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [project['color'], project['color'].withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          project['category'] ?? '',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (project['badge'] != null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.textMain,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            project['badge'],
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.textMain.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: AppColors.school,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              (project['rating'] ?? 4.5).toString(),
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.favorite_border_rounded,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        service['title'],
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    project['title'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    project['provider'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        project['price'] ?? '',
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Color(0xFF1E293B),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        service['tag'],
-                        style: TextStyle(
-                          fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: color,
+                          color: AppColors.itServices,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  service['desc'],
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.star_rounded, color: Colors.amber[600], size: 16),
-                        const SizedBox(width: 4),
+                      if (project['oldPrice'] != null && project['oldPrice'] != '')
                         Text(
-                          rating.toString(),
+                          project['oldPrice'],
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Color(0xFF1E293B),
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                            decoration: TextDecoration.lineThrough,
                           ),
                         ),
-                        Text(
-                          ' ($reviews)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      service['price'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ItServiceDetailsScreen(serviceData: service),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Get Quote',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                  if (project['reviews'] != null)
+                    Text(
+                      '${project['reviews']} reviews',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

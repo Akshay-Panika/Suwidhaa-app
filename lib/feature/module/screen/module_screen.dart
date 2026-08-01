@@ -5,7 +5,8 @@ import '../../collage/screen/collage_dashboard_screen.dart';
 import '../../collage/screen/collage_home_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_home_screen.dart';
-import '../../it_service/screen/it_service_screen.dart';
+import '../../it_service/screen/it_service_home_screen.dart';
+import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
 import '../../ngo/screen/ngo_home_screen.dart';
 import '../../notificatinal/screen/notification_screen.dart';
@@ -86,7 +87,7 @@ class _ModuleScreenState extends State<ModuleScreen>
         'subtitle': 'Tech Support',
         'icon': Icons.build_circle_rounded,
         'color': AppColors.itServices,
-        'targetScreen': const ItServiceScreen(),
+        'targetScreen': const ItServicesDashboardScreen(),
         'gradient': [AppColors.itServices, AppColors.itServices.withOpacity(0.3)],
       },
       {
@@ -146,7 +147,7 @@ class _ModuleScreenState extends State<ModuleScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        'targetScreen': const ItServiceScreen(),
+        'targetScreen': const ItServicesDashboardScreen(),
       },
       {
         'headline': '🎓 ADMISSION OPEN 2026',
