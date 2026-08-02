@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import '../../../core/utils/app_color.dart';
 import '../../collage/screen/collage_dashboard_screen.dart';
-import '../../collage/screen/collage_home_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
-import '../../ecommerce/screen/ecommerce_home_screen.dart';
-import '../../it_service/screen/it_service_home_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
-import '../../ngo/screen/ngo_home_screen.dart';
-import '../../notificatinal/screen/notification_screen.dart';
+import '../../ott_platform/screen/ott_platform_dashboard_screen.dart';
 import '../../school/screen/school_screen.dart';
-import '../../video_player/screen/video_player_screen.dart';
 
 class ModuleScreen extends StatefulWidget {
   const ModuleScreen({super.key});
@@ -103,7 +98,7 @@ class _ModuleScreenState extends State<ModuleScreen>
         'subtitle': 'Entertainment',
         'icon': Icons.play_circle_fill_rounded,
         'color': AppColors.ott,
-        'targetScreen': const NetflixHomeScreen(),
+        'targetScreen': const OttDashboardScreen(),
         'gradient': [AppColors.ott, AppColors.ott.withOpacity(0.3)],
       },
       {

@@ -1,10 +1,10 @@
 // lib/screens/ott/ott_dashboard_screen.dart
 import 'package:flutter/material.dart';
-import 'ott_platform_category_screen.dart';
+import '../../../core/utils/app_color.dart';
 import 'ott_platform_home_screen.dart';
 import 'ott_platform_profile_screen.dart';
-import 'ott_search_screen.dart';
-
+import 'ott_platform_reel_screen.dart';
+import 'ott_platform_search_screen.dart';
 
 class OttDashboardScreen extends StatefulWidget {
   const OttDashboardScreen({super.key});
@@ -21,10 +21,10 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          OttHomeScreen(),
-          OttCategoryScreen(),
-          OttSearchScreen(),
+        children:  [
+          OttPlatformHomeScreen(),
+          OttPlatformSearchScreen(),
+          OttPlatformReelScreen(),
           OttProfileScreen(),
         ],
       ),
@@ -33,16 +33,16 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              blurRadius: 8,
+              offset: const Offset(0, -3),
             ),
           ],
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFFDB2777),
-          unselectedItemColor: const Color(0xFF888888),
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: Colors.grey[500],
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 11,
@@ -60,23 +60,23 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              activeIcon: Icon(Icons.home_rounded),
+              icon: Icon(Icons.home_rounded, size: 24),
+              activeIcon: Icon(Icons.home_rounded, size: 24),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.category_rounded),
-              activeIcon: Icon(Icons.category_rounded),
-              label: 'Categories',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search_rounded),
-              activeIcon: Icon(Icons.search_rounded),
+              icon: Icon(Icons.search, size: 24),
+              activeIcon: Icon(Icons.search, size: 24),
               label: 'Search',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
+              icon: Icon(Icons.video_collection_outlined, size: 24),
+              activeIcon: Icon(Icons.video_collection, size: 24),
+              label: 'Reel',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded, size: 24),
+              activeIcon: Icon(Icons.person_rounded, size: 24),
               label: 'Profile',
             ),
           ],

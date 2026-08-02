@@ -1,5 +1,5 @@
-// lib/screens/ott/ott_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:untitled/core/utils/app_color.dart';
 
 class OttProfileScreen extends StatelessWidget {
   const OttProfileScreen({super.key});
@@ -7,291 +7,385 @@ class OttProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.white,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Profile',
+        title: Text(
+          "Profile",
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black,
           ),
         ),
-        backgroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_rounded, color: Colors.white),
+            icon: Icon(Icons.settings_outlined, color: Colors.black),
             onPressed: () {},
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-            // Profile Header
+            SizedBox(height: 10),
+
+            // Profile Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFFDB2777), const Color(0xFF9C27B0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 50,
-                      color: Color(0xFFDB2777),
+                  // Avatar
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage: NetworkImage(
+                      'https://picsum.photos/seed/user/200/200',
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16),
+                  // Name & Email
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'John Doe',
+                        Text(
+                          "John Doe",
                           style: TextStyle(
-                            color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
-                          'john.doe@email.com',
+                          "john.doe@email.com",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
                             fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Premium Member',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            color: Colors.grey[600],
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  // Edit Button
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "Edit",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
-            // Stats
+            // Stats Row
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildStat('Watch History', '124'),
-                  _buildStat('Downloads', '12'),
-                  _buildStat('Favorites', '45'),
+                  _statItem("48", "Watchlist"),
+                  _divider(),
+                  _statItem("23", "Favorites"),
+                  _divider(),
+                  _statItem("12", "Reviews"),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Menu Items
+            _menuItem(
+              icon: Icons.history,
+              title: "Watch History",
+              onTap: () {},
+            ),
+            _menuItem(
+              icon: Icons.download,
+              title: "Downloads",
+              onTap: () {},
+            ),
+            _menuItem(
+              icon: Icons.favorite,
+              title: "Favorites",
+              onTap: () {},
+              iconColor: Colors.red,
+            ),
+            _menuItem(
+              icon: Icons.star,
+              title: "Ratings & Reviews",
+              onTap: () {},
+              iconColor: Colors.amber,
+            ),
+
+            SizedBox(height: 20),
+
+            // Account Settings
+            _sectionTitle("Account Settings"),
+            _menuItem(
+              icon: Icons.person_outline,
+              title: "Edit Profile",
+              onTap: () {},
+            ),
+            _menuItem(
+              icon: Icons.notifications_outlined,
+              title: "Notifications",
+              onTap: () {},
+            ),
+            _menuItem(
+              icon: Icons.lock_outline,
+              title: "Privacy & Security",
+              onTap: () {},
+            ),
+
+            SizedBox(height: 20),
+
+            // Subscription
+            _sectionTitle("Subscription"),
             Container(
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildMenuItem(
-                    icon: Icons.history_rounded,
-                    title: 'Watch History',
-                    subtitle: 'Continue watching',
-                    color: const Color(0xFFDB2777),
+                  Row(
+                    children: [
+                      Icon(Icons.subscriptions, color: Colors.purple),
+                      SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Premium Plan",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            "\$9.99/month",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  _buildDivider(),
-                  _buildMenuItem(
-                    icon: Icons.favorite_rounded,
-                    title: 'Favorites',
-                    subtitle: 'Your saved videos',
-                    color: const Color(0xFFE53935),
-                  ),
-                  _buildDivider(),
-                  _buildMenuItem(
-                    icon: Icons.download_rounded,
-                    title: 'Downloads',
-                    subtitle: 'Offline videos',
-                    color: const Color(0xFF4CAF50),
-                  ),
-                  _buildDivider(),
-                  _buildMenuItem(
-                    icon: Icons.payment_rounded,
-                    title: 'Subscription',
-                    subtitle: 'Manage your plan',
-                    color: const Color(0xFFFF6F00),
-                  ),
-                  _buildDivider(),
-                  _buildMenuItem(
-                    icon: Icons.help_rounded,
-                    title: 'Help & Support',
-                    subtitle: 'FAQ, contact & feedback',
-                    color: const Color(0xFF00BCD4),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "Active",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
-            // Logout
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+            // Support
+            _sectionTitle("Support"),
+            _menuItem(
+              icon: Icons.help_outline,
+              title: "Help & Support",
+              onTap: () {},
+            ),
+            _menuItem(
+              icon: Icons.info_outline,
+              title: "About",
+              onTap: () {},
+            ),
+
+            SizedBox(height: 30),
+
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  _showLogoutDialog(context);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: BorderSide(color: Colors.red.shade300),
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.logout_rounded,
-                    color: Colors.red,
-                    size: 24,
-                  ),
                 ),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red,
-                    fontSize: 14,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Logout",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                onTap: () {},
               ),
             ),
 
-            const SizedBox(height: 40),
-
-            // Version
-            Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
+            SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStat(String label, String value) {
+  Widget _statItem(String value, String label) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey[500],
             fontSize: 12,
+            color: Colors.grey[600],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color, size: 22),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-          color: Colors.white,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: Colors.grey[500],
-          fontSize: 12,
-        ),
-      ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 14,
-        color: Colors.grey,
-      ),
-      onTap: () {},
+  Widget _divider() {
+    return Container(
+      height: 25,
+      width: 1,
+      color: Colors.grey[300],
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(
-      height: 0,
-      thickness: 0.5,
-      color: Colors.grey[800],
-      indent: 72,
+  Widget _sectionTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[600],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _menuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: iconColor ?? AppColors.primary,
+          size: 24,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Colors.grey[400],
+          size: 20,
+        ),
+        onTap: onTap,
+        contentPadding: EdgeInsets.symmetric(horizontal: 4),
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Logout"),
+        content: Text("Are you sure you want to logout?"),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Logged out successfully"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: Text("Logout"),
+          ),
+        ],
+      ),
     );
   }
 }

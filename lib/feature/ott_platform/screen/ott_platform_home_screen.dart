@@ -1,922 +1,454 @@
-// lib/screens/ott/ott_home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:carousel_slider_plus/carousel_slider_plus.dart';
-import 'ott_video_player_screen.dart';
-import 'ott_video_detail_screen.dart';
+import 'package:untitled/core/utils/app_color.dart';
+import 'ott_platform_video_play_screen.dart';
 
-class OttHomeScreen extends StatefulWidget {
-  const OttHomeScreen({super.key});
+class OttPlatformHomeScreen extends StatefulWidget {
+  const OttPlatformHomeScreen({super.key});
 
   @override
-  State<OttHomeScreen> createState() => _OttHomeScreenState();
+  State<OttPlatformHomeScreen> createState() => _OttPlatformHomeScreenState();
 }
 
-class _OttHomeScreenState extends State<OttHomeScreen> {
-  final CarouselSliderController _carouselController = CarouselSliderController();
-  int _currentBannerIndex = 0;
+class _OttPlatformHomeScreenState extends State<OttPlatformHomeScreen> {
+  int selectedTabIndex = 0;
+  final List<String> tabNames = ['Home', 'TV Show', 'Movies', 'Kids'];
 
-  // Banner Data with random network videos
-  final List<Map<String, dynamic>> banners = [
-    {
-      'title': 'The Crown Season 6',
-      'subtitle': 'The final season of the royal drama',
-      'image': 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600',
-      'color': const Color(0xFFDB2777),
-      'tag': '🔥 Trending Now',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    },
-    {
-      'title': 'Money Heist',
-      'subtitle': 'The ultimate heist series',
-      'image': 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?q=80&w=600',
-      'color': const Color(0xFFE53935),
-      'tag': '⭐ Popular',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    },
-    {
-      'title': 'Marvel Movies',
-      'subtitle': 'The complete MCU collection',
-      'image': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600',
-      'color': const Color(0xFF1565C0),
-      'tag': '🎬 New Release',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    },
-    {
-      'title': 'Anime Collection',
-      'subtitle': 'Best anime series streaming now',
-      'image': 'https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=600',
-      'color': const Color(0xFFFF6F00),
-      'tag': '🎌 Anime',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    },
-  ];
-
-  // Video Categories
-  final List<Map<String, dynamic>> categories = [
-    {'name': 'Movies', 'icon': Icons.movie_rounded, 'color': const Color(0xFFDB2777)},
-    {'name': 'TV Shows', 'icon': Icons.tv_rounded, 'color': const Color(0xFFE53935)},
-    {'name': 'Web Series', 'icon': Icons.play_circle_rounded, 'color': const Color(0xFF9C27B0)},
-    {'name': 'Anime', 'icon': Icons.animation_rounded, 'color': const Color(0xFFFF6F00)},
-    {'name': 'Documentaries', 'icon': Icons.document_scanner_rounded, 'color': const Color(0xFF00BCD4)},
-    {'name': 'Kids', 'icon': Icons.child_care_rounded, 'color': const Color(0xFFFF9800)},
-    {'name': 'Sports', 'icon': Icons.sports_rounded, 'color': const Color(0xFF4CAF50)},
-    {'name': 'Music', 'icon': Icons.music_note_rounded, 'color': const Color(0xFF9C27B0)},
-  ];
-
-  // Video Data with random network videos
-  final List<Map<String, dynamic>> videos = [
-    {
-      'id': '1',
-      'title': 'Big Buck Bunny',
-      'year': '2024',
-      'duration': '10:34',
-      'quality': '4K',
-      'views': '2.5M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=300',
-      'category': 'Movies',
-      'genre': 'Animation',
-      'rating': 4.8,
-      'description': 'A large rabbit is bullied by three small animals, but plots to get revenge.',
-      'cast': ['Big Buck', 'Bunny'],
-      'director': 'Sacha Goedegebure',
-      'releaseDate': '2024',
-      'language': 'English',
-      'subtitles': 'Hindi, Tamil, Telugu',
-      'badge': 'Trending',
-    },
-    {
-      'id': '2',
-      'title': 'Elephants Dream',
-      'year': '2023',
-      'duration': '10:53',
-      'quality': 'HD',
-      'views': '1.8M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?q=80&w=300',
-      'category': 'Movies',
-      'genre': 'Sci-Fi',
-      'rating': 4.5,
-      'description': 'Emo and his friends explore a strange mechanical world.',
-      'cast': ['Emo', 'Proog'],
-      'director': 'Bassam Kurdali',
-      'releaseDate': '2023',
-      'language': 'English',
-      'subtitles': 'Hindi, Tamil, Telugu',
-      'badge': 'Popular',
-    },
-    {
-      'id': '3',
-      'title': 'For Bigger Blazes',
-      'year': '2024',
-      'duration': '15:00',
-      'quality': '4K',
-      'views': '3.2M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=300',
-      'category': 'TV Shows',
-      'genre': 'Action',
-      'rating': 4.9,
-      'description': 'A thrilling action series with epic fight scenes.',
-      'cast': ['Hero', 'Villain'],
-      'director': 'John Doe',
-      'releaseDate': '2024',
-      'language': 'English',
-      'subtitles': 'Hindi, Tamil, Telugu',
-      'badge': 'New',
-    },
-    {
-      'id': '4',
-      'title': 'For Bigger Escapes',
-      'year': '2023',
-      'duration': '12:00',
-      'quality': 'HD',
-      'views': '1.2M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=300',
-      'category': 'Movies',
-      'genre': 'Adventure',
-      'rating': 4.3,
-      'description': 'An epic adventure of survival and escape.',
-      'cast': ['John', 'Sarah'],
-      'director': 'Jane Smith',
-      'releaseDate': '2023',
-      'language': 'English',
-      'subtitles': 'Hindi, Tamil, Telugu',
-      'badge': 'Trending',
-    },
-    {
-      'id': '5',
-      'title': 'For Bigger Fun',
-      'year': '2024',
-      'duration': '8:00',
-      'quality': '4K',
-      'views': '4.5M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=300',
-      'category': 'Web Series',
-      'genre': 'Comedy',
-      'rating': 4.7,
-      'description': 'A hilarious comedy series that will make you laugh.',
-      'cast': ['Comic 1', 'Comic 2'],
-      'director': 'Mike Johnson',
-      'releaseDate': '2024',
-      'language': 'English',
-      'subtitles': 'Hindi, Tamil, Telugu',
-      'badge': 'Popular',
-    },
-    {
-      'id': '6',
-      'title': 'For Bigger Joy',
-      'year': '2023',
-      'duration': '11:00',
-      'quality': 'HD',
-      'views': '2.1M',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoy.mp4',
-      'thumbUrl': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=300',
-      'category': 'Anime',
-      'genre': 'Animation',
-      'rating': 4.6,
-      'description': 'A heartwarming anime about friendship and joy.',
-      'cast': ['Hero', 'Friend'],
-      'director': 'Yuki Tanaka',
-      'releaseDate': '2023',
-      'language': 'Japanese',
-      'subtitles': 'English, Hindi',
-      'badge': 'New',
-    },
-  ];
-
-  final List<Map<String, dynamic>> continueWatching = [
-    {
-      'title': 'The Crown Season 5',
-      'progress': 0.75,
-      'thumbUrl': 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=200',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    },
-    {
-      'title': 'Money Heist Part 5',
-      'progress': 0.45,
-      'thumbUrl': 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?q=80&w=200',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    },
-    {
-      'title': 'Marvel Avengers',
-      'progress': 0.90,
-      'thumbUrl': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=200',
-      'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    },
+  final List<String> thumbnailUrls = const [
+    'https://picsum.photos/seed/1/300/400',
+    'https://picsum.photos/seed/2/300/400',
+    'https://picsum.photos/seed/3/300/400',
+    'https://picsum.photos/seed/4/300/400',
+    'https://picsum.photos/seed/5/300/400',
+    'https://picsum.photos/seed/6/300/400',
+    'https://picsum.photos/seed/7/300/200',
+    'https://picsum.photos/seed/8/300/200',
+    'https://picsum.photos/seed/9/300/200',
+    'https://picsum.photos/seed/10/300/200',
+    'https://picsum.photos/seed/11/300/200',
+    'https://picsum.photos/seed/12/300/200',
+    'https://picsum.photos/seed/13/300/200',
+    'https://picsum.photos/seed/14/300/200',
+    'https://picsum.photos/seed/15/300/200',
+    'https://picsum.photos/seed/16/300/200',
+    'https://picsum.photos/seed/17/300/200',
+    'https://picsum.photos/seed/18/300/200',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            pinned: true,
-            elevation: 0,
-            backgroundColor: Colors.black,
-            surfaceTintColor: Colors.black,
-            toolbarHeight: 70,
-            leading: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.menu_rounded, color: Colors.white, size: 28),
-            ),
-            title: Row(
-              children: [
-                const Text(
-                  'OTT',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFDB2777),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Text(
-                  'Stream',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.cast_rounded, color: Colors.white, size: 22),
-                    onPressed: () {},
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-                    onPressed: () {},
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.white,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.dashboard, color: AppColors.primary),
+        ),
+        title: Text(
+          "OTT Platform",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.more_vert, color: Colors.black, size: 24),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Tab Bar
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(tabNames.length, (index) {
+                return _buildTabButton(
+                  tabNames[index],
+                  selectedTabIndex == index,
+                      () {
+                    setState(() {
+                      selectedTabIndex = index;
+                    });
+                  },
+                );
+              }),
             ),
           ),
+          Divider(height: 1),
 
-          // Banner Carousel
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: CarouselSlider(
-                      controller: _carouselController,
-                      options: CarouselOptions(
-                        height: 200,
-                        viewportFraction: 1.0,
-                        enableInfiniteScroll: true,
-                        autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 5),
-                        autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                        pauseAutoPlayOnTouch: true,
-                        onPageChanged: (index, reason) {
-                          setState(() {
-                            _currentBannerIndex = index;
-                          });
-                        },
-                      ),
-                      items: banners.map((banner) {
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => OttVideoPlayerScreen(
-                                  videoUrl: banner['videoUrl'],
-                                  title: banner['title'],
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  banner['color'],
-                                  banner['color'].withOpacity(0.7),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Opacity(
-                                    opacity: 0.15,
-                                    child: Image.network(
-                                      banner['image'],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: -20,
-                                  top: -20,
-                                  child: Container(
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.25),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          banner['tag'],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        banner['title'],
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        banner['subtitle'],
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(25),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.play_arrow_rounded, color: Colors.black, size: 16),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              'Watch Now',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 14,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: banners.asMap().entries.map((entry) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: _currentBannerIndex == entry.key ? 28 : 8,
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(3),
-                            color: _currentBannerIndex == entry.key
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.4),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-          // Continue Watching
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+          Expanded(
+            child: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.play_circle_rounded, color: Color(0xFFDB2777), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Continue Watching',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: continueWatching.length,
-                      itemBuilder: (context, index) {
-                        final item = continueWatching[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => OttVideoPlayerScreen(
-                                  videoUrl: item['videoUrl'],
-                                  title: item['title'],
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            width: 200,
-                            margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Stack(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                        child: Image.network(
-                                          item['thumbUrl'],
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
-                                            color: Colors.grey[800],
-                                            child: const Icon(Icons.movie_rounded, color: Colors.grey, size: 40),
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: LinearProgressIndicator(
-                                          value: item['progress'],
-                                          backgroundColor: Colors.white.withOpacity(0.2),
-                                          color: const Color(0xFFDB2777),
-                                          minHeight: 3,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 8,
-                                        right: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.7),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            '${(item['progress'] * 100).round()}%',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: Text(
-                                    item['title'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  _buildBanner(),
+                  _buildContentBasedOnTab(),
                 ],
               ),
             ),
           ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-          // Categories
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.grid_view_rounded, color: Color(0xFFDB2777), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Categories',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        final cat = categories[index];
-                        return GestureDetector(
-                          onTap: () {},
-                          child: Container(
-                            width: 70,
-                            margin: const EdgeInsets.only(right: 12),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: cat['color'].withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Icon(
-                                    cat['icon'],
-                                    color: cat['color'],
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  cat['name'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-          // Trending Videos
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.trending_up_rounded, color: Color(0xFFDB2777), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Trending Now',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 250,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: videos.length,
-                      itemBuilder: (context, index) {
-                        final video = videos[index];
-                        return _buildVideoCard(video);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-          // Popular Movies
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.local_fire_department_rounded, color: Color(0xFFDB2777), size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Popular Movies',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 250,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: videos.length,
-                      itemBuilder: (context, index) {
-                        final video = videos[index];
-                        return _buildVideoCard(video);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
   }
 
-  Widget _buildVideoCard(Map<String, dynamic> video) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OttVideoDetailScreen(video: video),
-          ),
-        );
-      },
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
+  Widget _buildTabButton(String text, bool isSelected, VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: isSelected ? AppColors.primary : Colors.grey,
+        textStyle: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      video['thumbUrl'],
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.movie_rounded, color: Colors.grey, size: 40),
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDB2777),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          video['quality'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (video['badge'] != null)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            video['badge'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 12),
-                            const SizedBox(width: 2),
-                            Text(
-                              video['rating'].toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          video['duration'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          gradient: LinearGradient(
-                            begin: Alignment.center,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.3),
-                            ],
-                          ),
-                        ),
-                        child: Center(
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: Color(0xFFDB2777),
-                              size: 28,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      ),
+      child: Text(text),
+    );
+  }
+
+  Widget _buildBanner() {
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => OttPlatformVideoPlayScreen()));
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 180,
+        margin: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          image: DecorationImage(
+            image: NetworkImage('https://picsum.photos/seed/banner/800/400'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              colors: [
+                Colors.black.withOpacity(0.6),
+                Colors.transparent,
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.all(16),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    video['title'],
-                    style: const TextStyle(
+                    "Featured Content",
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 4),
                   Text(
-                    '${video['year']} • ${video['views']} views',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 10,
+                    "Watch the latest trending shows",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => OttPlatformVideoPlayScreen()));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    ),
+                    child: Text('Watch Now', style: TextStyle(fontSize: 13)),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildContentBasedOnTab() {
+    switch (selectedTabIndex) {
+      case 0:
+        return Column(
+          children: [
+            _buildSection("Continue Watching", _getContinueWatching(), true),
+            _buildSection("Best For You", _getBestForYou(), false),
+            _buildSection("Trending Movies", _getTrending(), false),
+          ],
+        );
+      case 1:
+        return Column(
+          children: [
+            _buildSection("TV Shows", _getTVShows(), true),
+            _buildSection("Popular TV Shows", _getPopularTVShows(), false),
+          ],
+        );
+      case 2:
+        return Column(
+          children: [
+            _buildSection("Movies", _getMovies(), true),
+            _buildSection("Popular Movies", _getPopularMovies(), false),
+          ],
+        );
+      case 3:
+        return Column(
+          children: [
+            _buildSection("Kids Shows", _getKidsShows(), true),
+            _buildSection("Kids Movies", _getKidsMovies(), false),
+          ],
+        );
+      default:
+        return SizedBox.shrink();
+    }
+  }
+
+  Widget _buildSection(String title, List<Map<String, dynamic>> items, bool isSmall) {
+    return Padding(
+      padding: EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  "See All",
+                  style: TextStyle(color: AppColors.primary, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6),
+          SizedBox(
+            height: isSmall ? 180 : 160,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: items.length,
+              separatorBuilder: (context, index) => SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                return _buildCard(items[index], index, isSmall);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard(Map<String, dynamic> item, int index, bool isSmall) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => OttPlatformVideoPlayScreen()));
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: isSmall ? 140 : 220,
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          elevation: 3,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                thumbnailUrls[index % thumbnailUrls.length],
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey[300],
+                    child: Icon(Icons.movie, color: Colors.grey[600], size: 30),
+                  );
+                },
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title'] ?? 'Title',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isSmall ? 11 : 13,
+                      ),
+                    ),
+                    if (item.containsKey('episode'))
+                      Text(
+                        item['episode'],
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: isSmall ? 9 : 11,
+                        ),
+                      ),
+                    if (item.containsKey('rating'))
+                      Row(
+                        children: [
+                          Icon(Icons.star, color: Colors.amber, size: 12),
+                          SizedBox(width: 3),
+                          Text(
+                            item['rating'],
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isSmall ? 10 : 12,
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            item['year'],
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: isSmall ? 10 : 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (item.containsKey('rank'))
+                      Row(
+                        children: [
+                          Icon(Icons.trending_up, color: Colors.green, size: 12),
+                          SizedBox(width: 3),
+                          Text(
+                            item['rank'],
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: isSmall ? 10 : 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Data Methods
+  List<Map<String, dynamic>> _getContinueWatching() => [
+    {'title': 'Stranger Things', 'episode': 'Episode 1', 'time': '45 min left'},
+    {'title': 'The Crown', 'episode': 'Episode 3', 'time': '30 min left'},
+    {'title': 'Breaking Bad', 'episode': 'Episode 6', 'time': '50 min left'},
+    {'title': 'Game of Thrones', 'episode': 'Episode 4', 'time': '25 min left'},
+    {'title': 'The Office', 'episode': 'Episode 8', 'time': '15 min left'},
+    {'title': 'Friends', 'episode': 'Episode 10', 'time': '20 min left'},
+  ];
+
+  List<Map<String, dynamic>> _getBestForYou() => [
+    {'title': 'Avatar 2', 'rating': '4.8', 'year': '2022'},
+    {'title': 'Top Gun', 'rating': '4.9', 'year': '2022'},
+    {'title': 'Barbie', 'rating': '4.3', 'year': '2023'},
+    {'title': 'Oppenheimer', 'rating': '4.8', 'year': '2023'},
+    {'title': 'Dune Part 2', 'rating': '4.6', 'year': '2024'},
+    {'title': 'Deadpool 3', 'rating': '4.4', 'year': '2024'},
+  ];
+
+  List<Map<String, dynamic>> _getTrending() => [
+    {'title': 'Avatar 2', 'rank': '#1 in Movies'},
+    {'title': 'Top Gun', 'rank': '#2 in Movies'},
+    {'title': 'Barbie', 'rank': '#3 in Movies'},
+    {'title': 'Oppenheimer', 'rank': '#4 in Movies'},
+    {'title': 'Dune Part 2', 'rank': '#5 in Movies'},
+    {'title': 'Deadpool 3', 'rank': '#6 in Movies'},
+  ];
+
+  List<Map<String, dynamic>> _getTVShows() => [
+    {'title': 'The Witcher', 'episode': 'Season 3', 'year': '2023'},
+    {'title': 'Wednesday', 'episode': 'Season 1', 'year': '2022'},
+    {'title': 'The Last of Us', 'episode': 'Season 1', 'year': '2023'},
+    {'title': 'House of Dragons', 'episode': 'Season 2', 'year': '2024'},
+    {'title': 'The Mandalorian', 'episode': 'Season 3', 'year': '2023'},
+    {'title': 'Loki', 'episode': 'Season 2', 'year': '2023'},
+  ];
+
+  List<Map<String, dynamic>> _getPopularTVShows() => [
+    {'title': 'Breaking Bad', 'rating': '4.9', 'year': '2010'},
+    {'title': 'Game of Thrones', 'rating': '4.6', 'year': '2017'},
+    {'title': 'The Office', 'rating': '4.5', 'year': '2011'},
+    {'title': 'Friends', 'rating': '4.4', 'year': '2004'},
+    {'title': 'Stranger Things', 'rating': '4.8', 'year': '2022'},
+    {'title': 'The Crown', 'rating': '4.7', 'year': '2022'},
+  ];
+
+  List<Map<String, dynamic>> _getMovies() => [
+    {'title': 'Avatar 2', 'rating': '4.8', 'year': '2022'},
+    {'title': 'Top Gun Maverick', 'rating': '4.9', 'year': '2022'},
+    {'title': 'Barbie', 'rating': '4.3', 'year': '2023'},
+    {'title': 'Oppenheimer', 'rating': '4.8', 'year': '2023'},
+    {'title': 'Dune Part 2', 'rating': '4.6', 'year': '2024'},
+    {'title': 'Deadpool 3', 'rating': '4.4', 'year': '2024'},
+  ];
+
+  List<Map<String, dynamic>> _getPopularMovies() => [
+    {'title': 'The Godfather', 'rating': '4.9', 'year': '1972'},
+    {'title': 'The Dark Knight', 'rating': '4.8', 'year': '2008'},
+    {'title': 'Pulp Fiction', 'rating': '4.7', 'year': '1994'},
+    {'title': 'Inception', 'rating': '4.6', 'year': '2010'},
+    {'title': 'The Matrix', 'rating': '4.5', 'year': '1999'},
+    {'title': 'Interstellar', 'rating': '4.5', 'year': '2014'},
+  ];
+
+  List<Map<String, dynamic>> _getKidsShows() => [
+    {'title': 'Cocomelon', 'episode': 'Season 5', 'year': '2024'},
+    {'title': 'Peppa Pig', 'episode': 'Season 8', 'year': '2023'},
+    {'title': 'Bluey', 'episode': 'Season 3', 'year': '2024'},
+    {'title': 'Paw Patrol', 'episode': 'Season 9', 'year': '2023'},
+    {'title': 'SpongeBob', 'episode': 'Season 14', 'year': '2024'},
+    {'title': 'Dora', 'episode': 'Season 8', 'year': '2023'},
+  ];
+
+  List<Map<String, dynamic>> _getKidsMovies() => [
+    {'title': 'Frozen 2', 'rating': '4.5', 'year': '2019'},
+    {'title': 'Toy Story 4', 'rating': '4.6', 'year': '2019'},
+    {'title': 'Moana', 'rating': '4.4', 'year': '2016'},
+    {'title': 'Coco', 'rating': '4.5', 'year': '2017'},
+    {'title': 'Lion King', 'rating': '4.7', 'year': '2019'},
+    {'title': 'Despicable Me 3', 'rating': '4.3', 'year': '2017'},
+  ];
 }
