@@ -1,12 +1,17 @@
+// lib/feature/module/screen/module_screen.dart
 import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
+import 'package:get/get.dart';
 import '../../../core/utils/app_color.dart';
 import '../../collage/screen/collage_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
 import '../../ott_platform/screen/ott_platform_dashboard_screen.dart';
-import '../../school/screen/school_screen.dart';
+import '../../school/auth/screen/school_auth_screen.dart';
+import '../../school/dashboard/screen/school_student_dashboard_screen.dart';
+import '../../school/dashboard/screen/school_teacher_dashboard_screen.dart';
+import '../../school/auth/controller/school_auth_controller.dart';
 
 class ModuleScreen extends StatefulWidget {
   const ModuleScreen({super.key});
@@ -66,6 +71,25 @@ class _ModuleScreenState extends State<ModuleScreen>
     super.dispose();
   }
 
+  // Function to handle School Portal navigation
+  void _navigateToSchool() {
+    // Get the controller instance
+    final authController = Get.find<SchoolAuthController>();
+
+    // Check if user is logged in
+    if (authController.isLoggedIn.value) {
+      // If logged in, navigate to dashboard based on user type
+      if (authController.userType.value == 'student') {
+        Get.to(() => const SchoolStudentDashboardScreen());
+      } else {
+        Get.to(() => const SchoolTeacherDashboardScreen());
+      }
+    } else {
+      // If not logged in, navigate to login screen
+      Get.to(() => const SchoolAuthScreen());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> primaryServices = [
@@ -74,7 +98,7 @@ class _ModuleScreenState extends State<ModuleScreen>
         'subtitle': 'Shopping',
         'icon': Icons.shopping_bag_rounded,
         'color': AppColors.ecommerce,
-        'targetScreen':  EcommerceDashboardScreen(),
+        'targetScreen': const EcommerceDashboardScreen(),
         'gradient': [AppColors.ecommerce, AppColors.ecommerce.withOpacity(0.3)],
       },
       {
@@ -90,8 +114,9 @@ class _ModuleScreenState extends State<ModuleScreen>
         'subtitle': 'Education',
         'icon': Icons.school_rounded,
         'color': AppColors.school,
-        'targetScreen': SchoolScreen(),
+        'targetScreen': null, // We'll handle navigation manually
         'gradient': [AppColors.school, AppColors.school.withOpacity(0.3)],
+        'isSchool': true, // Flag to identify school portal
       },
       {
         'title': 'Video Player',
@@ -154,7 +179,8 @@ class _ModuleScreenState extends State<ModuleScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        'targetScreen': SchoolScreen(),
+        'targetScreen': null, // School portal
+        'isSchool': true,
       },
     ];
 
@@ -171,25 +197,21 @@ class _ModuleScreenState extends State<ModuleScreen>
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    // SECTION 1: Explore Categories
                     _buildSectionTitle('Explore Categories', 'View All →'),
                     const SizedBox(height: 14),
                     _buildCategoryGrid(primaryServices),
                     const SizedBox(height: 24),
                     _buildDivider(),
-                    // SECTION 2: Promotions
                     const SizedBox(height: 24),
                     _buildSectionTitle('✨ Promotions & Highlights', 'See All →'),
                     const SizedBox(height: 14),
                     _buildPromotionalCards(promotionalCards),
                     const SizedBox(height: 24),
                     _buildDivider(),
-                    // SECTION 3: Quick Actions
                     const SizedBox(height: 24),
                     _buildQuickActions(),
                     const SizedBox(height: 24),
                     _buildDivider(),
-                    // SECTION 4: About
                     const SizedBox(height: 24),
                     _buildAboutSection(),
                     const SizedBox(height: 80),
@@ -203,7 +225,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== APP BAR ====================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: AppColors.primary,
@@ -260,7 +281,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== SLIVER APP BAR ====================
   SliverAppBar _buildSliverAppBar() {
     return SliverAppBar(
       backgroundColor: AppColors.primary,
@@ -325,11 +345,10 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== BANNER ====================
   Widget _buildBannerItem(Map<String, String> item) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -358,7 +377,7 @@ class _ModuleScreenState extends State<ModuleScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -367,27 +386,27 @@ class _ModuleScreenState extends State<ModuleScreen>
                     item['tag']!,
                     style: TextStyle(
                       color: AppColors.primary,
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   item['title']!,
                   style: const TextStyle(
                     color: Color(0xFF1E293B),
-                    fontSize: 16,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    height: 1.3,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
@@ -407,7 +426,7 @@ class _ModuleScreenState extends State<ModuleScreen>
                     item['action']!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -418,8 +437,8 @@ class _ModuleScreenState extends State<ModuleScreen>
           Expanded(
             flex: 3,
             child: Container(
-              height: 60,
-              width: 60,
+              height: 44,
+              width: 44,
               decoration: BoxDecoration(
                 color: AppColors.primary.withOpacity(0.05),
                 shape: BoxShape.circle,
@@ -427,7 +446,7 @@ class _ModuleScreenState extends State<ModuleScreen>
               child: Center(
                 child: Text(
                   item['icon']!,
-                  style: const TextStyle(fontSize: 40),
+                  style: const TextStyle(fontSize: 30),
                 ),
               ),
             ),
@@ -437,7 +456,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== BANNER INDICATORS ====================
   Widget _buildBannerIndicators() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -468,7 +486,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== SECTION TITLE ====================
   Widget _buildSectionTitle(String title, String action) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -521,7 +538,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== CATEGORY GRID ====================
   Widget _buildCategoryGrid(List<Map<String, dynamic>> services) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -531,10 +547,9 @@ class _ModuleScreenState extends State<ModuleScreen>
               children: [
                 Expanded(child: _buildCategoryCard(services[2])), // School
                 const SizedBox(width: 8),
-                Expanded(child: _buildCategoryCard(services[5])), // NGO
+                Expanded(child: _buildCategoryCard(services[5])), // Collage
                 const SizedBox(width: 8),
-                Expanded(child: _buildCategoryCard(services[4])),
-
+                Expanded(child: _buildCategoryCard(services[4])), // NGO
               ],
             ),
             const SizedBox(height: 8),
@@ -557,10 +572,18 @@ class _ModuleScreenState extends State<ModuleScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => module['targetScreen']),
-        ),
+        onTap: () {
+          // Check if it's the school portal
+          if (module['isSchool'] == true) {
+            _navigateToSchool();
+          } else {
+            // Normal navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => module['targetScreen']),
+            );
+          }
+        },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
@@ -625,7 +648,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== PROMOTIONAL CARDS ====================
   Widget _buildPromotionalCards(List<Map<String, dynamic>> cards) {
     return SizedBox(
       height: 140,
@@ -636,10 +658,16 @@ class _ModuleScreenState extends State<ModuleScreen>
         itemBuilder: (context, index) {
           final card = cards[index];
           return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => card['targetScreen']),
-            ),
+            onTap: () {
+              if (card['isSchool'] == true) {
+                _navigateToSchool();
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => card['targetScreen']),
+                );
+              }
+            },
             child: Container(
               width: 280,
               margin: const EdgeInsets.only(right: 12),
@@ -738,7 +766,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== QUICK ACTIONS ====================
   Widget _buildQuickActions() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -801,7 +828,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== ABOUT SECTION ====================
   Widget _buildAboutSection() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -915,7 +941,6 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  // ==================== DIVIDER ====================
   Widget _buildDivider() {
     return Container(
       height: 1,
