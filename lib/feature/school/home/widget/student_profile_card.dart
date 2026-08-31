@@ -302,21 +302,6 @@ class StudentProfileCard extends StatelessWidget {
                         color: Colors.grey.shade700,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.confirmation_number,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Roll: ${controller.rollNumber}",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
                   ],
                 ),
 
@@ -336,50 +321,6 @@ class StudentProfileCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Fee Status Chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: student.feeStatus.toLowerCase() == 'paid'
-                            ? Colors.green.shade50
-                            : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: student.feeStatus.toLowerCase() == 'paid'
-                              ? Colors.green.shade200
-                              : Colors.orange.shade200,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            student.feeStatus.toLowerCase() == 'paid'
-                                ? Icons.check_circle
-                                : Icons.warning_amber_rounded,
-                            size: 12,
-                            color: student.feeStatus.toLowerCase() == 'paid'
-                                ? Colors.green.shade700
-                                : Colors.orange.shade700,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            student.feeStatus,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: student.feeStatus.toLowerCase() == 'paid'
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade700,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],

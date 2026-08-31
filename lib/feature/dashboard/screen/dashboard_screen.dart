@@ -3,7 +3,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../core/utils/app_color.dart';
 import '../../account/screen/account_screen.dart';
-import '../../module/screen/ai_assistant_screen.dart';
 import '../../module/screen/module_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,80 +21,134 @@ class _DashboardScreenState extends State<DashboardScreen> {
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: const Drawer(
-        width: 300, // More reasonable width
+        width: 350,
         child: AccountScreen(),
       ),
       body: Stack(
         children: [
-          // Main content
           const ModuleScreen(),
-
-          // Bottom action buttons
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, right: 10, bottom: 16),
-              child: Row(
+            left: 25,
+            right: 25,
+            bottom: 25,
+            child: SizedBox(
+              height: 75,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
                 children: [
-                  // Social media button
-                  Card(
-                    elevation: 2,
-                    color: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        // Handle Instagram action
-                        // You can add your Instagram link here
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: FaIcon(
-                          FontAwesomeIcons.instagram,
-                          color: Colors.white, // Using the imported color
-                        ),
+                  // Bottom Navigation Bar
+                  Container(
+                    height: 60,
+                    padding: const EdgeInsets.symmetric(horizontal: 25),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(35),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.15),
+                        width: 1.5,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Home Button
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              // Navigate to Home
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                FaIcon(
+                                  FontAwesomeIcons.house,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Home',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 70),
+
+                        // Account Button
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(30),
+                            onTap: () {
+                              _scaffoldKey.currentState?.openDrawer();
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.account_box_rounded,
+                                  size: 20,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Account',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
 
-                  // Main action button
-                  Expanded(
-                    child: Card(
-                      elevation: 2,
-                      color: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AIAssistantScreen(),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 16,
+                  // Center AI Button
+                  Positioned(
+                    top: -12,
+                    child: GestureDetector(
+                      onTap: () {
+                        // AI Assistant action
+                      },
+                      child: Container(
+                        height: 66,
+                        width: 66,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primary,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 5,
                           ),
-                          child: Center(
-                            child: Text(
-                              "Tell Your Doubt",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.white,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.30),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
                             ),
-                          ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.face_rounded,
+                          color: Colors.white,
+                          size: 36,
                         ),
                       ),
                     ),

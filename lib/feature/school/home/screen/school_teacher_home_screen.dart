@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widget/school_home_ads_card.dart';
 import '../widget/teacher_attendance_card.dart';
 import '../widget/teacher_dashboard_card.dart';
 import '../widget/teacher_home_work.dart';
@@ -15,7 +16,7 @@ class SchoolTeacherHomeScreen extends StatelessWidget {
       body: Column(
         children: [
           TeacherProfileCard(),
-          TeacherAttendanceCard(),
+          SchoolHomeAdsCard(),
           Expanded(
             flex: 3,
             child: TeacherDashboardCard(),

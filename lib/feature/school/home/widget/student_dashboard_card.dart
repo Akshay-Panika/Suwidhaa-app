@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:untitled/feature/school/home/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/home/screen/student_fee_screen.dart';
+import 'package:untitled/feature/school/home/widget/student_attendance_dashboard_card.dart';
 
 class StudentDashboardCard extends StatelessWidget {
   const StudentDashboardCard({super.key});
@@ -93,7 +94,7 @@ class StudentDashboardCard extends StatelessWidget {
 
                       // Attendance Graph
                       Expanded(
-                        child: _attendanceGraph(),
+                        child: StudentAttendanceDashboardCard(),
                       ),
 
                       // Fee Status
@@ -146,109 +147,6 @@ class StudentDashboardCard extends StatelessWidget {
       ],
     );
   }
-
-
-  Widget _attendanceGraph() {
-    final attendance = [
-      {"day": "Mon", "value": 1.0},
-      {"day": "Tue", "value": 1.0},
-      {"day": "Wed", "value": 0.7},
-      {"day": "Thu", "value": 1.0},
-      {"day": "Fri", "value": 0.4},
-      {"day": "Sat", "value": 1.0},
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  size: 20,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  "Attendance",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const Text(
-                "91.7%",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: attendance.map((item) {
-                final value = item["value"] as double;
-                final day = item["day"] as String;
-
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          width: 18,
-                          height: 65 * value,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      day,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 
   Widget _dashboardBox({
     required IconData icon,

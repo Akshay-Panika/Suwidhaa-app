@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:untitled/feature/school/home/screen/school_event_screen.dart';
+import 'package:untitled/feature/school/home/widget/teacher_attendance_dashboard_card.dart';
 import 'package:untitled/feature/school/student/screen/student_screen.dart';
+
+import '../../../../router/app_routes.dart';
 
 class TeacherDashboardCard extends StatelessWidget {
   const TeacherDashboardCard({super.key});
@@ -93,7 +98,7 @@ class TeacherDashboardCard extends StatelessWidget {
 
                       // Attendance Graph
                       Expanded(
-                        child: _attendanceGraph(),
+                        child: TeacherAttendanceDashboardCard(),
                       ),
 
                       // Classes Today
@@ -117,7 +122,7 @@ class TeacherDashboardCard extends StatelessWidget {
                       // Students Count
                       InkWell(
                         onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => StudentScreen(),));
+                          Get.toNamed(AppRoutes.studentList);
                         },
                         child: _dashboardBox(
                           icon: Icons.people_outline,
@@ -144,109 +149,6 @@ class TeacherDashboardCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  // ================= ATTENDANCE GRAPH =================
-
-  Widget _attendanceGraph() {
-    final attendance = [
-      {"day": "Mon", "value": 0.9},
-      {"day": "Tue", "value": 0.8},
-      {"day": "Wed", "value": 0.95},
-      {"day": "Thu", "value": 0.7},
-      {"day": "Fri", "value": 0.85},
-      {"day": "Sat", "value": 0.6},
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  size: 20,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  "Class Attendance",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const Text(
-                "80%",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: attendance.map((item) {
-                final value = item["value"] as double;
-                final day = item["day"] as String;
-
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          width: 18,
-                          height: 65 * value,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      day,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

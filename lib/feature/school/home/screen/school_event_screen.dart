@@ -273,19 +273,12 @@ class _SchoolEventScreenState extends State<SchoolEventScreen> {
       body: Column(
         children: [
           // Filter Chips
-          _buildFilterChips(),
-          const SizedBox(height: 8),
-
-          // Stats Row
-          _buildStatsRow(),
-          const SizedBox(height: 8),
-
-          // Events List
+          _buildFilterChips(), // Events List
           Expanded(
             child: filteredEvents.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: filteredEvents.length,
               itemBuilder: (context, index) {
                 final event = filteredEvents[index];
@@ -344,65 +337,6 @@ class _SchoolEventScreenState extends State<SchoolEventScreen> {
     );
   }
 
-  // ==================== STATS ROW ====================
-  Widget _buildStatsRow() {
-    final upcoming = events.where((e) => e['status'] == 'Upcoming').length;
-    final ongoing = events.where((e) => e['status'] == 'Ongoing').length;
-    final completed = events.where((e) => e['status'] == 'Completed').length;
-    final total = events.length;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('📅', '$upcoming', 'Upcoming'),
-          Container(width: 1, height: 30, color: Colors.grey[200]),
-          _buildStatItem('🔄', '$ongoing', 'Ongoing'),
-          Container(width: 1, height: 30, color: Colors.grey[200]),
-          _buildStatItem('✅', '$completed', 'Completed'),
-          Container(width: 1, height: 30, color: Colors.grey[200]),
-          _buildStatItem('📋', '$total', 'Total'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String emoji, String value, String label) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: AppColors.textMain,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[500],
-          ),
-        ),
-      ],
-    );
-  }
 
   // ==================== EVENT CARD ====================
   Widget _buildEventCard(Map<String, dynamic> event) {

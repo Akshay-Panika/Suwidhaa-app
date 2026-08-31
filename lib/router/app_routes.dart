@@ -5,4 +5,6 @@ class AppRoutes {
   static const String schoolLogin = '/school-login';
   static const String studentDashboard = '/student-dashboard';
   static const String teacherDashboard = '/teacher-dashboard';
+  static const String studentList = '/student-list';
+
 }

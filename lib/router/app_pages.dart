@@ -4,6 +4,7 @@ import 'package:untitled/feature/dashboard/screen/dashboard_screen.dart';
 import 'package:untitled/feature/school/dashboard/screen/school_student_dashboard_screen.dart';
 import '../feature/school/auth/screen/school_auth_screen.dart';
 import '../feature/school/dashboard/screen/school_teacher_dashboard_screen.dart';
+import '../feature/school/student/screen/student_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -27,6 +28,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.teacherDashboard,
       page: () => SchoolTeacherDashboardScreen(),
+      transition: Transition.fade,
+    ),
+    GetPage(
+      name: AppRoutes.studentList,
+      page: () => const StudentListScreen(),
       transition: Transition.fade,
     ),
   ];

@@ -12,6 +12,7 @@ import '../../school/auth/screen/school_auth_screen.dart';
 import '../../school/dashboard/screen/school_student_dashboard_screen.dart';
 import '../../school/dashboard/screen/school_teacher_dashboard_screen.dart';
 import '../../school/auth/controller/school_auth_controller.dart';
+import '../widget/module_ads_bard.dart';
 
 class ModuleScreen extends StatefulWidget {
   const ModuleScreen({super.key});
@@ -197,13 +198,15 @@ class _ModuleScreenState extends State<ModuleScreen>
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    _buildSectionTitle('Explore Categories', 'View All →'),
+                    _buildSectionTitle('Explore Categories',),
                     const SizedBox(height: 14),
                     _buildCategoryGrid(primaryServices),
+                    const SizedBox(height: 14),
+                    ModuleAdsBard(),
                     const SizedBox(height: 24),
                     _buildDivider(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('✨ Promotions & Highlights', 'See All →'),
+                    _buildSectionTitle('✨ Promotions & Highlights'),
                     const SizedBox(height: 14),
                     _buildPromotionalCards(promotionalCards),
                     const SizedBox(height: 24),
@@ -486,7 +489,7 @@ class _ModuleScreenState extends State<ModuleScreen>
     );
   }
 
-  Widget _buildSectionTitle(String title, String action) {
+  Widget _buildSectionTitle(String title,) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -515,24 +518,6 @@ class _ModuleScreenState extends State<ModuleScreen>
               ),
             ),
           ],
-        ),
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              action,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
         ),
       ],
     );
@@ -657,108 +642,96 @@ class _ModuleScreenState extends State<ModuleScreen>
         itemCount: cards.length,
         itemBuilder: (context, index) {
           final card = cards[index];
-          return GestureDetector(
-            onTap: () {
-              if (card['isSchool'] == true) {
-                _navigateToSchool();
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => card['targetScreen']),
-                );
-              }
-            },
-            child: Container(
-              width: 280,
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: card['gradient'],
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: (card['gradient'] as LinearGradient)
-                        .colors
-                        .first
-                        .withOpacity(0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 7,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            card['headline'],
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+          return Container(
+            width: 280,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: card['gradient'],
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: (card['gradient'] as LinearGradient)
+                      .colors
+                      .first
+                      .withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 7,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          card['desc'],
+                        child: Text(
+                          card['headline'],
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            height: 1.2,
+                            letterSpacing: 0.5,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white.withOpacity(0.3),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            card['actionLabel'],
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: (card['gradient'] as LinearGradient)
-                                  .colors
-                                  .first,
-                              fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        card['desc'],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.3),
+                              blurRadius: 8,
                             ),
+                          ],
+                        ),
+                        child: Text(
+                          card['actionLabel'],
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: (card['gradient'] as LinearGradient)
+                                .colors
+                                .first,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  Icon(
-                    card['icon'],
-                    color: Colors.white.withOpacity(0.15),
-                    size: 56,
-                  ),
-                ],
-              ),
+                ),
+                const Spacer(),
+                Icon(
+                  card['icon'],
+                  color: Colors.white.withOpacity(0.15),
+                  size: 56,
+                ),
+              ],
             ),
           );
         },

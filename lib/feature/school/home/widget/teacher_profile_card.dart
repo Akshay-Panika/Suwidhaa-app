@@ -285,6 +285,25 @@ class TeacherProfileCard extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 5),
+                // Teacher ID
+                Row(
+                  children: [
+                    Icon(
+                      Icons.badge,
+                      size: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "ID: ${controller.teacherIdCard}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
 
                 // Qualification
                 Row(
@@ -310,33 +329,6 @@ class TeacherProfileCard extends StatelessWidget {
 
                 const SizedBox(height: 3),
 
-                // Subjects
-                Row(
-                  children: [
-                    Icon(
-                      Icons.book,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        controller.subjectsString.isNotEmpty
-                            ? "Subjects: ${controller.subjectsString}"
-                            : "No subjects assigned",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 3),
-
                 // Experience & Gender
                 Row(
                   children: [
@@ -347,21 +339,7 @@ class TeacherProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "Exp: ${controller.experienceString}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      controller.genderIcon,
-                      size: 14,
-                      color: controller.genderColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      teacher.gender,
+                      "Experience: ${controller.experienceString}",
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -370,60 +348,6 @@ class TeacherProfileCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 3),
-
-                // Teacher ID
-                Row(
-                  children: [
-                    Icon(
-                      Icons.badge,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "ID: ${controller.teacherIdCard}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Salary Chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.green.shade200,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.attach_money,
-                            size: 12,
-                            color: Colors.green.shade700,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            "₹${teacher.salary}",
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
