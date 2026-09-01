@@ -33,4 +33,8 @@ class ApiUrls {
   static const String homeworkList = 'v1/school/homework/list/';
   static const String homeworkCreate = 'v1/school/homework/create/';
   static const String homeworkDetail = 'v1/school/homework/';
+
+  // Transport endpoints
+  static const String transportList = 'v1/school/transport/list/';
+  static const String transportDetail = 'v1/school/transport/';
 }

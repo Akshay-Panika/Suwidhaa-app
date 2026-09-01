@@ -12,7 +12,7 @@ class StudentHomeWorkScreen extends StatelessWidget {
     final controller = Get.put(HomeworkController());
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.blue,
         elevation: 0,
@@ -38,7 +38,7 @@ class StudentHomeWorkScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -235,17 +235,17 @@ class StudentHomeWorkScreen extends StatelessWidget {
       onTap: () => _showHomeworkDetails(context, hw, controller),
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
+              color: Colors.grey.shade50,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -254,8 +254,8 @@ class StudentHomeWorkScreen extends StatelessWidget {
           children: [
             // Subject Icon with image
             Container(
-              width: 80,
-              height: 80,
+              width: 120,
+              height: 150,
               decoration: BoxDecoration(
                 color: subjectColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
@@ -266,8 +266,7 @@ class StudentHomeWorkScreen extends StatelessWidget {
                 child: Image.network(
                   hw.image!,
                   fit: BoxFit.cover,
-                  width: 80,
-                  height: 80,
+                  width: 100,
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(
                       subjectIcon,
@@ -396,18 +395,7 @@ class StudentHomeWorkScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.primary,
-              ),
-            ),
+
           ],
         ),
       ),
@@ -513,128 +501,130 @@ class StudentHomeWorkScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 60,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 60,
+                      height: 4,
                       decoration: BoxDecoration(
-                        color: subjectColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        subjectIcon,
-                        color: subjectColor,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            hw.subjectName ?? '',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            hw.subjectTopic ?? '',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Status and Priority Badges
-                Row(
-                  children: [
-                    _buildBadge('Status: $status', _getStatusColor(status)),
-                    const SizedBox(width: 8),
-                    _buildBadge('Priority: $priority', _getPriorityColor(priority)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Details
-                _buildDetailRow('📅 Due Date', hw.endDate ?? ''),
-                _buildDetailRow(
-                  '⏰ Days Remaining',
-                  daysRemaining > 0
-                      ? '$daysRemaining days'
-                      : daysRemaining == 0
-                      ? 'Due today'
-                      : 'Overdue by ${daysRemaining.abs()} days',
-                ),
-                if (hw.className != null && hw.className!.isNotEmpty)
-                  _buildDetailRow('🏫 Class', hw.className!),
-                if (hw.teacherName != null && hw.teacherName!.isNotEmpty)
-                  _buildDetailRow('👨‍🏫 Teacher', hw.teacherName!),
-                if (hw.schoolType != null && hw.schoolType!.isNotEmpty)
-                  _buildDetailRow('🏛️ School Type', hw.schoolType!),
-                if (hw.issueDate != null && hw.issueDate!.isNotEmpty)
-                  _buildDetailRow('📝 Issue Date', hw.issueDate!),
-
-                // Image
-                if (hw.image != null && hw.image!.isNotEmpty)
-                  _buildImagePreview(hw.image!),
-
-                const SizedBox(height: 20),
-
-                // Close Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
+                  const SizedBox(height: 20),
+          
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: subjectColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          subjectIcon,
+                          color: subjectColor,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hw.subjectName ?? '',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              hw.subjectTopic ?? '',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+          
+                  // Status and Priority Badges
+                  Row(
+                    children: [
+                      _buildBadge('Status: $status', _getStatusColor(status)),
+                      const SizedBox(width: 8),
+                      _buildBadge('Priority: $priority', _getPriorityColor(priority)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+          
+                  // Details
+                  _buildDetailRow('📅 Due Date', hw.endDate ?? ''),
+                  _buildDetailRow(
+                    '⏰ Days Remaining',
+                    daysRemaining > 0
+                        ? '$daysRemaining days'
+                        : daysRemaining == 0
+                        ? 'Due today'
+                        : 'Overdue by ${daysRemaining.abs()} days',
+                  ),
+                  if (hw.className != null && hw.className!.isNotEmpty)
+                    _buildDetailRow('🏫 Class', hw.className!),
+                  if (hw.teacherName != null && hw.teacherName!.isNotEmpty)
+                    _buildDetailRow('👨‍🏫 Teacher', hw.teacherName!),
+                  if (hw.schoolType != null && hw.schoolType!.isNotEmpty)
+                    _buildDetailRow('🏛️ School Type', hw.schoolType!),
+                  if (hw.issueDate != null && hw.issueDate!.isNotEmpty)
+                    _buildDetailRow('📝 Issue Date', hw.issueDate!),
+          
+                  // Image
+                  if (hw.image != null && hw.image!.isNotEmpty)
+                    _buildImagePreview(hw.image!),
+          
+                  const SizedBox(height: 20),
+          
+                  // Close Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
         );
@@ -697,7 +687,7 @@ class StudentHomeWorkScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
           imageUrl,
-          height: 150,
+          height: 400,
           width: double.infinity,
           fit: BoxFit.cover,
           loadingBuilder: (context, child, loadingProgress) {

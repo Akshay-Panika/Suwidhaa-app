@@ -7,6 +7,7 @@ import '../feature/school/homework/controller/homework_controller.dart';
 import '../feature/school/profile/controller/student_controller.dart';
 import '../feature/school/profile/controller/teacher_controller.dart';
 import '../feature/school/student/controller/student_list_controller.dart';
+import '../feature/school/transport/controller/transport_controller.dart';
 
 class AppBindings implements Bindings {
   @override
@@ -17,5 +18,6 @@ class AppBindings implements Bindings {
     Get.put<StudentListController>(StudentListController(), permanent: true);
     Get.put<HomeworkController>(HomeworkController(), permanent: true);
     Get.put<SchoolEventController>(SchoolEventController(), permanent: true);
+    Get.put<TransportController>(TransportController(), permanent: true);
   }
 }

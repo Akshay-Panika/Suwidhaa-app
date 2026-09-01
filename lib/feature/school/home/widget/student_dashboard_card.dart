@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/feature/school/home/screen/student_fee_screen.dart';
+import 'package:untitled/feature/school/payment/screen/student_fee_screen.dart';
 import 'package:untitled/feature/school/home/widget/student_attendance_dashboard_card.dart';
 import '../../event/widget/school_event_dashboard_card.dart';
+import '../../payment/widget/school_student_fee_dashboard_card.dart';
 
 class StudentDashboardCard extends StatelessWidget {
   const StudentDashboardCard({super.key});
@@ -55,18 +56,7 @@ class StudentDashboardCard extends StatelessWidget {
                       ),
 
                       // Fee Status
-                      InkWell(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => StudentFeeScreen(),));
-                        },
-                        child: _dashboardBox(
-                          icon: Icons.account_balance_wallet_outlined,
-                          title: "Fee Status",
-                          value: "₹2,500 Pending",
-                          subtitle: "Due on 10 Sep 2026",
-                          iconColor: Colors.orange,
-                        ),
-                      ),
+                      SchoolStudentFeeDashboardCard(),
                     ],
                   ),
                 ),
