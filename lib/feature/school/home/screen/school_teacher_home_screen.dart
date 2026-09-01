@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../widget/school_home_ads_card.dart';
 import '../widget/teacher_attendance_card.dart';
 import '../widget/teacher_dashboard_card.dart';
-import '../widget/teacher_home_work.dart';
+import '../../homework/widget/teacher_home_work.dart';
 import '../widget/teacher_leave_request.dart';
 import '../widget/teacher_profile_card.dart';
 

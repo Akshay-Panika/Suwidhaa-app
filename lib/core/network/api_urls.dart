@@ -27,5 +27,10 @@ class ApiUrls {
   // Schedule endpoints
   static const String scheduleList = 'v1/school/schedule/list/';
   static const String scheduleCreate = 'v1/school/schedule/create/';
-  static const String scheduleDetail = 'v1/school/schedule/';  // + id
+  static const String scheduleDetail = 'v1/school/schedule/';  //
+
+  // Homework endpoints
+  static const String homeworkList = 'v1/school/homework/list/';
+  static const String homeworkCreate = 'v1/school/homework/create/';
+  static const String homeworkDetail = 'v1/school/homework/';
 }

@@ -29,6 +29,7 @@ dependencies:
   get: ^4.7.3
   shared_preferences: ^2.5.5
   file_picker: ^10.3.10
+  image_picker: ^1.0.7
   shimmer: ^3.0.0
 
 
