@@ -11,108 +11,145 @@ class SchoolHomeAdsCard extends StatefulWidget {
 class _SchoolHomeAdsCardState extends State<SchoolHomeAdsCard> {
   int _currentIndex = 0;
 
-  final List<String> adImages = const [
-    'https://placehold.co/800x400/2196F3/FFFFFF?text=School+Ad+1',
-    'https://placehold.co/800x400/4CAF50/FFFFFF?text=School+Ad+2',
-    'https://placehold.co/800x400/FF9800/FFFFFF?text=School+Ad+3',
+  // Using local asset images or colored containers instead of network images
+  final List<Color> adColors = const [
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+  ];
+
+  final List<String> adTitles = const [
+    'Admission Open 2026',
+    'Sports Day Coming Soon',
+    'Science Exhibition',
+  ];
+
+  final List<IconData> adIcons = const [
+    Icons.school,
+    Icons.sports_soccer,
+    Icons.science,
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 120,
-      // margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.black.withOpacity(0.1),
-      child: Stack(
-        children: [
-          CarouselSlider.builder(
-            itemCount: adImages.length,
-            itemBuilder: (context, index, realIndex) {
-              return Image.network(
-                adImages[index],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: Colors.blue,
-                      ),
+      // margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      // decoration: BoxDecoration(
+      //   borderRadius: BorderRadius.circular(12),
+      //   boxShadow: [
+      //     BoxShadow(
+      //       color: Colors.black.withOpacity(0.1),
+      //       blurRadius: 8,
+      //       offset: const Offset(0, 2),
+      //     ),
+      //   ],
+      // ),
+      child: ClipRRect(
+        // borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            CarouselSlider.builder(
+              itemCount: adColors.length,
+              itemBuilder: (context, index, realIndex) {
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        adColors[index],
+                        adColors[index].withOpacity(0.7),
+                      ],
                     ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    width: double.infinity,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Colors.grey.shade400,
-                          size: 40,
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              adTitles[index],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap to learn more',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Failed to load image',
-                          style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 12,
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            adIcons[index],
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
-              );
-            },
-            options: CarouselOptions(
-              height: double.infinity,
-              viewportFraction: 1.0,
-              enableInfiniteScroll: true,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 4),
-              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              pauseAutoPlayOnTouch: true,
-              enlargeCenterPage: false,
-              onPageChanged: (index, reason) {
-                setState(() {
-                  _currentIndex = index;
-                });
+                  ),
+                );
               },
+              options: CarouselOptions(
+                height: double.infinity,
+                viewportFraction: 1.0,
+                enableInfiniteScroll: true,
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 4),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                pauseAutoPlayOnTouch: true,
+                enlargeCenterPage: false,
+                onPageChanged: (index, reason) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+              ),
             ),
-          ),
-          // Custom Indicator
-          Positioned(
-            bottom: 10,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                adImages.length,
-                    (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentIndex == index ? 12 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _currentIndex == index
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(3),
+            // Custom Indicator
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  adColors.length,
+                      (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentIndex == index ? 12 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _currentIndex == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,10 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../core/widget/contact_helper.dart';
 import '../../auth/controller/school_auth_controller.dart';
 import '../../home/widget/student_attendance_card.dart';
 import '../controller/student_controller.dart';
 import '../model/student_model.dart';
+import '../widget/school_facilitie_card.dart';
 
 class SchoolStudentProfileScreen extends StatelessWidget {
   const SchoolStudentProfileScreen({super.key});
@@ -594,64 +596,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "School Facilities",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.local_library,
-                    "Library",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.science,
-                    "Science Lab",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.computer,
-                    "Computer Lab",
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.sports_soccer,
-                    "Sports",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.directions_bus,
-                    "Transport",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.restaurant,
-                    "Canteen",
-                  ),
-                ),
-              ],
-            ),
+            SchoolFacilitiesCard(),
             const SizedBox(height: 16),
             // Address Card with real address
             _buildAddressCard(student),
@@ -942,13 +887,13 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             icon: Icons.call,
             label: "Contact",
             color: Colors.green,
-            onPressed: () {},
+            onPressed:() => ContactHelper.call('+918989207770'),
           ),
           _buildContactButton(
             icon: Icons.help_outline,
             label: "Help",
             color: Colors.blue,
-            onPressed: () {},
+            onPressed:() => ContactHelper.whatsapp('+918989207770',"Hello Akshay"),
           ),
           _buildContactButton(
             icon: Icons.logout,

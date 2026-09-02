@@ -8,7 +8,7 @@ import '../../collage/screen/collage_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
-import '../../ott_platform/screen/ott_platform_dashboard_screen.dart';
+import '../../ott_platform/auth/screen/ott_splash_screen.dart';
 import '../../school/auth/controller/school_auth_controller.dart';
 import '../../school/auth/screen/school_auth_screen.dart';
 import '../../school/dashboard/screen/school_student_dashboard_screen.dart';
@@ -71,7 +71,7 @@ class _ModuleCardState extends State<ModuleCard> {
       'subtitle': 'Entertainment',
       'icon': Icons.play_circle_fill_rounded,
       'color': AppColors.ott,
-      'targetScreen': const OttDashboardScreen(),
+      'targetScreen': const OttSplashScreen(),
       'gradient': [AppColors.ott, AppColors.ott.withOpacity(0.3)],
     },
     {

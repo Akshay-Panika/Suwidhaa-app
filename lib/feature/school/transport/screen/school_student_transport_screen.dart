@@ -1,6 +1,7 @@
 // lib/feature/school/transport/view/school_student_transport_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:untitled/core/widget/contact_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../controller/transport_controller.dart';
@@ -356,13 +357,13 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                   _buildActionButton(
                     icon: Icons.call,
                     color: Colors.green.shade700,
-                    onTap: () => _callDriver(transport.driverNumber),
+                    onTap: () =>  ContactHelper.call(transport.driverNumber),
                     tooltip: 'Call Driver',
                   ),
                   _buildActionButton(
                     icon: Icons.message,
                     color: Colors.green.shade700,
-                    onTap: () => _whatsAppDriver(transport.driverNumber),
+                    onTap: () =>  ContactHelper.whatsapp(transport.driverNumber,'Hello, I need assistance with my transport service.'),
                     tooltip: 'WhatsApp',
                   ),
                   _buildActionButton(
@@ -638,7 +639,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => _callDriver(transport.driverNumber),
+                                  onPressed: () => ContactHelper.call(transport.driverNumber),
                                   icon: const Icon(Icons.call, size: 18),
                                   label: const Text('Call'),
                                   style: OutlinedButton.styleFrom(
@@ -654,7 +655,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => _whatsAppDriver(transport.driverNumber),
+                                  onPressed: () => ContactHelper.whatsapp(transport.driverNumber,'Hello, I need assistance with my transport service.'),
                                   icon: const Icon(Icons.message, size: 18),
                                   label: const Text('WhatsApp'),
                                   style: OutlinedButton.styleFrom(
@@ -902,43 +903,5 @@ class SchoolStudentTransportScreen extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  // ==================== CONTACT FUNCTIONS ====================
-
-  void _callDriver(String number) async {
-    String cleanNumber = number.replaceAll(RegExp(r'[^0-9+]'), '');
-    if (!cleanNumber.startsWith('+')) {
-      cleanNumber = '+$cleanNumber';
-    }
-
-    final Uri callUri = Uri.parse('tel:$cleanNumber');
-    try {
-      if (await canLaunchUrl(callUri)) {
-        await launchUrl(callUri);
-      } else {
-        FlutterToast.error('Could not place call to $number');
-      }
-    } catch (e) {
-      FlutterToast.error('Error: ${e.toString()}');
-    }
-  }
-
-  void _whatsAppDriver(String number) async {
-    String cleanNumber = number.replaceAll(RegExp(r'[^0-9+]'), '');
-    if (!cleanNumber.startsWith('+')) {
-      cleanNumber = '+$cleanNumber';
-    }
-
-    final Uri whatsappUri = Uri.parse('https://wa.me/$cleanNumber');
-    try {
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-      } else {
-        FlutterToast.error('Could not open WhatsApp for $number');
-      }
-    } catch (e) {
-      FlutterToast.error('Error: ${e.toString()}');
-    }
   }
 }

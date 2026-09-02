@@ -2,10 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../core/widget/contact_helper.dart';
 import '../../auth/controller/school_auth_controller.dart';
 import '../../home/widget/student_attendance_card.dart';
 import '../controller/teacher_controller.dart';
 import '../model/teacher_model.dart';
+import '../widget/school_facilitie_card.dart';
 
 class SchoolTeacherProfileScreen extends StatelessWidget {
   const SchoolTeacherProfileScreen({super.key});
@@ -546,64 +548,7 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "School Facilities",
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.local_library,
-                    "Library",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.science,
-                    "Science Lab",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.computer,
-                    "Computer Lab",
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.sports_soccer,
-                    "Sports",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.directions_bus,
-                    "Transport",
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildFacilityItem(
-                    Icons.restaurant,
-                    "Canteen",
-                  ),
-                ),
-              ],
-            ),
+            SchoolFacilitiesCard(),
             const SizedBox(height: 16),
             // Personal Information Card
             _buildPersonalInfoCard(teacher),
@@ -809,54 +754,6 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAddressCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.location_on,
-            color: Colors.blue,
-            size: 25,
-          ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "School Address",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Main Road, Raipur, Chhattisgarh, India",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAboutSchool() {
     return Container(
       width: double.infinity,
@@ -914,13 +811,13 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
             icon: Icons.call,
             label: "Contact",
             color: Colors.green,
-            onPressed: () {},
+            onPressed:() => ContactHelper.call('+918989207770'),
           ),
           _buildContactButton(
             icon: Icons.help_outline,
             label: "Help",
             color: Colors.blue,
-            onPressed: () {},
+            onPressed:() => ContactHelper.whatsapp('+918989207770',"Hello Akshay"),
           ),
           _buildContactButton(
             icon: Icons.logout,
