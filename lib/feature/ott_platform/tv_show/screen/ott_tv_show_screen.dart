@@ -8,6 +8,7 @@ class OttTvShowScreen extends StatefulWidget {
 }
 
 class _OttTvShowScreenState extends State<OttTvShowScreen> {
+
   final List<String> _categories = [
     'All',
     'Drama',

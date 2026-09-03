@@ -8,64 +8,111 @@ class OttSchoolScreen extends StatefulWidget {
 }
 
 class _OttSchoolScreenState extends State<OttSchoolScreen> {
-  final List<String> _subjects = [
+  final List<String> _categories = [
     'All',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Computer Science',
-    'History',
-    'Geography',
-    'English',
+    'Educational',
+    'Fun Learning',
+    'Science',
+    'Arts',
+    'Music',
+    'Sports',
+    'Crafts',
   ];
 
-  final List<Map<String, String>> _courses = [
+  final List<Map<String, String>> _videos = [
     {
-      'title': 'Mathematics - Algebra',
-      'level': 'Advanced',
+      'title': 'Learn ABC - Fun Animation',
+      'category': 'Educational',
       'rating': '4.9',
-      'lectures': '24',
-      'image': 'https://picsum.photos/seed/math/200/300',
+      'duration': '15 min',
+      'image': 'https://picsum.photos/seed/abc/200/300',
+      'age': '3+',
     },
     {
-      'title': 'Physics - Mechanics',
-      'level': 'Intermediate',
+      'title': 'Science Experiments for Kids',
+      'category': 'Science',
       'rating': '4.8',
-      'lectures': '18',
-      'image': 'https://picsum.photos/seed/physics/200/300',
+      'duration': '20 min',
+      'image': 'https://picsum.photos/seed/science/200/300',
+      'age': '6+',
     },
     {
-      'title': 'Chemistry - Organic',
-      'level': 'Beginner',
+      'title': 'Creative Art & Drawing',
+      'category': 'Arts',
       'rating': '4.7',
-      'lectures': '15',
-      'image': 'https://picsum.photos/seed/chemistry/200/300',
+      'duration': '18 min',
+      'image': 'https://picsum.photos/seed/art/200/300',
+      'age': '4+',
     },
     {
-      'title': 'Biology - Genetics',
-      'level': 'Advanced',
+      'title': 'Kids Yoga & Exercise',
+      'category': 'Sports',
       'rating': '4.8',
-      'lectures': '20',
-      'image': 'https://picsum.photos/seed/biology/200/300',
+      'duration': '12 min',
+      'image': 'https://picsum.photos/seed/yoga/200/300',
+      'age': '5+',
     },
     {
-      'title': 'Computer Science - Python',
-      'level': 'Expert',
+      'title': 'Learn Piano - Easy Songs',
+      'category': 'Music',
       'rating': '4.9',
-      'lectures': '30',
-      'image': 'https://picsum.photos/seed/python/200/300',
+      'duration': '25 min',
+      'image': 'https://picsum.photos/seed/piano/200/300',
+      'age': '6+',
     },
     {
-      'title': 'History - World Wars',
-      'level': 'Intermediate',
+      'title': 'Paper Crafts - Origami',
+      'category': 'Crafts',
       'rating': '4.6',
-      'lectures': '12',
-      'image': 'https://picsum.photos/seed/history/200/300',
+      'duration': '15 min',
+      'image': 'https://picsum.photos/seed/origami/200/300',
+      'age': '5+',
+    },
+    {
+      'title': 'Fun Math Games',
+      'category': 'Fun Learning',
+      'rating': '4.7',
+      'duration': '10 min',
+      'image': 'https://picsum.photos/seed/mathfun/200/300',
+      'age': '4+',
+    },
+    {
+      'title': 'Animal Kingdom - Wildlife',
+      'category': 'Educational',
+      'rating': '4.9',
+      'duration': '22 min',
+      'image': 'https://picsum.photos/seed/animals/200/300',
+      'age': '3+',
+    },
+    {
+      'title': 'Learn Spanish - Basics',
+      'category': 'Fun Learning',
+      'rating': '4.5',
+      'duration': '18 min',
+      'image': 'https://picsum.photos/seed/spanish/200/300',
+      'age': '7+',
+    },
+    {
+      'title': 'Cooking for Kids',
+      'category': 'Crafts',
+      'rating': '4.8',
+      'duration': '20 min',
+      'image': 'https://picsum.photos/seed/cooking/200/300',
+      'age': '6+',
     },
   ];
 
-  int _selectedSubject = 0;
+  int _selectedCategory = 0;
+
+  // Filter videos based on selected category
+  List<Map<String, String>> get _filteredVideos {
+    if (_selectedCategory == 0) {
+      return _videos;
+    }
+    return _videos
+        .where((video) => video['category'] == _categories[_selectedCategory])
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +129,7 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
       elevation: 0,
       automaticallyImplyLeading: false,
       title: const Text(
-        '📚 School',
+        '🎓 School',
         style: TextStyle(
           color: Colors.white,
           fontSize: 24,
@@ -104,29 +151,29 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          // Subjects
-          _buildSubjects(),
+          // Categories
+          _buildCategories(),
           const SizedBox(height: 16),
-          // Courses Grid
-          _buildCourseGrid(),
+          // Video Grid
+          _buildVideoGrid(),
         ],
       ),
     );
   }
 
-  Widget _buildSubjects() {
+  Widget _buildCategories() {
     return SizedBox(
       height: 40,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _subjects.length,
+        itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final isSelected = _selectedSubject == index;
+          final isSelected = _selectedCategory == index;
           return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedSubject = index;
+                _selectedCategory = index;
               });
             },
             child: Container(
@@ -136,15 +183,15 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                 vertical: 8,
               ),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.blue : Colors.grey[900],
+                color: isSelected ? Colors.orange : Colors.grey[900],
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[800]!,
+                  color: isSelected ? Colors.orange : Colors.grey[800]!,
                   width: 1,
                 ),
               ),
               child: Text(
-                _subjects[index],
+                _categories[index],
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.grey,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -158,7 +205,32 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
     );
   }
 
-  Widget _buildCourseGrid() {
+  Widget _buildVideoGrid() {
+    if (_filteredVideos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.video_library,
+                color: Colors.grey[700],
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No videos found',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
@@ -170,16 +242,14 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
           mainAxisSpacing: 12,
           childAspectRatio: 0.7,
         ),
-        itemCount: _courses.length,
+        itemCount: _filteredVideos.length,
         itemBuilder: (context, index) {
-          final course = _courses[index];
-          final levelColor = course['level'] == 'Beginner'
+          final video = _filteredVideos[index];
+          final ageColor = int.parse(video['age']!.replaceAll('+', '')) <= 4
               ? Colors.green
-              : course['level'] == 'Intermediate'
+              : int.parse(video['age']!.replaceAll('+', '')) <= 6
               ? Colors.orange
-              : course['level'] == 'Advanced'
-              ? Colors.red
-              : Colors.purple;
+              : Colors.red;
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -187,19 +257,19 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.blue.shade800.withOpacity(0.2),
-                  Colors.green.shade800.withOpacity(0.2),
+                  Colors.orange.shade800.withOpacity(0.2),
+                  Colors.deepOrange.shade800.withOpacity(0.2),
                 ],
               ),
               border: Border.all(
-                color: Colors.blue.shade600.withOpacity(0.3),
+                color: Colors.orange.shade600.withOpacity(0.3),
                 width: 1,
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Course Image
+                // Video Thumbnail
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
@@ -207,7 +277,7 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                   child: Stack(
                     children: [
                       Image.network(
-                        course['image']!,
+                        video['image']!,
                         height: 160,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -219,7 +289,7 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                             color: Colors.grey[900],
                             child: const Center(
                               child: CircularProgressIndicator(
-                                color: Colors.blue,
+                                color: Colors.orange,
                               ),
                             ),
                           );
@@ -230,14 +300,53 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                             width: double.infinity,
                             color: Colors.grey[800],
                             child: const Icon(
-                              Icons.school,
-                              color: Colors.blue,
+                              Icons.play_circle_outline,
+                              color: Colors.orange,
                               size: 50,
                             ),
                           );
                         },
                       ),
-                      // Level Badge
+                      // Play Button Overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                      // Category Badge
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            video['category']!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Age Badge
                       Positioned(
                         top: 8,
                         right: 8,
@@ -247,20 +356,30 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: levelColor.withOpacity(0.9),
+                            color: ageColor.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
-                            course['level']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.family_restroom,
+                                color: Colors.white,
+                                size: 10,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                video['age']!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      // Lectures Badge
+                      // Duration Badge
                       Positioned(
                         bottom: 8,
                         right: 8,
@@ -274,7 +393,7 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            '📖 ${course['lectures']}',
+                            '⏱ ${video['duration']}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -286,14 +405,14 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                     ],
                   ),
                 ),
-                // Course Info
+                // Video Info
                 Padding(
                   padding: const EdgeInsets.all(8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        course['title']!,
+                        video['title']!,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -312,7 +431,7 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            course['rating']!,
+                            video['rating']!,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -325,13 +444,13 @@ class _OttSchoolScreenState extends State<OttSchoolScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.2),
+                              color: Colors.orange.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
-                              'Course',
+                              'School',
                               style: TextStyle(
-                                color: Colors.blueAccent,
+                                color: Colors.orangeAccent,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
                               ),

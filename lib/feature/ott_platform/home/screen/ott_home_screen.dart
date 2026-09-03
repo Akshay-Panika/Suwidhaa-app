@@ -105,13 +105,13 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.red,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
               'OTT',
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),

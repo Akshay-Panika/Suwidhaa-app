@@ -17,4 +17,16 @@ class ContactHelper {
       debugPrint('❌ Cannot open WhatsApp for: $phone');
     }
   }
+  static Future<void> openWebsite(String url) async {
+    // Add https:// if not present
+    String finalUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      finalUrl = 'https://$url';
+    }
+
+    final uri = Uri.parse(finalUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('❌ Cannot open website: $url');
+    }
+  }
 }

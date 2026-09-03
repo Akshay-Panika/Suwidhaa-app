@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../dashboard/screen/ott_dashboard_screen.dart';
+import 'ott_auth_screen.dart';
 
 class OttSplashScreen extends StatefulWidget {
   const OttSplashScreen({super.key});
@@ -301,21 +302,7 @@ class _OttSplashScreenState extends State<OttSplashScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            child: const Text(
-                              "Subscribe Now",
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
+
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           width: double.infinity,
@@ -324,7 +311,7 @@ class _OttSplashScreenState extends State<OttSplashScreen> {
                               Navigator.push(context, MaterialPageRoute(builder: (context) => OttDashboardScreen(),));
                             },
                             child: const Text(
-                              "Sign In",
+                              "Enjoin Now",
                               style: TextStyle(
                                 color: Colors.red,
                                 fontSize: 16,

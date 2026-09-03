@@ -1,10 +1,20 @@
+// Complete updated file with fix
+
+// lib/feature/college/screen/collage_view_screen.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:untitled/feature/collage/screen/room_view_screen.dart';
 import '../../../core/utils/app_color.dart';
+import '../../../core/widget/contact_helper.dart';
+import '../controller/room_controller.dart';
+import '../controller/tiffin_controller.dart';
+import '../model/college_model.dart';
+import '../model/room_model.dart';
+import '../model/tiffin_model.dart';
 
 class CollageViewScreen extends StatefulWidget {
-  final String collageName;
-  const CollageViewScreen({super.key, required this.collageName});
+  final College college;
+  const CollageViewScreen({super.key, required this.college});
 
   @override
   State<CollageViewScreen> createState() => _CollageViewScreenState();
@@ -16,230 +26,68 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
   String _selectedTiffinType = 'All';
   int _selectedImageIndex = 0;
 
-  // College Gallery Images
-  final List<String> _galleryImages = [
-    "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&h=500&fit=crop",
-    "https://images.unsplash.com/photo-1562774053-701939374585?w=800&h=500&fit=crop",
-    "https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=800&h=500&fit=crop",
-    "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&h=500&fit=crop",
-    "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800&h=500&fit=crop",
-    "https://images.unsplash.com/photo-1592823680328-7b67d7d76c14?w=800&h=500&fit=crop",
-  ];
+  final RoomController _roomController = Get.find<RoomController>();
+  final TiffinController _tiffinController = Get.find<TiffinController>();
+
+  // Get gallery images from college
+  List<String> get _galleryImages {
+    if (widget.college.images.isNotEmpty) {
+      return widget.college.images.map((image) => image.url).toList();
+    }
+    // Fallback images if no images available
+    return [
+      "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=800&h=500&fit=crop",
+    ];
+  }
 
   // Room type filters
-  final List<String> _roomTypes = ['All', 'Single Room', '1BHK', '2BHK', '3BHK', 'PG'];
+  final List<String> _roomTypes = ['All', 'Single Room', '1bhk', '2bhk', '3bhk', 'pg'];
 
   // Tiffin type filters
-  final List<String> _tiffinTypes = ['All', 'Veg', 'Non-Veg', 'Jain', 'Egg'];
-
-  // Sample room data with room type and distance
-  final List<RoomModel> _allRooms = [
-    RoomModel(
-      name: "Comfort Single Room",
-      type: "Single Room",
-      price: "₹8,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&h=300&fit=crop",
-      rating: 4.5,
-      isAvailable: true,
-      distance: "0.5 km",
-      address: "Near College Gate, Jabalpur",
-    ),
-    RoomModel(
-      name: "Spacious 1BHK",
-      type: "1BHK",
-      price: "₹12,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=400&h=300&fit=crop",
-      rating: 4.3,
-      isAvailable: true,
-      distance: "1.2 km",
-      address: "Ranital, Jabalpur",
-    ),
-    RoomModel(
-      name: "Modern 2BHK Apartment",
-      type: "2BHK",
-      price: "₹18,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-      rating: 4.7,
-      isAvailable: true,
-      distance: "2.0 km",
-      address: "Vijay Nagar, Jabalpur",
-    ),
-    RoomModel(
-      name: "Luxury 3BHK",
-      type: "3BHK",
-      price: "₹25,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=400&h=300&fit=crop",
-      rating: 4.8,
-      isAvailable: false,
-      distance: "3.5 km",
-      address: "Civil Lines, Jabalpur",
-    ),
-    RoomModel(
-      name: "Boys PG",
-      type: "PG",
-      price: "₹6,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=400&h=300&fit=crop",
-      rating: 4.0,
-      isAvailable: true,
-      distance: "0.8 km",
-      address: "Garha, Jabalpur",
-    ),
-    RoomModel(
-      name: "Girls PG",
-      type: "PG",
-      price: "₹7,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=400&h=300&fit=crop",
-      rating: 4.2,
-      isAvailable: true,
-      distance: "1.5 km",
-      address: "Pachpedi, Jabalpur",
-    ),
-    RoomModel(
-      name: "Studio Single Room",
-      type: "Single Room",
-      price: "₹9,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-      rating: 4.1,
-      isAvailable: false,
-      distance: "2.8 km",
-      address: "Madan Mahal, Jabalpur",
-    ),
-    RoomModel(
-      name: "Premium 1BHK",
-      type: "1BHK",
-      price: "₹14,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=400&h=300&fit=crop",
-      rating: 4.6,
-      isAvailable: true,
-      distance: "1.8 km",
-      address: "Adhartal, Jabalpur",
-    ),
-    RoomModel(
-      name: "Family 2BHK",
-      type: "2BHK",
-      price: "₹20,000/month",
-      imageUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=400&h=300&fit=crop",
-      rating: 4.4,
-      isAvailable: true,
-      distance: "4.0 km",
-      address: "Civic Center, Jabalpur",
-    ),
-  ];
-
-  // Sample tiffin data with center details
-  final List<TiffinModel> _allTiffins = [
-    TiffinModel(
-      name: "Sharma Veg Tiffin",
-      type: "Veg",
-      price: "₹120/meal",
-      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
-      rating: 4.6,
-      cuisine: "North Indian",
-      distance: "0.3 km",
-      address: "Near College Gate, Jabalpur",
-      timing: "12:00 PM - 2:00 PM",
-      contact: "+91 98765 43210",
-    ),
-    TiffinModel(
-      name: "Royal Non-Veg Special",
-      type: "Non-Veg",
-      price: "₹180/meal",
-      imageUrl: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop",
-      rating: 4.8,
-      cuisine: "Mughlai",
-      distance: "1.0 km",
-      address: "Ranital, Jabalpur",
-      timing: "11:30 AM - 2:30 PM",
-      contact: "+91 98765 43211",
-    ),
-    TiffinModel(
-      name: "Healthy Veg Bowl",
-      type: "Veg",
-      price: "₹90/meal",
-      imageUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
-      rating: 4.3,
-      cuisine: "Continental",
-      distance: "1.5 km",
-      address: "Vijay Nagar, Jabalpur",
-      timing: "10:00 AM - 1:00 PM",
-      contact: "+91 98765 43212",
-    ),
-    TiffinModel(
-      name: "South Indian Delight",
-      type: "Veg",
-      price: "₹100/meal",
-      imageUrl: "https://images.unsplash.com/photo-1633945274405-b6c80a12c5b1?w=400&h=300&fit=crop",
-      rating: 4.7,
-      cuisine: "South Indian",
-      distance: "0.8 km",
-      address: "Garha, Jabalpur",
-      timing: "11:00 AM - 3:00 PM",
-      contact: "+91 98765 43213",
-    ),
-    TiffinModel(
-      name: "Egg Special Tiffin",
-      type: "Egg",
-      price: "₹85/meal",
-      imageUrl: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&h=300&fit=crop",
-      rating: 4.2,
-      cuisine: "Fusion",
-      distance: "2.0 km",
-      address: "Madan Mahal, Jabalpur",
-      timing: "12:30 PM - 2:30 PM",
-      contact: "+91 98765 43214",
-    ),
-    TiffinModel(
-      name: "Jain Bhojan",
-      type: "Jain",
-      price: "₹110/meal",
-      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
-      rating: 4.5,
-      cuisine: "Rajasthani",
-      distance: "2.5 km",
-      address: "Civil Lines, Jabalpur",
-      timing: "12:00 PM - 2:00 PM",
-      contact: "+91 98765 43215",
-    ),
-    TiffinModel(
-      name: "Mughlai Non-Veg",
-      type: "Non-Veg",
-      price: "₹200/meal",
-      imageUrl: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop",
-      rating: 4.9,
-      cuisine: "Mughlai",
-      distance: "3.0 km",
-      address: "Adhartal, Jabalpur",
-      timing: "11:30 AM - 3:00 PM",
-      contact: "+91 98765 43216",
-    ),
-    TiffinModel(
-      name: "Pure Veg Thali",
-      type: "Veg",
-      price: "₹95/meal",
-      imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
-      rating: 4.4,
-      cuisine: "Gujarati",
-      distance: "1.2 km",
-      address: "Pachpedi, Jabalpur",
-      timing: "12:00 PM - 2:30 PM",
-      contact: "+91 98765 43217",
-    ),
-  ];
+  final List<String> _tiffinTypes = ['All', 'Veg', 'Non-Veg', 'Both'];
 
   // Get filtered rooms based on selected type
-  List<RoomModel> get _filteredRooms {
+  List<Room> get _filteredRooms {
     if (_selectedRoomType == 'All') {
-      return _allRooms;
+      return _roomController.filteredRooms;
     }
-    return _allRooms.where((room) => room.type == _selectedRoomType).toList();
+    return _roomController.filteredRooms
+        .where((room) =>
+    room.roomType?.toLowerCase() == _selectedRoomType.toLowerCase())
+        .toList();
   }
 
   // Get filtered tiffins based on selected type
-  List<TiffinModel> get _filteredTiffins {
+  List<Tiffin> get _filteredTiffins {
     if (_selectedTiffinType == 'All') {
-      return _allTiffins;
+      return _tiffinController.filteredTiffins;
     }
-    return _allTiffins.where((tiffin) => tiffin.type == _selectedTiffinType).toList();
+
+    if (_selectedTiffinType == 'Veg') {
+      return _tiffinController.filteredTiffins
+          .where((tiffin) => tiffin.isVegOnly)
+          .toList();
+    } else if (_selectedTiffinType == 'Non-Veg') {
+      return _tiffinController.filteredTiffins
+          .where((tiffin) => tiffin.isNonVegOnly)
+          .toList();
+    } else if (_selectedTiffinType == 'Both') {
+      return _tiffinController.filteredTiffins
+          .where((tiffin) => tiffin.isBothVegNonVeg)
+          .toList();
+    }
+
+    return _tiffinController.filteredTiffins;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch rooms by college name
+    _roomController.fetchRoomsByCollege(widget.college.name);
+    // Fetch tiffins by college name
+    _tiffinController.fetchTiffinsByCollege(widget.college.name);
   }
 
   @override
@@ -247,7 +95,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.collageName),
+        title: Text(widget.college.name),
         titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
@@ -259,290 +107,341 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.favorite_border, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: Colors.white),
-          ),
+
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          // College Header Image with Gallery
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Main Image with Gallery Indicator
-                Stack(
-                  children: [
-                    Container(
-                      height: 250,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        image: DecorationImage(
-                          image: NetworkImage(_galleryImages[_selectedImageIndex]),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    // Gradient overlay
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 80,
+      body: Obx(() {
+        final bool isLoading = (_roomController.isLoading.value && _roomController.rooms.isEmpty) &&
+            (_tiffinController.isLoading.value && _tiffinController.tiffins.isEmpty);
+
+        if (isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        return CustomScrollView(
+          slivers: [
+            // College Header Image with Gallery
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Main Image with Gallery Indicator
+                  Stack(
+                    children: [
+                      Container(
+                        height: 250,
+                        width: double.infinity,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.7),
-                              Colors.transparent,
-                            ],
+                          color: Colors.grey.shade200,
+                          image: DecorationImage(
+                            image: NetworkImage(_galleryImages[_selectedImageIndex]),
+                            fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {
+                              // Handle image load error silently
+                            },
                           ),
                         ),
                       ),
-                    ),
-                    // Gallery Navigation Arrows
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      left: 8,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedImageIndex = (_selectedImageIndex - 1 + _galleryImages.length) % _galleryImages.length;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.chevron_left,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: 8,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedImageIndex = (_selectedImageIndex + 1) % _galleryImages.length;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.chevron_right,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Image Counter
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "${_selectedImageIndex + 1}/${_galleryImages.length}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Gallery Indicator Dots
-                    Positioned(
-                      bottom: 16,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          _galleryImages.length,
-                              (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: _selectedImageIndex == index ? 20 : 8,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(3),
-                              color: _selectedImageIndex == index
-                                  ? Colors.white
-                                  : Colors.white.withOpacity(0.4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Thumbnail Gallery
-                Container(
-                  height: 70,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  color: Colors.grey.shade50,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _galleryImages.length,
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedImageIndex = index;
-                          });
-                        },
+                      // Gradient overlay
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
                         child: Container(
-                          width: 80,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          height: 80,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _selectedImageIndex == index
-                                  ? AppColors.primary
-                                  : Colors.transparent,
-                              width: 3,
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withOpacity(0.7),
+                                Colors.transparent,
+                              ],
                             ),
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.network(
-                              _galleryImages[index],
+                        ),
+                      ),
+                      // Gallery Navigation Arrows (only if more than 1 image)
+                      if (_galleryImages.length > 1) ...[
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          left: 8,
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedImageIndex = (_selectedImageIndex - 1 + _galleryImages.length) % _galleryImages.length;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.chevron_left,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          right: 8,
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedImageIndex = (_selectedImageIndex + 1) % _galleryImages.length;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      // Image Counter
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "${_selectedImageIndex + 1}/${_galleryImages.length}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Gallery Indicator Dots
+                      Positioned(
+                        bottom: 16,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _galleryImages.length,
+                                (index) => Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: _selectedImageIndex == index ? 20 : 8,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(3),
+                                color: _selectedImageIndex == index
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.4),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Thumbnail Gallery (only if more than 1 image)
+                  if (_galleryImages.length > 1)
+                    Container(
+                      height: 70,
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      color: Colors.grey.shade50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _galleryImages.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedImageIndex = index;
+                              });
+                            },
+                            child: Container(
                               width: 80,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _selectedImageIndex == index
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  _galleryImages[index],
                                   width: 80,
                                   height: 60,
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 80,
+                                      height: 60,
+                                      color: Colors.grey.shade200,
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // College Info
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.collageName,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Jabalpur, Madhya Pradesh",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildInfoChip(Icons.home, "50+ Rooms", AppColors.primary),
-                      const SizedBox(width: 8),
-                      _buildInfoChip(Icons.fastfood_outlined, "50+ Tiffin", Colors.green),
-                      const SizedBox(width: 8),
-                      _buildInfoChip(Icons.location_on, "${5.6} Km", Colors.blue),
-                    ],
-                  ),
                 ],
               ),
             ),
-          ),
 
-          // Tabs: Room & Tiffin
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyTabDelegate(
-              child: Container(
-                color: Colors.white,
+            // College Info
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Main Tabs
+                    Text(
+                      widget.college.name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildTabButton("Rooms", 0),
-                        _buildTabButton("Tiffin", 1),
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            widget.college.address,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    // Filter Chips for selected tab
-                    _buildFilterChips(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildInfoChip(
+                            Icons.home,
+                            "${_roomController.rooms.length} Rooms",
+                            AppColors.primary
+                        ),
+                        const SizedBox(width: 8),
+                        _buildInfoChip(
+                            Icons.fastfood_outlined,
+                            "${_tiffinController.tiffins.length} Tiffin",
+                            Colors.green
+                        ),
+                        const SizedBox(width: 8),
+                        _buildInfoChip(
+                            Icons.category_rounded,
+                            widget.college.category ?? 'General',
+                            Colors.blue
+                        ),
+                      ],
+                    ),
+                    if (widget.college.website.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.language_rounded,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => ContactHelper.openWebsite(widget.college.website),
+                            child: Text(
+                              widget.college.website,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
-          ),
 
-          SliverToBoxAdapter(child: SizedBox(height: 10,),),
-          // Content based on selected tab
-          _selectedTab == 0
-              ? _buildRoomGrid()
-              : _buildTiffinGrid(),
-        ],
-      ),
+            // Tabs: Room & Tiffin
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickyTabDelegate(
+                child: Container(
+                  color: Colors.white,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Main Tabs
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildTabButton("Rooms", 0),
+                          _buildTabButton("Tiffin", 1),
+                        ],
+                      ),
+                      // Filter Chips for selected tab
+                      _buildFilterChips(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(child: SizedBox(height: 10,),),
+            // Content based on selected tab
+            _selectedTab == 0
+                ? _buildRoomGrid()
+                : _buildTiffinGrid(),
+          ],
+        );
+      }),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
   }
 
   Widget _buildFilterChips() {
@@ -658,6 +557,18 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
   // Room Section
   SliverToBoxAdapter _buildRoomGrid() {
     final rooms = _filteredRooms;
+
+    // Show loading if rooms are being fetched
+    if (_roomController.isLoading.value && rooms.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          height: 200,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (rooms.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -672,11 +583,14 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No rooms found for "${_selectedRoomType}"',
+                  _selectedRoomType == 'All'
+                      ? 'No rooms available near ${widget.college.name}'
+                      : 'No rooms found for "$_selectedRoomType"',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey.shade600,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -684,17 +598,18 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         ),
       );
     }
+
     return SliverToBoxAdapter(
       child: GridView.builder(
         shrinkWrap: true,
         itemCount: rooms.length,
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.all(8),
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 1,
+          childAspectRatio: 0.9,
         ),
         itemBuilder: (context, index) {
           final room = rooms[index];
@@ -704,7 +619,16 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     );
   }
 
-  Widget _buildRoomCard(RoomModel room) {
+  Widget _buildRoomCard(Room room) {
+    // Get first image URL
+    String imageUrl = room.roomImages.isNotEmpty
+        ? room.roomImages.first.url
+        : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&h=300&fit=crop';
+
+    // Generate rating from ID (since API doesn't have rating)
+    double rating = (room.id % 5) + 1.0 + (room.id % 10) / 10;
+    if (rating > 5.0) rating = 5.0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -728,7 +652,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
               child: Stack(
                 children: [
                   Image.network(
-                    room.imageUrl,
+                    imageUrl,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -765,7 +689,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        room.type,
+                        room.roomTypeDisplay,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 8,
@@ -781,47 +705,16 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: room.isAvailable ? Colors.green : Colors.red,
+                        color: room.availabilityColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        room.isAvailable ? "Available" : "Booked",
+                        room.availabilityStatus,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ),
-                  ),
-                  // Rating
-                  Positioned(
-                    bottom: 6,
-                    right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Colors.amber,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            room.rating.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -834,7 +727,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    room.name,
+                    room.title,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -857,32 +750,58 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        room.price,
+                        room.formattedPrice,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_rounded,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            room.distance,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade600,
+                      if (room.amenityCount > 0)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 12,
+                              color: Colors.green,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${room.amenityCount} amenities',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
+                  // Amenities preview
+                  if (room.amenityCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 2,
+                        children: room.amenities.take(2).map((amenity) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              amenity,
+                              style: TextStyle(
+                                fontSize: 7,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -892,9 +811,21 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     );
   }
 
-  // Tiffin Section
+  // Tiffin Section - Updated with API data
   SliverToBoxAdapter _buildTiffinGrid() {
     final tiffins = _filteredTiffins;
+
+    // Show loading if tiffins are being fetched
+    if (_tiffinController.isLoading.value && tiffins.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          height: 200,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
+        ),
+      );
+    }
+
     if (tiffins.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -909,11 +840,14 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No tiffins found for "${_selectedTiffinType}"',
+                  _selectedTiffinType == 'All'
+                      ? 'No tiffins available near ${widget.college.name}'
+                      : 'No tiffins found for "$_selectedTiffinType"',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey.shade600,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -921,12 +855,13 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         ),
       );
     }
+
     return SliverToBoxAdapter(
       child: GridView.builder(
         shrinkWrap: true,
         itemCount: tiffins.length,
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 10,
@@ -941,7 +876,12 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     );
   }
 
-  Widget _buildTiffinCard(TiffinModel tiffin) {
+  Widget _buildTiffinCard(Tiffin tiffin) {
+    // Get first image URL
+    String imageUrl = tiffin.hasImages
+        ? tiffin.firstImageUrl
+        : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+
     return Card(
       color: Colors.white,
       elevation: 0.3,
@@ -956,7 +896,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
             child: Stack(
               children: [
                 Image.network(
-                  tiffin.imageUrl,
+                  imageUrl,
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -991,11 +931,11 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: _getTiffinColor(tiffin.type),
+                      color: _getTiffinTypeColor(tiffin),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      tiffin.type,
+                      tiffin.tiffinType,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 8,
@@ -1024,7 +964,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                         ),
                         const SizedBox(width: 2),
                         Text(
-                          tiffin.rating.toString(),
+                          tiffin.ratingValue.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -1035,34 +975,23 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                     ),
                   ),
                 ),
-                // Distance
+                // Availability
                 Positioned(
                   bottom: 6,
                   right: 6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: tiffin.availabilityColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          color: Colors.white,
-                          size: 10,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          tiffin.distance,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      tiffin.availabilityStatus,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -1075,7 +1004,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tiffin.name,
+                  tiffin.title,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -1086,62 +1015,43 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  tiffin.cuisine,
+                  tiffin.description.isNotEmpty
+                      ? tiffin.description
+                      : 'Delicious tiffin service',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  tiffin.price,
+                  tiffin.formattedPrice,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_rounded,
-                      size: 10,
-                      color: Colors.grey.shade500,
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        tiffin.timing,
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: Colors.grey.shade600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 4),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Show tiffin details
+                    onPressed: tiffin.isBooking ? null : () {
                       _showTiffinDetails(tiffin);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: tiffin.isBooking ? Colors.grey : AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       minimumSize: const Size(double.infinity, 28),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      "Order Now",
-                      style: TextStyle(
+                    child: Text(
+                      tiffin.isBooking ? "Booked" : "Order Now",
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -1157,22 +1067,18 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     );
   }
 
-  Color _getTiffinColor(String type) {
-    switch (type) {
-      case 'Veg':
-        return Colors.green;
-      case 'Non-Veg':
-        return Colors.red;
-      case 'Jain':
-        return Colors.orange;
-      case 'Egg':
-        return Colors.amber;
-      default:
-        return Colors.blue;
+  Color _getTiffinTypeColor(Tiffin tiffin) {
+    if (tiffin.isBothVegNonVeg) {
+      return Colors.purple;
+    } else if (tiffin.isVegOnly) {
+      return Colors.green;
+    } else if (tiffin.isNonVegOnly) {
+      return Colors.red;
     }
+    return Colors.blue;
   }
 
-  void _showTiffinDetails(TiffinModel tiffin) {
+  void _showTiffinDetails(Tiffin tiffin) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -1198,47 +1104,81 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                tiffin.name,
+                tiffin.title,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 12),
-              _buildDetailRow(Icons.location_on_rounded, tiffin.address),
-              _buildDetailRow(Icons.access_time_rounded, tiffin.timing),
-              _buildDetailRow(Icons.phone_rounded, tiffin.contact),
-              _buildDetailRow(Icons.food_bank_rounded, "${tiffin.cuisine} Cuisine"),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${tiffin.name} ordered successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    "Order Now",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getTiffinTypeColor(tiffin).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  tiffin.tiffinType,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _getTiffinTypeColor(tiffin),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              _buildDetailRow(Icons.price_change_rounded, tiffin.formattedPrice),
+              if (tiffin.nearCollege != null && tiffin.nearCollege!.isNotEmpty)
+                _buildDetailRow(Icons.school_rounded, 'Near: ${tiffin.nearCollege}'),
+              if (tiffin.hasContact)
+                _buildDetailRow(Icons.phone_rounded, tiffin.contactDisplay),
+              _buildDetailRow(Icons.info_outline_rounded,
+                  tiffin.description.isEmpty ? 'Delicious tiffin service available' : tiffin.description),
+              const SizedBox(height: 20),
+              if (tiffin.hasContact) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => ContactHelper.call(tiffin.contactNumber!),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.call, color: Colors.white, size: 18),
+                        label: const Text(
+                          'Call',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => ContactHelper.whatsapp(
+                          tiffin.contactNumber!,
+                          'Hi, I want to order ${tiffin.title}',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.message, color: Colors.white, size: 18),
+                        label: const Text(
+                          'WhatsApp',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 10),
             ],
           ),
@@ -1267,55 +1207,6 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
       ),
     );
   }
-}
-
-// Data Models
-class RoomModel {
-  final String name;
-  final String type;
-  final String price;
-  final String imageUrl;
-  final double rating;
-  final bool isAvailable;
-  final String distance;
-  final String address;
-
-  RoomModel({
-    required this.name,
-    required this.type,
-    required this.price,
-    required this.imageUrl,
-    required this.rating,
-    required this.isAvailable,
-    required this.distance,
-    required this.address,
-  });
-}
-
-class TiffinModel {
-  final String name;
-  final String type;
-  final String price;
-  final String imageUrl;
-  final double rating;
-  final String cuisine;
-  final String distance;
-  final String address;
-  final String timing;
-  final String contact;
-
-  TiffinModel({
-    required this.name,
-    required this.type,
-    required this.price,
-    required this.imageUrl,
-    required this.rating,
-    required this.cuisine,
-    required this.distance,
-    required this.address,
-    required this.timing,
-    required this.contact,
-  });
 }
 
 // Custom SliverPersistentHeaderDelegate for sticky tabs

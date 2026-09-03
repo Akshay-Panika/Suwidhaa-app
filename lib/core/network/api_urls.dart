@@ -37,4 +37,20 @@ class ApiUrls {
   // Transport endpoints
   static const String transportList = 'v1/school/transport/list/';
   static const String transportDetail = 'v1/school/transport/';
+
+  // College Banner endpoints
+  static const String collegeBannerList = 'v1/college/college-banner/list/';
+  static const String collegeBannerDetail = 'v1/college/college-banner/';
+
+  // College endpoints
+  static const String collegeList = 'v1/college/colleges/list/';
+  static const String collegeDetail = 'v1/college/colleges/';
+
+  // Room endpoints
+  static const String roomList = 'v1/college/rooms/list/';
+  static const String roomDetail = 'v1/college/rooms/';
+
+  // Tiffin endpoints
+  static const String tiffinList = 'v1/college/tiffins/list/';
+  static const String tiffinDetail = 'v1/college/tiffins/';
 }

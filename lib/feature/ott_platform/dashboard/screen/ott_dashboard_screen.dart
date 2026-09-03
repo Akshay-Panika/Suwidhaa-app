@@ -69,7 +69,7 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.school),
-            label: 'School',
+            label: 'Student',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_box),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/app_color.dart';
-import 'collage_home_screen.dart';
+
+import '../../../../core/utils/app_color.dart';
+import '../../home/screen/collage_home_screen.dart';
+import '../../screen/add_tiffin_senter_screen.dart';
 
 
 class CollageDashboardScreen extends StatefulWidget {
@@ -56,57 +58,61 @@ class _CollageDashboardScreenState extends State<CollageDashboardScreen> {
           ),
         ],
       ),
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey.shade600,
-          selectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(_icons[0]),
-              label: "Home",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(_icons[1]),
-              label: "Favorites",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(_icons[2]),
-              label: "Bookings",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(_icons[3]),
-              label: "Profile",
-            ),
-          ],
-        ),
-      ),
+      body: SafeArea(child: CollageHomeScreen()),
+      // body: _screens[_selectedIndex],
+      // bottomNavigationBar: Container(
+      //   decoration: BoxDecoration(
+      //     boxShadow: [
+      //       BoxShadow(
+      //         color: Colors.black.withOpacity(0.05),
+      //         blurRadius: 10,
+      //         offset: const Offset(0, -2),
+      //       ),
+      //     ],
+      //   ),
+      //   child: BottomNavigationBar(
+      //     currentIndex: _selectedIndex,
+      //     onTap: (index) {
+      //       setState(() {
+      //         _selectedIndex = index;
+      //       });
+      //     },
+      //     type: BottomNavigationBarType.fixed,
+      //     backgroundColor: Colors.white,
+      //     selectedItemColor: AppColors.primary,
+      //     unselectedItemColor: Colors.grey.shade600,
+      //     selectedLabelStyle: const TextStyle(
+      //       fontSize: 12,
+      //       fontWeight: FontWeight.w600,
+      //     ),
+      //     unselectedLabelStyle: const TextStyle(
+      //       fontSize: 12,
+      //       fontWeight: FontWeight.w500,
+      //     ),
+      //     elevation: 0,
+      //     items: [
+      //       BottomNavigationBarItem(
+      //         icon: Icon(_icons[0]),
+      //         label: "Home",
+      //       ),
+      //       BottomNavigationBarItem(
+      //         icon: Icon(_icons[1]),
+      //         label: "Favorites",
+      //       ),
+      //       BottomNavigationBarItem(
+      //         icon: Icon(_icons[2]),
+      //         label: "Bookings",
+      //       ),
+      //       BottomNavigationBarItem(
+      //         icon: Icon(_icons[3]),
+      //         label: "Profile",
+      //       ),
+      //     ],
+      //   ),
+      // ),
+      //
+      // floatingActionButton: FloatingActionButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AddTiffinCenterScreen(),),),child:
+      //   Icon(Icons.add),),
     );
   }
 }

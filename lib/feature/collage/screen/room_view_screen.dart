@@ -1,9 +1,13 @@
+// lib/feature/college/screen/room_view_screen.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/utils/app_color.dart';
+import '../../../core/widget/contact_helper.dart';
+import '../model/room_model.dart';
 import 'collage_view_screen.dart';
 
 class RoomViewScreen extends StatefulWidget {
-  final RoomModel room;
+  final Room room;
   const RoomViewScreen({super.key, required this.room});
 
   @override
@@ -11,17 +15,57 @@ class RoomViewScreen extends StatefulWidget {
 }
 
 class _RoomViewScreenState extends State<RoomViewScreen> {
-  bool _isFavorite = false;
+  int _selectedImageIndex = 0;
 
-  // Basic amenities
-  final List<Map<String, dynamic>> _amenities = [
-    {"icon": Icons.wifi, "name": "WiFi", "available": true},
-    {"icon": Icons.ac_unit, "name": "AC", "available": true},
-    {"icon": Icons.kitchen, "name": "Kitchen", "available": true},
-    {"icon": Icons.local_parking, "name": "Parking", "available": true},
-    {"icon": Icons.security, "name": "Security", "available": false},
-    {"icon": Icons.local_laundry_service, "name": "Laundry", "available": true},
-  ];
+  // Get gallery images from room
+  List<String> get _galleryImages {
+    if (widget.room.roomImages.isNotEmpty) {
+      return widget.room.roomImages.map((image) => image.url).toList();
+    }
+    // Fallback images if no images available
+    return [
+      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&h=500&fit=crop",
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&h=500&fit=crop",
+    ];
+  }
+
+  // Generate room details for sharing
+  String get _shareMessage {
+    final buffer = StringBuffer();
+    buffer.writeln('🏠 *${widget.room.title}*');
+    buffer.writeln();
+    buffer.writeln('📍 *Location:* ${widget.room.address}');
+    if (widget.room.nearCollege != null && widget.room.nearCollege!.isNotEmpty) {
+      buffer.writeln('🏫 *Near:* ${widget.room.nearCollege}');
+    }
+    buffer.writeln('💰 *Price:* ${widget.room.formattedPrice}');
+    buffer.writeln('🏷️ *Room Type:* ${widget.room.roomTypeDisplay}');
+    buffer.writeln('📊 *Status:* ${widget.room.availabilityStatus}');
+
+    if (widget.room.amenityCount > 0) {
+      buffer.writeln();
+      buffer.writeln('✅ *Amenities:*');
+      for (var amenity in widget.room.amenities) {
+        buffer.writeln('   • $amenity');
+      }
+    }
+
+    if (widget.room.hasContact) {
+      buffer.writeln();
+      buffer.writeln('📞 *Contact:* ${widget.room.contactDisplay}');
+    }
+
+    buffer.writeln();
+    buffer.writeln('📝 *Description:*');
+    buffer.writeln(widget.room.description.isNotEmpty
+        ? widget.room.description
+        : 'This ${widget.room.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities.');
+
+    buffer.writeln();
+    buffer.writeln('🔗 *Shared from Suwidhaa App*');
+
+    return buffer.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +79,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         title: Text(
-          widget.room.name,
+          widget.room.title,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -44,18 +88,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              setState(() {
-                _isFavorite = !_isFavorite;
-              });
-            },
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: Colors.white,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
+            onPressed: _shareRoomDetails,
             icon: const Icon(Icons.share_outlined, color: Colors.white),
           ),
         ],
@@ -64,11 +97,11 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Room Image
+            // Room Image Gallery
             Stack(
               children: [
                 Image.network(
-                  widget.room.imageUrl,
+                  _galleryImages[_selectedImageIndex],
                   height: 280,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -100,15 +133,90 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    height: 60,
+                    height: 80,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withOpacity(0.7),
                           Colors.transparent,
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Gallery Navigation Arrows (only if more than 1 image)
+                if (_galleryImages.length > 1) ...[
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 8,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImageIndex = (_selectedImageIndex - 1 + _galleryImages.length) % _galleryImages.length;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_left,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: 8,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImageIndex = (_selectedImageIndex + 1) % _galleryImages.length;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                // Image Counter
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "${_selectedImageIndex + 1}/${_galleryImages.length}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -120,7 +228,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: widget.room.isAvailable ? Colors.green : Colors.red,
+                      color: widget.room.availabilityColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -130,7 +238,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                       ],
                     ),
                     child: Text(
-                      widget.room.isAvailable ? "Available" : "Booked",
+                      widget.room.availabilityStatus,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -156,7 +264,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                       ],
                     ),
                     child: Text(
-                      widget.room.type,
+                      widget.room.roomTypeDisplay,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -165,38 +273,87 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                     ),
                   ),
                 ),
-                // Rating
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                // Thumbnail Gallery Indicator
+                if (_galleryImages.length > 1)
+                  Positioned(
+                    bottom: 16,
+                    left: 0,
+                    right: 0,
                     child: Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.room.rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _galleryImages.length,
+                            (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _selectedImageIndex == index ? 20 : 8,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(3),
+                            color: _selectedImageIndex == index
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.4),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
+
+            // Thumbnail Gallery
+            if (_galleryImages.length > 1)
+              Container(
+                height: 60,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                color: Colors.grey.shade50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _galleryImages.length,
+                  itemBuilder: (context, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedImageIndex = index;
+                        });
+                      },
+                      child: Container(
+                        width: 60,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _selectedImageIndex == index
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.network(
+                            _galleryImages[index],
+                            width: 60,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 60,
+                                height: 50,
+                                color: Colors.grey.shade200,
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // Details Container
             Container(
@@ -217,7 +374,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.room.name,
+                              widget.room.title,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -246,25 +403,27 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_rounded,
-                                  size: 12,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "${widget.room.distance} from college",
-                                  style: TextStyle(
-                                    fontSize: 12,
+                            if (widget.room.nearCollege != null && widget.room.nearCollege!.isNotEmpty)
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.school_rounded,
+                                    size: 12,
                                     color: AppColors.primary,
-                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      "Near: ${widget.room.nearCollege}",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -272,7 +431,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            widget.room.price,
+                            widget.room.formattedPrice,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -291,67 +450,150 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                     ],
                   ),
 
+                  if (widget.room.amenityCount > 0)
+                    Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Amenities",
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: widget.room.amenities.map((amenity) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getAmenityIcon(amenity),
+                                    size: 14,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    amenity,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+
                   const SizedBox(height: 20),
                   const Divider(),
                   const SizedBox(height: 16),
 
-                  // Amenities
-                  const Text(
-                    "Amenities",
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  // Contact Information
+                  if (widget.room.hasContact) ...[
+                    const Text(
+                      "Contact Information",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _amenities.map((amenity) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: amenity["available"]
-                              ? AppColors.primary.withOpacity(0.1)
-                              : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: amenity["available"]
-                                ? AppColors.primary.withOpacity(0.3)
-                                : Colors.grey.shade300,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.phone_rounded,
+                            color: AppColors.primary,
+                            size: 20,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              amenity["icon"],
-                              size: 14,
-                              color: amenity["available"]
-                                  ? AppColors.primary
-                                  : Colors.grey.shade400,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              amenity["name"],
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: amenity["available"]
-                                    ? AppColors.primary
-                                    : Colors.grey.shade400,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              widget.room.contactDisplay,
+                              style: const TextStyle(
+                                fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 20),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              ContactHelper.call(widget.room.contactNumber!);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: const Size(0, 0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              "Call",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              ContactHelper.whatsapp(
+                                widget.room.contactNumber!,
+                                "Hi, I'm interested in ${widget.room.title}",
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green.shade700,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: const Size(0, 0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              "WhatsApp",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Description
                   const Text(
@@ -364,7 +606,9 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "This ${widget.room.type} is located in a prime location with easy access to college and local amenities. The room is well-furnished and maintained with all modern facilities.",
+                    widget.room.description.isNotEmpty
+                        ? widget.room.description
+                        : "This ${widget.room.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities. The room is well-furnished and maintained with all modern facilities.",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade700,
@@ -379,20 +623,20 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: widget.room.isAvailable
+                      onPressed: !widget.room.isBooking
                           ? () => _showBookingDialog(context)
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: widget.room.isBooking ? Colors.grey : AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 2,
                       ),
                       child: Text(
-                        widget.room.isAvailable
-                            ? "Book Now - ${widget.room.price}"
-                            : "Sold Out",
+                        widget.room.isBooking
+                            ? "Booked"
+                            : "Book Now - ${widget.room.formattedPrice}",
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -420,6 +664,45 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     );
   }
 
+  // Direct share via WhatsApp
+  void _shareRoomDetails() {
+    final String message = _shareMessage;
+
+    // If room has contact number, share with that contact
+    if (widget.room.hasContact) {
+      ContactHelper.whatsapp(
+        widget.room.contactNumber!,
+        message,
+      );
+    } else {
+      // If no contact number, share to any WhatsApp contact
+      // User can select contact from WhatsApp
+      ContactHelper.whatsapp(
+        '', // Empty phone number will open WhatsApp contact picker
+        message,
+      );
+    }
+  }
+
+  IconData _getAmenityIcon(String amenity) {
+    switch (amenity.toLowerCase()) {
+      case 'wifi':
+        return Icons.wifi;
+      case 'ac':
+        return Icons.ac_unit;
+      case 'parking':
+        return Icons.local_parking;
+      case 'security':
+        return Icons.security;
+      case 'laundry':
+        return Icons.local_laundry_service;
+      case 'water':
+        return Icons.water_drop;
+      default:
+        return Icons.check_circle_rounded;
+    }
+  }
+
   void _showBookingDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -430,13 +713,19 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-
+          title: const Text(
+            "Confirm Booking",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.room.name,
+                widget.room.title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -444,7 +733,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(8),
@@ -462,7 +751,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         Text(
-                          widget.room.price,
+                          widget.room.formattedPrice,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -491,6 +780,26 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Room Type",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        Text(
+                          widget.room.roomTypeDisplay,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                     const Divider(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -503,7 +812,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         Text(
-                          widget.room.price,
+                          widget.room.formattedPrice,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -528,16 +837,24 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${widget.room.name} booked successfully!'),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                );
+                // Send booking confirmation via WhatsApp
+                final String bookingMessage = '''
+🏠 *Booking Confirmation*
+📍 *Room:* ${widget.room.title}
+💰 *Price:* ${widget.room.formattedPrice}
+📅 *Status:* Booked
+
+✅ Your booking has been confirmed!
+📞 Contact: ${widget.room.contactDisplay}
+
+Thank you for choosing Suwidhaa!''';
+
+                if (widget.room.hasContact) {
+                  ContactHelper.whatsapp(
+                    widget.room.contactNumber!,
+                    bookingMessage,
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
