@@ -1,9 +1,7 @@
-// Complete updated file with fix
-
-// lib/feature/college/screen/collage_view_screen.dart
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:untitled/feature/collage/screen/room_view_screen.dart';
+import 'package:untitled/feature/college/screen/room_view_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/contact_helper.dart';
 import '../controller/room_controller.dart';
@@ -12,15 +10,15 @@ import '../model/college_model.dart';
 import '../model/room_model.dart';
 import '../model/tiffin_model.dart';
 
-class CollageViewScreen extends StatefulWidget {
+class CollegeViewScreen extends StatefulWidget {
   final College college;
-  const CollageViewScreen({super.key, required this.college});
+  const CollegeViewScreen({super.key, required this.college});
 
   @override
-  State<CollageViewScreen> createState() => _CollageViewScreenState();
+  State<CollegeViewScreen> createState() => _CollegeViewScreenState();
 }
 
-class _CollageViewScreenState extends State<CollageViewScreen> {
+class _CollegeViewScreenState extends State<CollegeViewScreen> {
   int _selectedTab = 0; // 0 for Room, 1 for Tiffin
   String _selectedRoomType = 'All';
   String _selectedTiffinType = 'All';
@@ -260,6 +258,24 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                           ),
                         ),
                       ),
+                      Positioned(
+                        left: 10,
+                        bottom: 0,
+                        child: Container(
+                          height: 50,
+                          width: 50,
+                          margin: EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.border, width: 0.3),
+                            image: DecorationImage(
+                              image: NetworkImage(widget.college.logoUrl.toString()),
+                              fit: BoxFit.fill,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   // Thumbnail Gallery (only if more than 1 image)
@@ -321,54 +337,25 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
 
             // College Info
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade100)
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.college.name,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            widget.college.address,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
+                        Text(
+                          widget.college.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _buildInfoChip(
-                            Icons.home,
-                            "${_roomController.rooms.length} Rooms",
-                            AppColors.primary
-                        ),
-                        const SizedBox(width: 8),
-                        _buildInfoChip(
-                            Icons.fastfood_outlined,
-                            "${_tiffinController.tiffins.length} Tiffin",
-                            Colors.green
-                        ),
-                        const SizedBox(width: 8),
                         _buildInfoChip(
                             Icons.category_rounded,
                             widget.college.category ?? 'General',
@@ -399,6 +386,57 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                         ],
                       ),
                     ],
+
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            widget.college.address,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            _buildInfoChip(
+                                Icons.home,
+                                "${_roomController.rooms.length} Rooms",
+                                AppColors.primary
+                            ),
+                            const SizedBox(width: 8),
+                            _buildInfoChip(
+                                Icons.fastfood_outlined,
+                                "${_tiffinController.tiffins.length} Tiffin",
+                                Colors.green
+                            ),
+
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: InkWell(
+                              onTap: () {
+                                ContactHelper.whatsapp('+918989207770', "Hello Sir I want to more information of this ${widget.college.name}");
+                              },
+                              child: FaIcon(FontAwesomeIcons.whatsapp,size: 30,color: Colors.green,)),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -440,9 +478,6 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
-  }
 
   Widget _buildFilterChips() {
     return Container(
@@ -473,11 +508,11 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             color: isSelected ? AppColors.primary : Colors.grey.shade100,
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.transparent,
-              width: 1.5,
+              color: isSelected ? AppColors.primary :AppColors.border,
+              width: 0.3,
             ),
           ),
           child: Center(
@@ -607,8 +642,8 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
           childAspectRatio: 0.9,
         ),
         itemBuilder: (context, index) {
@@ -644,64 +679,44 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
+            Expanded(
               child: Stack(
                 children: [
-                  Image.network(
-                    imageUrl,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 120,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 120,
-                        color: Colors.grey.shade200,
-                        child: const Icon(
-                          Icons.bed_rounded,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
-                  // Room Type Tag
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        room.roomTypeDisplay,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: Image.network(
+                      imageUrl,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.fill,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 120,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 120,
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.bed_rounded,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  // Availability
                   Positioned(
-                    top: 6,
-                    right: 6,
+                    top: 4,right: 4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
@@ -740,15 +755,38 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                   Text(
                     room.address,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       color: Colors.grey.shade600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Row(
+                        children: [
+                          if(room.roomTypeDisplay!='')
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              room.roomTypeDisplay,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+
+
+                        ],
+                      ),
                       Text(
                         room.formattedPrice,
                         style: TextStyle(
@@ -757,51 +795,8 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                           color: AppColors.primary,
                         ),
                       ),
-                      if (room.amenityCount > 0)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              size: 12,
-                              color: Colors.green,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${room.amenityCount} amenities',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
                     ],
-                  ),
-                  // Amenities preview
-                  if (room.amenityCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Wrap(
-                        spacing: 4,
-                        runSpacing: 2,
-                        children: room.amenities.take(2).map((amenity) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              amenity,
-                              style: TextStyle(
-                                fontSize: 7,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                  )
                 ],
               ),
             ),
@@ -864,8 +859,8 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
         padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
           childAspectRatio: 0.75,
         ),
         itemBuilder: (context, index) {
@@ -888,114 +883,86 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            child: Stack(
-              children: [
-                Image.network(
-                  imageUrl,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 120,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 120,
-                      color: Colors.grey.shade200,
-                      child: Center(
-                        child: const Icon(
-                          Icons.food_bank_rounded,
-                          size: 40,
-                          color: Colors.grey,
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: Stack(
+                children: [
+                  Image.network(
+                    imageUrl,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 120,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                // Tiffin Type Tag
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _getTiffinTypeColor(tiffin),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      tiffin.tiffinType,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                // Rating
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Colors.amber,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          tiffin.ratingValue.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 120,
+                        color: Colors.grey.shade200,
+                        child: Center(
+                          child: const Icon(
+                            Icons.food_bank_rounded,
+                            size: 40,
+                            color: Colors.grey,
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
-                // Availability
-                Positioned(
-                  bottom: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: tiffin.availabilityColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      tiffin.availabilityStatus,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
+                  // Tiffin Type Tag
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _getTiffinTypeColor(tiffin),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        tiffin.tiffinType,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+            
+                  // Availability
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: tiffin.availabilityColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        tiffin.availabilityStatus,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(
@@ -1019,7 +986,7 @@ class _CollageViewScreenState extends State<CollageViewScreen> {
                       ? tiffin.description
                       : 'Delicious tiffin service',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
                   ),
                   maxLines: 1,

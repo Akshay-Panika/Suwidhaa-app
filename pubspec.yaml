@@ -55,4 +55,7 @@ flutter:
   assets:
     - assets/image/
     - assets/logo/
+    - assets/ott/
+    - assets/school/
+    - assets/college/
 

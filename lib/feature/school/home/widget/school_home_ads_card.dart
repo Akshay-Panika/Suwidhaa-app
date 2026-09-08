@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 
+import '../../../ott_platform/dashboard/screen/ott_dashboard_screen.dart';
+// import 'package:your_app/path/to/ott_dashboard_screen.dart';
+
 class SchoolHomeAdsCard extends StatefulWidget {
   const SchoolHomeAdsCard({super.key});
 
@@ -11,100 +14,198 @@ class SchoolHomeAdsCard extends StatefulWidget {
 class _SchoolHomeAdsCardState extends State<SchoolHomeAdsCard> {
   int _currentIndex = 0;
 
-  // Using local asset images or colored containers instead of network images
-  final List<Color> adColors = const [
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
+  // Combined Ads Data (School + Movies)
+  final List<Map<String, dynamic>> adItems = const [
+    // School Ads
+    {
+      'type': 'school',
+      'title': 'Admission Open 2026',
+      'subtitle': 'Tap to learn more',
+      'color': Colors.blue,
+      'icon': Icons.school,
+    },
+    {
+      'type': 'school',
+      'title': 'Sports Day Coming Soon',
+      'subtitle': 'Tap to learn more',
+      'color': Colors.green,
+      'icon': Icons.sports_soccer,
+    },
+    {
+      'type': 'school',
+      'title': 'Science Exhibition',
+      'subtitle': 'Tap to learn more',
+      'color': Colors.orange,
+      'icon': Icons.science,
+    },
+    // Movie Ads
+    {
+      'type': 'movie',
+      'title': '🎬 Moana 2',
+      'subtitle': 'New Adventure Begins',
+      'color': Colors.purple,
+      'icon': Icons.movie,
+    },
+    {
+      'type': 'movie',
+      'title': '🦁 Mufasa: The Lion King',
+      'subtitle': 'The Legend Continues',
+      'color': Colors.amber,
+      'icon': Icons.live_tv,
+    },
+    {
+      'type': 'movie',
+      'title': '⚡ Sonic 3',
+      'subtitle': 'Faster Than Ever',
+      'color': Colors.deepOrange,
+      'icon': Icons.videogame_asset,
+    },
   ];
 
-  final List<String> adTitles = const [
-    'Admission Open 2026',
-    'Sports Day Coming Soon',
-    'Science Exhibition',
-  ];
-
-  final List<IconData> adIcons = const [
-    Icons.school,
-    Icons.sports_soccer,
-    Icons.science,
-  ];
+  // Navigation method
+  void _navigateToOttDashboard() {
+    // Uncomment when you have OttDashboardScreen imported
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OttDashboardScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 120,
-      // margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      // decoration: BoxDecoration(
-      //   borderRadius: BorderRadius.circular(12),
-      //   boxShadow: [
-      //     BoxShadow(
-      //       color: Colors.black.withOpacity(0.1),
-      //       blurRadius: 8,
-      //       offset: const Offset(0, 2),
-      //     ),
-      //   ],
-      // ),
       child: ClipRRect(
-        // borderRadius: BorderRadius.circular(12),
         child: Stack(
           children: [
             CarouselSlider.builder(
-              itemCount: adColors.length,
+              itemCount: adItems.length,
               itemBuilder: (context, index, realIndex) {
-                return Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        adColors[index],
-                        adColors[index].withOpacity(0.7),
-                      ],
+                final item = adItems[index];
+                final isMovie = item['type'] == 'movie';
+
+                return GestureDetector(
+                  onTap: _navigateToOttDashboard,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          item['color'] as Color,
+                          (item['color'] as Color).withOpacity(0.7),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              adTitles[index],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Left side - Title and Subtitle
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    // Show movie badge if it's a movie
+                                    if (isMovie) ...[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          'MOVIE',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        item['title'] as String,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: isMovie ? 16 : 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item['subtitle'] as String,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.85),
+                                    fontSize: isMovie ? 12 : 12,
+                                  ),
+                                ),
+                                // Show "Watch Now" for movies
+                                if (isMovie) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.25),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Watch Now',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 14,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Tap to learn more',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 12,
-                              ),
+                          ),
+                          // Right side - Icon
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
+                            child: Icon(
+                              item['icon'] as IconData,
+                              color: Colors.white,
+                              size: isMovie ? 26 : 28,
+                            ),
                           ),
-                          child: Icon(
-                            adIcons[index],
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -133,7 +234,7 @@ class _SchoolHomeAdsCardState extends State<SchoolHomeAdsCard> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
-                  adColors.length,
+                  adItems.length,
                       (index) => Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: _currentIndex == index ? 12 : 6,

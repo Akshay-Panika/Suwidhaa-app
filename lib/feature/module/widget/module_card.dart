@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-
 import '../../../core/utils/app_color.dart';
-import '../../collage/dashboard/screen/collage_dashboard_screen.dart';
+import '../../college/dashboard/screen/college_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
@@ -73,6 +72,7 @@ class _ModuleCardState extends State<ModuleCard> {
       'color': AppColors.ott,
       'targetScreen': const OttSplashScreen(),
       'gradient': [AppColors.ott, AppColors.ott.withOpacity(0.3)],
+      'image':'assets/ott/ott-banner.jpg',
     },
     {
       'title': 'NGO Connect',
@@ -83,11 +83,11 @@ class _ModuleCardState extends State<ModuleCard> {
       'gradient': [AppColors.ngo, AppColors.ngo.withOpacity(0.3)],
     },
     {
-      'title': 'Collage',
+      'title': 'College',
       'subtitle': 'Community Help',
       'icon': Icons.school,
       'color': AppColors.ngo,
-      'targetScreen': const CollageDashboardScreen(),
+      'targetScreen': const CollegeDashboardScreen(),
       'gradient': [AppColors.ngo, AppColors.ngo.withOpacity(0.3)],
     },
   ];
@@ -97,13 +97,13 @@ class _ModuleCardState extends State<ModuleCard> {
     return  Container(
       height: 320,
       child: Column(
-        spacing: 6,
+        spacing: 12,
         children: [
           // Top row - Same as your original
           Expanded(
             flex: 2,
             child: Row(
-              spacing: 6,
+              spacing: 12,
               children: [
                 // Left side - 2 stacked boxes
                 Expanded(
@@ -178,6 +178,12 @@ class _ModuleCardState extends State<ModuleCard> {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
+          image: module['image'] == null
+              ? null
+              : DecorationImage(
+            image: AssetImage(module['image']!),
+            fit: BoxFit.fill,
+          ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.black.withOpacity(0.01), width: 1.5),
           gradient: RadialGradient(
@@ -187,7 +193,8 @@ class _ModuleCardState extends State<ModuleCard> {
             ],
           ),
         ),
-        child: Column(
+        child: module['image'] != null
+            ? null:Column(
           spacing: 4,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

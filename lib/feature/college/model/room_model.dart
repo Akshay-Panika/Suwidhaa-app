@@ -127,7 +127,7 @@ class Room {
   }
 
   String get roomTypeDisplay {
-    if (roomType == null || roomType!.isEmpty) return 'Not Specified';
+    if (roomType == null || roomType!.isEmpty) return '';
     return roomType!.toUpperCase();
   }
 

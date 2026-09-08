@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+
+import '../../auth/controller/auth_controller.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -11,7 +15,7 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _biometricEnabled = false;
   bool _notificationsEnabled = true;
   String _selectedLanguage = 'English';
-
+  final AuthController authController = Get.find<AuthController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,8 +194,8 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Akshay Panika",
+                   Text(
+                     authController.getUserName??"user name",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -200,7 +204,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    "akshay.panika@email.com",
+                    authController.getUserPhone,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -675,15 +679,7 @@ class _AccountScreenState extends State<AccountScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Logged out successfully'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
+              onPressed: authController.logout,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,

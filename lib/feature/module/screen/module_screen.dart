@@ -1,7 +1,10 @@
 // lib/feature/module/screen/module_screen.dart
 import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
 import '../../../core/utils/app_color.dart';
+import '../../auth/controller/auth_controller.dart';
 import '../widget/module_banner_card.dart';
 import '../widget/module_card.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
@@ -17,6 +20,7 @@ class ModuleScreen extends StatefulWidget {
 
 class _ModuleScreenState extends State<ModuleScreen> {
 
+  final AuthController authController = Get.find<AuthController>();
 
 
   @override
@@ -156,8 +160,8 @@ class _ModuleScreenState extends State<ModuleScreen> {
               fontWeight: FontWeight.w400,
             ),
           ),
-          const Text(
-            "Akshay Panika",
+           Text(
+             authController.getUserName,
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,

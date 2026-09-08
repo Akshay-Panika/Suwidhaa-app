@@ -13,19 +13,6 @@ class CollegeController extends GetxController {
   final RxString errorMessage = ''.obs;
   final Rx<College?> selectedCollege = Rx<College?>(null);
 
-  // Computed properties for nearby and best colleges
-  List<College> get nearbyColleges {
-    // You can implement logic to filter nearby colleges
-    // For now, return all colleges
-    return colleges;
-  }
-
-  List<College> get bestColleges {
-    // You can implement logic to filter best colleges
-    // For now, return all colleges
-    return colleges;
-  }
-
   @override
   void onInit() {
     super.onInit();
@@ -78,5 +65,10 @@ class CollegeController extends GetxController {
   /// Clear selected college
   void clearSelectedCollege() {
     selectedCollege.value = null;
+  }
+
+  // Get recommended colleges
+  List<College> get recommendedColleges {
+    return colleges.where((college) => college.isRecommended).toList();
   }
 }

@@ -2,10 +2,11 @@
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/bindings_interface.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
-import '../feature/collage/controller/college_banner_controller.dart';
-import '../feature/collage/controller/college_controller.dart';
-import '../feature/collage/controller/room_controller.dart';
-import '../feature/collage/controller/tiffin_controller.dart';
+import '../feature/auth/controller/auth_controller.dart';
+import '../feature/college/controller/college_banner_controller.dart';
+import '../feature/college/controller/college_controller.dart';
+import '../feature/college/controller/room_controller.dart';
+import '../feature/college/controller/tiffin_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
 import '../feature/school/homework/controller/homework_controller.dart';
@@ -18,6 +19,7 @@ class AppBindings implements Bindings {
   @override
   void dependencies() {
     // Use lazyPut for most controllers (they'll be created when first used)
+    Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     Get.lazyPut<SchoolAuthController>(() => SchoolAuthController(), fenix: true);
     Get.lazyPut<StudentController>(() => StudentController(), fenix: true);
     Get.lazyPut<TeacherController>(() => TeacherController(), fenix: true);

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/contact_helper.dart';
 import '../model/room_model.dart';
-import 'collage_view_screen.dart';
+import 'college_view_screen.dart';
 
 class RoomViewScreen extends StatefulWidget {
   final Room room;
@@ -450,58 +450,21 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                     ],
                   ),
 
-                  if (widget.room.amenityCount > 0)
-                    Column(
-                      children: [
-                        const SizedBox(height: 20),
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "Amenities",
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: widget.room.amenities.map((amenity) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getAmenityIcon(amenity),
-                                    size: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    amenity,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
+                  // All Amenities Section
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Amenities",
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  // All amenities grid
+                  _buildAllAmenitiesGrid(),
 
                   const SizedBox(height: 20),
                   const Divider(),
@@ -664,6 +627,76 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     );
   }
 
+  // New method to show all amenities with green for true ones
+  Widget _buildAllAmenitiesGrid() {
+    // Define all possible amenities
+    final allAmenities = [
+      {'key': 'wifi', 'label': 'WiFi', 'icon': Icons.wifi},
+      {'key': 'ac', 'label': 'AC', 'icon': Icons.ac_unit},
+      {'key': 'parking', 'label': 'Parking', 'icon': Icons.local_parking},
+      {'key': 'security', 'label': 'Security', 'icon': Icons.security},
+      {'key': 'laundry', 'label': 'Laundry', 'icon': Icons.local_laundry_service},
+      {'key': 'water', 'label': 'Water', 'icon': Icons.water_drop},
+    ];
+
+    // Get available amenities from room
+    final availableAmenities = widget.room.amenities.map((e) => e.toLowerCase()).toList();
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: allAmenities.map((amenity) {
+        final isAvailable = availableAmenities.contains(amenity['key']);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isAvailable ? Colors.green.withOpacity(0.1) : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isAvailable ? Colors.green : Colors.grey.shade300,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                amenity['icon'] as IconData,
+                size: 14,
+                color: isAvailable ? Colors.green : Colors.grey.shade400,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                amenity['label'] as String,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isAvailable ? Colors.green.shade700 : Colors.grey.shade500,
+                  fontWeight: isAvailable ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+              if (isAvailable) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.all(1),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   // Direct share via WhatsApp
   void _shareRoomDetails() {
     final String message = _shareMessage;
@@ -756,26 +789,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Security Deposit",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const Text(
-                          "₹5,000",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],

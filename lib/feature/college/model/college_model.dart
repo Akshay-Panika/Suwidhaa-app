@@ -1,4 +1,5 @@
-// lib/models/college/college_model.dart
+// lib/feature/college/model/college_model.dart
+
 class CollegeListResponse {
   final bool success;
   final int count;
@@ -34,7 +35,10 @@ class College {
   final String name;
   final String address;
   final String website;
+  final String? contactNumber;
   final String? category;
+  final String? logoUrl;
+  final bool isRecommended;
   final List<CollegeImage> images;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -44,7 +48,10 @@ class College {
     required this.name,
     required this.address,
     required this.website,
+    this.contactNumber,
     this.category,
+    this.logoUrl,
+    this.isRecommended = false,
     required this.images,
     required this.createdAt,
     required this.updatedAt,
@@ -56,7 +63,10 @@ class College {
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       website: json['website'] ?? '',
+      contactNumber: json['contact_number'],
       category: json['category'],
+      logoUrl: json['logo_url'],
+      isRecommended: json['is_recommended'] ?? false,
       images: (json['images'] as List? ?? [])
           .map((item) => CollegeImage.fromJson(item))
           .toList(),
@@ -71,12 +81,32 @@ class College {
       'name': name,
       'address': address,
       'website': website,
+      'contact_number': contactNumber,
       'category': category,
+      'logo_url': logoUrl,
+      'is_recommended': isRecommended,
       'images': images.map((item) => item.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  // Helper method to get initials for placeholder
+  String get initials {
+    if (name.isEmpty) return '';
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  // Helper method to check if college has logo
+  bool get hasLogo => logoUrl != null && logoUrl!.isNotEmpty;
+
+  // Helper method to check if college is recommended
+  // Removed the duplicate getter since isRecommended is already a final field
+  bool get isRecommendedValue => isRecommended; // Or just use isRecommended directly
 }
 
 class CollegeImage {

@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../dashboard/screen/ott_dashboard_screen.dart';
-import 'ott_auth_screen.dart';
+import '../../../auth/screen/auth_screen.dart';
 
 class OttSplashScreen extends StatefulWidget {
   const OttSplashScreen({super.key});
