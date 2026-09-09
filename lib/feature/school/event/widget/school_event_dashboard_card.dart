@@ -215,82 +215,11 @@ class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Status and Type Badges
-                Row(
-                  children: [
-                    // Status Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            statusIcon,
-                            color: Colors.white,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            event.status ?? 'Unknown',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    // Type Badge
-                    if (event.type != null && event.type!.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          event.type!,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    const Spacer(),
-                    // View All Arrow
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 10,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+
                 // Title
                 Text(
                   event.title ?? 'Untitled Event',
                   style: const TextStyle(
-                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -331,56 +260,6 @@ class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
                   ],
                 ),
                 const SizedBox(height: 2),
-                // Location
-                if (event.location != null && event.location!.isNotEmpty)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 12,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          event.location!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white70,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                // Assigned Classes (if available)
-                if (event.assignedClasses != null &&
-                    event.assignedClasses!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.class_rounded,
-                          size: 12,
-                          color: Colors.white54,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${event.assignedClasses!.join(', ')}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white54,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),

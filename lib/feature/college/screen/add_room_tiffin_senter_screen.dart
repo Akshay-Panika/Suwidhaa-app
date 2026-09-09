@@ -1,4 +1,3 @@
-// lib/feature/college/screen/add_tiffin_center_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -53,7 +52,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   final TextEditingController _roomLaundryController = TextEditingController();
   final TextEditingController _roomWaterController = TextEditingController();
 
-  String _selectedRoomType = '3BHK';
+  String _selectedRoomType = '1RK';
   bool _isRoomBooking = false;
   List<File> _roomImages = [];
   List<String> _existingRoomImages = [];
@@ -61,19 +60,16 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   int? _editingRoomId;
 
   final List<String> _roomTypes = [
+    'Single Room',
+    '1RK',
     '1BHK',
     '2BHK',
     '3BHK',
     '4BHK',
     'PG',
-    'Hostel',
-    'Apartment',
-    'Villa'
+    'Other'
   ];
 
-  // ============================================================
-  // TIFFIN FORM CONTROLLERS
-  // ============================================================
   final GlobalKey<FormState> _tiffinFormKey = GlobalKey<FormState>();
   final TextEditingController _tiffinTitleController = TextEditingController();
   final TextEditingController _tiffinDescriptionController =
@@ -139,7 +135,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     _roomAddressController.text = room.address;
     _roomContactController.text = room.contactNumber ?? '';
     _roomNearCollegeController.text = room.nearCollege ?? '';
-    _selectedRoomType = room.roomType ?? '3BHK';
+    _selectedRoomType = room.roomType ?? '1RK';
     _isRoomBooking = room.isBooking;
 
     // Load amenities
@@ -745,64 +741,66 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                 scrollDirection: Axis.horizontal,
                 itemCount: existingImages.length,
                 itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade300),
-                          image: DecorationImage(
-                            image: NetworkImage(existingImages[index]),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 8,
-                        child: GestureDetector(
-                          onTap: () => onExistingImageRemoved(index, existingImages[index]),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(8),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade300),
+                            image: DecorationImage(
+                              image: NetworkImage(existingImages[index]),
+                              fit: BoxFit.cover,
                             ),
                           ),
-                          child: const Center(
-                            child: Text(
-                              'Existing',
-                              style: TextStyle(
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () => onExistingImageRemoved(index, existingImages[index]),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
                                 color: Colors.white,
-                                fontSize: 8,
+                                size: 16,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(8),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Existing',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -810,78 +808,99 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
           // New Images Preview
           if (images.isNotEmpty)
-            SizedBox(
-              height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: images.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade300),
-                          image: DecorationImage(
-                            image: FileImage(images[index]),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+            Column(
+              children: [
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Icon(Icons.image, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      "New ${label}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      Positioned(
-                        top: 0,
-                        right: 8,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              images.removeAt(index);
-                              onImagesSelected(images);
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(8),
-                            ),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'New',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.shade300),
+                                image: DecorationImage(
+                                  image: FileImage(images[index]),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
+                            Positioned(
+                              top: 0,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    images.removeAt(index);
+                                    onImagesSelected(images);
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(8),
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'New',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
 
           const SizedBox(height: 8),
@@ -1079,9 +1098,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
         ),
         items: items,
         onChanged: onChanged,
-        validator: validator,
-        dropdownColor: Colors.white,
-        isExpanded: true,
       ),
     );
   }

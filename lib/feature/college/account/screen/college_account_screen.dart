@@ -27,27 +27,6 @@ class CollegeAccountScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate to Add screen
-          Get.to(
-                () => const AddRoomTiffinCenterScreen(),
-            transition: Transition.rightToLeft,
-          )?.then((value) {
-            if (value == true) {
-              // Refresh both lists after adding
-              roomController.fetchRoomsByUserId(userId.toString());
-              tiffinController.fetchTiffinsByUserId(userId.toString());
-            }
-          });
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
-      ),
       body: Column(
         children: [
           // ============================================================
@@ -69,6 +48,7 @@ class CollegeAccountScreen extends StatelessWidget {
                       labelColor: AppColors.primary,
                       unselectedLabelColor: Colors.grey,
                       indicatorColor: AppColors.primary,
+                      labelStyle: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),
                       tabs: [
                         Tab(
                           text: '${roomController.rooms.length} Rooms',
@@ -100,46 +80,47 @@ class CollegeAccountScreen extends StatelessWidget {
   // PROFILE HEADER
   // ============================================================
   Widget _buildProfileHeader() {
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(24),
-            ),
-          ),
-          child: Column(
+    return  Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(24),
+        ),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
             children: [
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person,
+                  size: 40,
+                  color: AppColors.primary,
+                ),
               ),
-              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.camera_alt,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
                 userName,
                 style: const TextStyle(
@@ -157,29 +138,12 @@ class CollegeAccountScreen extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-        Positioned(
-          right: 10,
-          top: 10,
-          child: IconButton(
-            onPressed: () {
-              // Edit profile action
-            },
-            icon: const Icon(
-              Icons.edit,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-        ),
-      ],
+          )
+        ],
+      ),
     );
   }
 
-  // ============================================================
-  // USER ROOMS
-  // ============================================================
   Widget _buildRoomList() {
     return Obx(() {
       if (roomController.isLoading.value) {
@@ -234,6 +198,7 @@ class CollegeAccountScreen extends StatelessWidget {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Room Image
                 Container(
@@ -283,18 +248,24 @@ class CollegeAccountScreen extends StatelessWidget {
                         room.roomTypeDisplay,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        room.address,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
+                      Row(
+                        spacing: 3,
+                        children: [
+                          Icon(Icons.location_on,size: 14,color: Colors.green,),
+                          Text(
+                            room.address,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -326,13 +297,35 @@ class CollegeAccountScreen extends StatelessWidget {
             const Divider(height: 18),
             Row(
               children: [
-                Text(
-                  room.formattedPrice,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontSize: 15,
-                  ),
+                Column(
+                  children: [
+                    Text(
+                      room.formattedPrice,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (room.hasContact)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            room.contactDisplay,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
                 const Spacer(),
                 // Delete Button
@@ -376,17 +369,7 @@ class CollegeAccountScreen extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
-                if (room.amenityCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(
-                      '${room.amenityCount} Amenities',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ),
+
               ],
             ),
           ],
@@ -452,6 +435,7 @@ class CollegeAccountScreen extends StatelessWidget {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Tiffin Image
                 Container(
@@ -497,29 +481,6 @@ class CollegeAccountScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      // Location
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              tiffin.location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
                       // Tiffin Type Badge
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -539,6 +500,28 @@ class CollegeAccountScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              tiffin.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
                     ],
                   ),
                 ),
@@ -680,13 +663,7 @@ class CollegeAccountScreen extends StatelessWidget {
       if (success) {
         // Refresh the list
         roomController.fetchRoomsByUserId(userId.toString());
-        Get.snackbar(
-          'Success',
-          'Room deleted successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+
       }
     });
   }
@@ -696,13 +673,6 @@ class CollegeAccountScreen extends StatelessWidget {
       if (success) {
         // Refresh the list
         tiffinController.fetchTiffinsByUserId(userId.toString());
-        Get.snackbar(
-          'Success',
-          'Tiffin deleted successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
       }
     });
   }

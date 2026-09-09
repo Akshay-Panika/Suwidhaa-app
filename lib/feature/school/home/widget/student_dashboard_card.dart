@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:untitled/core/utils/app_color.dart';
 import 'package:untitled/feature/school/payment/screen/student_fee_screen.dart';
 import 'package:untitled/feature/school/home/widget/student_attendance_dashboard_card.dart';
+import '../../../ott_platform/dashboard/screen/ott_dashboard_screen.dart';
 import '../../event/widget/school_event_dashboard_card.dart';
 import '../../payment/widget/school_student_fee_dashboard_card.dart';
 
@@ -80,6 +82,54 @@ class StudentDashboardCard extends StatelessWidget {
                       Expanded(
                         child: SchoolEventDashboardCard(),
                       ),
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                          ),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => OttDashboardScreen(currentIndex: 3,),));
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.movie_outlined,
+                                  size: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  "OTT",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                               Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                 color: Colors.blue,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
                     ],
                   ),
                 ),

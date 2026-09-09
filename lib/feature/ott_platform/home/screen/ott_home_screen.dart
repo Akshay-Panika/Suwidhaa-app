@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../search/screen/search_movie_screen.dart';
 import '../widget/movie_banner.dart';
 
 class OttHomeScreen extends StatefulWidget {
@@ -125,23 +126,28 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
-                children: [
-                  SizedBox(width: 12),
-                  Icon(
-                    Icons.search,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Search...',
-                    style: TextStyle(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => SearchMovieScreen(),));
+                },
+                child: const Row(
+                  children: [
+                    SizedBox(width: 12),
+                    Icon(
+                      Icons.search,
                       color: Colors.white,
-                      fontSize: 14,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    Text(
+                      'Search...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

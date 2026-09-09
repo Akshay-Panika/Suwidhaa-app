@@ -67,7 +67,7 @@ class _SchoolHomeAdsCardState extends State<SchoolHomeAdsCard> {
     // Uncomment when you have OttDashboardScreen imported
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const OttDashboardScreen()),
+      MaterialPageRoute(builder: (context) =>  OttDashboardScreen(currentIndex: 3,)),
     );
   }
 

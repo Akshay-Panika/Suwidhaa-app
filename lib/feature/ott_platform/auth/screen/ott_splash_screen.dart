@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../dashboard/screen/ott_dashboard_screen.dart';
 import '../../../auth/screen/auth_screen.dart';
@@ -307,8 +308,19 @@ class _OttSplashScreenState extends State<OttSplashScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => OttDashboardScreen(),));
+                            onPressed: () async {
+                              final prefs = await SharedPreferences.getInstance();
+
+                              await prefs.setBool('ott_started', true);
+
+                              if (!context.mounted) return;
+
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const OttDashboardScreen(),
+                                ),
+                              );
                             },
                             child: const Text(
                               "Enjoin Now",

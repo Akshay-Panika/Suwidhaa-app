@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../account/screen/ott_account_screen.dart';
 import '../../home/screen/ott_home_screen.dart';
-import '../../ott_account/screen/ott_account_screen.dart';
-import '../../ott_movie/screen/ott_movie_screen.dart';
-import '../../ott_school/screen/ott_school_screen.dart';
+import '../../movie/screen/ott_movie_screen.dart';
+import '../../school/screen/ott_school_screen.dart';
 import '../../tv_show/screen/ott_tv_show_screen.dart';
 
 
 class OttDashboardScreen extends StatefulWidget {
-  const OttDashboardScreen({super.key});
+  final int? currentIndex;
+  const OttDashboardScreen({super.key,  this.currentIndex});
 
   @override
   State<OttDashboardScreen> createState() => _OttDashboardScreenState();
@@ -23,6 +24,17 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
     const OttSchoolScreen(),
     const OttAccountScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _currentIndex = widget.currentIndex ?? 0;
+
+    if (_currentIndex < 0 || _currentIndex >= _screens.length) {
+      _currentIndex = 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:untitled/core/widget/flutter_toast.dart';
 import '../../../core/utils/app_color.dart';
 import '../../college/dashboard/screen/college_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
 import '../../ngo/screen/ngo_dashboard_screen.dart';
 import '../../ott_platform/auth/screen/ott_splash_screen.dart';
+import '../../ott_platform/dashboard/screen/ott_dashboard_screen.dart';
 import '../../school/auth/controller/school_auth_controller.dart';
 import '../../school/auth/screen/school_auth_screen.dart';
 import '../../school/dashboard/screen/school_student_dashboard_screen.dart';
@@ -22,23 +25,56 @@ class ModuleCard extends StatefulWidget {
 
 class _ModuleCardState extends State<ModuleCard> {
 
-  void _navigateToSchool() {
-    // Get the controller instance
-    final authController = Get.find<SchoolAuthController>();
+  Future<void> _navigateToOtt() async {
+    final prefs = await SharedPreferences.getInstance();
 
-    // Check if user is logged in
-    if (authController.isLoggedIn.value) {
-      // If logged in, navigate to dashboard based on user type
-      if (authController.userType.value == 'student') {
-        Get.to(() => const SchoolStudentDashboardScreen());
-      } else {
-        Get.to(() => const SchoolTeacherDashboardScreen());
-      }
+    final bool isOttStarted = prefs.getBool('ott_started') ?? false;
+
+    if (!mounted) return;
+
+    if (isOttStarted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const OttDashboardScreen(),
+        ),
+      );
     } else {
-      // If not logged in, navigate to login screen
-      Get.to(() => const SchoolAuthScreen());
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const OttSplashScreen(),
+        ),
+      );
     }
   }
+
+  Future<void> _navigateToSchool() async {
+    final authController = Get.find<SchoolAuthController>();
+
+    await authController.checkLoginStatus();
+
+    if (authController.isLoggedIn.value) {
+      if (authController.userType.value.toLowerCase() ==
+          'student') {
+        Get.to(
+              () => const SchoolStudentDashboardScreen(),
+        );
+      } else if (authController.userType.value.toLowerCase() ==
+          'teacher') {
+        Get.to(
+              () => const SchoolTeacherDashboardScreen(),
+        );
+      } else {
+        FlutterToast.error("Invalid user type");
+      }
+    } else {
+      Get.to(
+            () => const SchoolAuthScreen(),
+      );
+    }
+  }
+
   final List<Map<String, dynamic>> primaryServices = [
     {
       'title': 'E-Commerce',
@@ -95,7 +131,8 @@ class _ModuleCardState extends State<ModuleCard> {
   @override
   Widget build(BuildContext context) {
     return  Container(
-      height: 320,
+      // height: 320,
+      height: 200,
       child: Column(
         spacing: 12,
         children: [
@@ -128,32 +165,32 @@ class _ModuleCardState extends State<ModuleCard> {
             ),
           ),
           // Bottom row - Same as your original
-          Expanded(
-            flex: 1,
-            child: Row(
-              spacing: 6,
-              children: [
-                // Left box
-                Expanded(
-                  child: _buildModuleBox(primaryServices[0]),
-                ),
-                // Right side - 2 stacked boxes
-                Expanded(
-                  child: Row(
-                    spacing: 6,
-                    children: [
-                      Expanded(
-                        child: _buildModuleBox(primaryServices[1]),
-                      ),
-                      Expanded(
-                        child: _buildModuleBox(primaryServices[4]),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Expanded(
+          //   flex: 1,
+          //   child: Row(
+          //     spacing: 6,
+          //     children: [
+          //       // Left box
+          //       Expanded(
+          //         child: _buildModuleBox(primaryServices[0]),
+          //       ),
+          //       // Right side - 2 stacked boxes
+          //       Expanded(
+          //         child: Row(
+          //           spacing: 6,
+          //           children: [
+          //             Expanded(
+          //               child: _buildModuleBox(primaryServices[1]),
+          //             ),
+          //             Expanded(
+          //               child: _buildModuleBox(primaryServices[4]),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
       ),
     );
@@ -161,15 +198,29 @@ class _ModuleCardState extends State<ModuleCard> {
 
   Widget _buildModuleBox(Map<String, dynamic> module) {
     return InkWell(
+      // onTap: () {
+      //   // Check if it's the school portal
+      //   if (module['isSchool'] == true) {
+      //     _navigateToSchool();
+      //   } else {
+      //     // Normal navigation
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (context) => module['targetScreen']),
+      //     );
+      //   }
+      // },
       onTap: () {
-        // Check if it's the school portal
         if (module['isSchool'] == true) {
           _navigateToSchool();
+        } else if (module['title'] == 'Video Player') {
+          _navigateToOtt();
         } else {
-          // Normal navigation
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => module['targetScreen']),
+            MaterialPageRoute(
+              builder: (context) => module['targetScreen'],
+            ),
           );
         }
       },

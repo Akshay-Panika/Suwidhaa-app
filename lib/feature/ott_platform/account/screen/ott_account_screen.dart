@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+
+import '../../../auth/controller/auth_controller.dart';
 
 class OttAccountScreen extends StatefulWidget {
   const OttAccountScreen({super.key});
@@ -8,6 +12,9 @@ class OttAccountScreen extends StatefulWidget {
 }
 
 class _OttAccountScreenState extends State<OttAccountScreen> {
+
+  final AuthController authController = Get.find<AuthController>();
+
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = true;
   bool _autoPlayEnabled = false;
@@ -54,8 +61,7 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
           // Support
           _buildSupportSection(),
           const SizedBox(height: 24),
-          // Logout Button
-          _buildLogoutButton(),
+
         ],
       ),
     );
@@ -65,14 +71,7 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.red.shade800,
-            Colors.red.shade600,
-          ],
-        ),
+       color: Colors.red,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -101,8 +100,8 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'John Doe',
+                 Text(
+                   authController.getUserName,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -111,7 +110,7 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'john.doe@email.com',
+                  authController.getUserPhone,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: 14,
@@ -275,19 +274,7 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
               activeColor: Colors.red,
             ),
           ),
-          _buildSettingsTile(
-            icon: Icons.play_arrow,
-            title: 'Auto-Play Next',
-            trailing: Switch(
-              value: _autoPlayEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _autoPlayEnabled = value;
-                });
-              },
-              activeColor: Colors.red,
-            ),
-          ),
+
           _buildSettingsTile(
             icon: Icons.subscriptions,
             title: 'Subscription',
@@ -434,70 +421,6 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
               size: 16,
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Show logout confirmation dialog
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: Colors.grey[900],
-              title: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.white),
-              ),
-              content: const Text(
-                'Are you sure you want to logout?',
-                style: TextStyle(color: Colors.white),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Logged out successfully'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          'Logout',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
     );
