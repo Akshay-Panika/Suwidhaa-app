@@ -1,6 +1,3 @@
-// lib/feature/college/models/tiffin_model.dart
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 class TiffinListResponse {
@@ -35,6 +32,7 @@ class TiffinListResponse {
 
 class Tiffin {
   final int id;
+  final String? userId;
   final String title;
   final String description;
   final String price;
@@ -50,6 +48,7 @@ class Tiffin {
 
   Tiffin({
     required this.id,
+    this.userId,
     required this.title,
     required this.description,
     required this.price,
@@ -67,11 +66,12 @@ class Tiffin {
   factory Tiffin.fromJson(Map<String, dynamic> json) {
     return Tiffin(
       id: json['id'] ?? 0,
+      userId: json['user_id']?.toString(),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       price: json['price'] ?? '0',
-      isVeg: json['is_veg'] ?? '',
-      isNonveg: json['is_nonveg'] ?? '',
+      isVeg: json['is_veg'] ?? 'false',
+      isNonveg: json['is_nonveg'] ?? 'false',
       isBooking: json['is_booking'] ?? false,
       rating: json['rating'] ?? '0.0',
       contactNumber: json['contact_number'],
@@ -87,6 +87,7 @@ class Tiffin {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'title': title,
       'description': description,
       'price': price,
@@ -146,6 +147,27 @@ class Tiffin {
   bool get isVegOnly => isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() != 'true';
   bool get isNonVegOnly => isNonveg.toLowerCase() == 'true' && isVeg.toLowerCase() != 'true';
   bool get isBothVegNonVeg => isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() == 'true';
+
+  // New getters for display
+  String get location {
+    return nearCollege ?? 'Location not specified';
+  }
+
+  String get typeDisplay {
+    if (isVegOnly) return '🥬 Vegetarian';
+    if (isNonVegOnly) return '🍗 Non-Vegetarian';
+    if (isBothVegNonVeg) return '🥬🍗 Both Available';
+    return '🍽️ Not Specified';
+  }
+
+  IconData get typeIcon {
+    if (isVegOnly) return Icons.eco;
+    if (isNonVegOnly) return Icons.restaurant;
+    if (isBothVegNonVeg) return Icons.restaurant_menu;
+    return Icons.help_outline;
+  }
+
+  bool get isActive => !isBooking;
 }
 
 class TiffinImage {
@@ -174,11 +196,4 @@ class TiffinImage {
       'created_at': createdAt.toIso8601String(),
     };
   }
-}
-
-// Extension for Tiffin
-extension TiffinExtension on Tiffin {
-  bool get isAvailable => !isBooking;
-  String get availabilityText => isBooking ? 'Booked' : 'Available Now';
-  Color get availabilityColor => isBooking ? Colors.red : Colors.green;
 }

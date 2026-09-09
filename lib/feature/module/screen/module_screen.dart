@@ -22,7 +22,6 @@ class _ModuleScreenState extends State<ModuleScreen> {
 
   final AuthController authController = Get.find<AuthController>();
 
-
   @override
   Widget build(BuildContext context) {
 

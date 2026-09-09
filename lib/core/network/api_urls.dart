@@ -47,10 +47,12 @@ class ApiUrls {
   static const String collegeDetail = 'v1/college/colleges/';
 
   // Room endpoints
+  static const String roomCreate = 'v1/college/rooms/create/';
   static const String roomList = 'v1/college/rooms/list/';
   static const String roomDetail = 'v1/college/rooms/';
 
   // Tiffin endpoints
+  static const String tiffinCreate = 'v1/college/tiffins/create/';
   static const String tiffinList = 'v1/college/tiffins/list/';
   static const String tiffinDetail = 'v1/college/tiffins/';
 }

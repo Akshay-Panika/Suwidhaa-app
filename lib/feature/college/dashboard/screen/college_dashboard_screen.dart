@@ -3,7 +3,7 @@ import '../../../../core/utils/app_color.dart';
 import '../../account/screen/college_account_screen.dart';
 import '../../booking/screen/college_booking_screen.dart';
 import '../../home/screen/collage_home_screen.dart';
-import '../../screen/add_tiffin_senter_screen.dart';
+import '../../screen/add_room_tiffin_senter_screen.dart';
 
 class CollegeDashboardScreen extends StatefulWidget {
   const CollegeDashboardScreen({super.key});
@@ -119,7 +119,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const AddTiffinCenterScreen(),
+                        builder: (context) => const AddRoomTiffinCenterScreen(),
                       ),
                     ),
                     child: Container(

@@ -1,163 +1,791 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
+import 'package:get/get.dart';
 import '../../../../core/utils/app_color.dart';
+import '../../../auth/controller/auth_controller.dart';
+import '../../controller/room_controller.dart';
+import '../../controller/tiffin_controller.dart';
+import '../../model/room_model.dart';
+import '../../model/tiffin_model.dart';
 
 class CollegeAccountScreen extends StatelessWidget {
-  const CollegeAccountScreen({super.key});
+  CollegeAccountScreen({super.key});
+
+  final AuthController authController = Get.find<AuthController>();
+  final RoomController roomController = Get.put(RoomController());
+  final TiffinController tiffinController = Get.put(TiffinController());
+
+  late final int userId = authController.getUserId;
+  late final String userName = authController.getUserName;
+  late final String userPhone = authController.getUserPhone;
 
   @override
   Widget build(BuildContext context) {
+    // Fetch data for logged-in user
+    roomController.fetchRoomsByUserId(userId.toString());
+    tiffinController.fetchTiffinsByUserId(userId.toString());
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(24),
-                ),
-              ),
+      body: Column(
+        children: [
+          // ============================================================
+          // PROFILE HEADER
+          // ============================================================
+          _buildProfileHeader(),
+          const SizedBox(height: 12),
+
+          // ============================================================
+          // TABS
+          // ============================================================
+          Expanded(
+            child: DefaultTabController(
+              length: 2,
               child: Column(
                 children: [
+                  Obx(
+                        () => TabBar(
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: AppColors.primary,
+                      tabs: [
+                        Tab(
+                          text: '${roomController.rooms.length} Rooms',
+                        ),
+                        Tab(
+                          text: '${tiffinController.tiffins.length} Tiffin',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildRoomList(),
+                        _buildTiffinList(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // PROFILE HEADER
+  // ============================================================
+  Widget _buildProfileHeader() {
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
                   const CircleAvatar(
-                    radius: 50,
+                    radius: 40,
                     backgroundColor: Colors.white,
                     child: Icon(
                       Icons.person,
-                      size: 50,
+                      size: 40,
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Student Name",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
                       color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "student@email.com",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            // Profile Options
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildProfileTile(
-                    Icons.person_outline_rounded,
-                    "Edit Profile",
-                        () {},
-                  ),
-                  _buildProfileTile(
-                    Icons.bookmark_border_rounded,
-                    "Saved Colleges",
-                        () {},
-                  ),
-                  _buildProfileTile(
-                    Icons.history_rounded,
-                    "Booking History",
-                        () {},
-                  ),
-                  _buildProfileTile(
-                    Icons.notifications_outlined,
-                    "Notifications",
-                        () {},
-                  ),
-                  _buildProfileTile(
-                    Icons.settings_outlined,
-                    "Settings",
-                        () {},
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Logout Button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50,
-                  foregroundColor: Colors.red.shade700,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
+              const SizedBox(height: 12),
+              Text(
+                userName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.logout_rounded,
-                      size: 20,
-                      color: Colors.red.shade700,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                userPhone,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          right: 10,
+          top: 10,
+          child: IconButton(
+            onPressed: () {
+              // Edit profile action
+            },
+            icon: const Icon(
+              Icons.edit,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // USER ROOMS
+  // ============================================================
+  Widget _buildRoomList() {
+    return Obx(() {
+      if (roomController.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+
+      if (roomController.errorMessage.value.isNotEmpty &&
+          roomController.rooms.isEmpty) {
+        return _buildErrorWidget(
+          message: 'Failed to load rooms',
+          onRetry: () => roomController.fetchRoomsByUserId(userId.toString()),
+        );
+      }
+
+      if (roomController.rooms.isEmpty) {
+        return _buildEmptyWidget(
+          icon: Icons.meeting_room_outlined,
+          message: 'No Room Listings',
+        );
+      }
+
+      return RefreshIndicator(
+        onRefresh: () => roomController.fetchRoomsByUserId(userId.toString()),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: roomController.rooms.length,
+          itemBuilder: (context, index) {
+            final room = roomController.rooms[index];
+            return _buildRoomCard(room);
+          },
+        ),
+      );
+    });
+  }
+
+  // ============================================================
+  // ROOM CARD
+  // ============================================================
+  Widget _buildRoomCard(Room room) {
+    return Card(
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Room Image
+                Container(
+                  width: 65,
+                  height: 65,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: room.roomImages.isNotEmpty
+                      ? Image.network(
+                    room.roomImages.first.url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.meeting_room,
+                        color: AppColors.primary,
+                        size: 30,
+                      );
+                    },
+                  )
+                      : const Icon(
+                    Icons.meeting_room,
+                    color: AppColors.primary,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Room Information
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        room.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        room.roomTypeDisplay,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        room.address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Availability
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: room.isBooking
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    room.availabilityStatus,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: room.availabilityColor,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Logout",
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 18),
+            Row(
+              children: [
+                Text(
+                  room.formattedPrice,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 15,
+                  ),
+                ),
+                const Spacer(),
+                // Delete Button
+                IconButton(
+                  onPressed: () => _showDeleteConfirmation(
+                    context: Get.context!,
+                    title: 'Delete Room',
+                    message: 'Are you sure you want to delete "${room.title}"?',
+                    onConfirm: () => _deleteRoom(room.id),
+                  ),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 4),
+                // Edit Button
+                IconButton(
+                  onPressed: () {
+                    // Navigate to edit room screen
+                    Get.snackbar(
+                      'Edit',
+                      'Edit room: ${room.title}',
+                      backgroundColor: AppColors.primary,
+                      colorText: Colors.white,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                if (room.amenityCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      '${room.amenityCount} Amenities',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade700,
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileTile(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
+  // ============================================================
+  // TIFFIN LIST
+  // ============================================================
+  Widget _buildTiffinList() {
+    return Obx(() {
+      if (tiffinController.isLoading.value) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+
+      if (tiffinController.errorMessage.value.isNotEmpty &&
+          tiffinController.tiffins.isEmpty) {
+        return _buildErrorWidget(
+          message: 'Failed to load tiffins',
+          onRetry: () => tiffinController.fetchTiffinsByUserId(userId.toString()),
+        );
+      }
+
+      if (tiffinController.tiffins.isEmpty) {
+        return _buildEmptyWidget(
+          icon: Icons.restaurant,
+          message: 'No Tiffin Services',
+        );
+      }
+
+      return RefreshIndicator(
+        onRefresh: () => tiffinController.fetchTiffinsByUserId(userId.toString()),
+        child: ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: tiffinController.tiffins.length,
+          itemBuilder: (context, index) {
+            final tiffin = tiffinController.tiffins[index];
+            return _buildTiffinCard(tiffin);
+          },
+        ),
+      );
+    });
+  }
+
+  // ============================================================
+  // TIFFIN CARD
+  // ============================================================
+  Widget _buildTiffinCard(Tiffin tiffin) {
+    return Card(
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Tiffin Image
+                Container(
+                  width: 65,
+                  height: 65,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: tiffin.hasImages
+                      ? Image.network(
+                    tiffin.firstImageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        tiffin.typeIcon,
+                        color: AppColors.primary,
+                        size: 30,
+                      );
+                    },
+                  )
+                      : Icon(
+                    tiffin.typeIcon,
+                    color: AppColors.primary,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Tiffin Information
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tiffin.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // Location
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              tiffin.location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Tiffin Type Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          tiffin.typeDisplay,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Availability Status
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tiffin.availabilityColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    tiffin.availabilityStatus,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: tiffin.availabilityColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tiffin.formattedPrice,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (tiffin.hasContact)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            tiffin.contactDisplay,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    // Rating
+                    if (tiffin.ratingValue > 0)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            size: 14,
+                            color: Colors.amber,
+                          ),
+                          Text(
+                            tiffin.ratingValue.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(width: 8),
+                    // Delete Button
+                    IconButton(
+                      onPressed: () => _showDeleteConfirmation(
+                        context: Get.context!,
+                        title: 'Delete Tiffin',
+                        message: 'Are you sure you want to delete "${tiffin.title}"?',
+                        onConfirm: () => _deleteTiffin(tiffin.id),
+                      ),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 4),
+                    // Edit Button
+                    IconButton(
+                      onPressed: () {
+                        // Navigate to edit tiffin screen
+                        Get.snackbar(
+                          'Edit',
+                          'Edit tiffin: ${tiffin.title}',
+                          backgroundColor: AppColors.primary,
+                          colorText: Colors.white,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: Colors.grey,
+    );
+  }
+
+  // ============================================================
+  // DELETE FUNCTIONS
+  // ============================================================
+
+  void _deleteRoom(int roomId) {
+    roomController.deleteRoom(roomId).then((success) {
+      if (success) {
+        // Refresh the list
+        roomController.fetchRoomsByUserId(userId.toString());
+
+      }
+    });
+  }
+
+  void _deleteTiffin(int tiffinId) {
+    tiffinController.deleteTiffin(tiffinId).then((success) {
+      if (success) {
+        // Refresh the list
+        tiffinController.fetchTiffinsByUserId(userId.toString());
+
+      }
+    });
+  }
+
+  // ============================================================
+  // DELETE CONFIRMATION DIALOG
+  // ============================================================
+
+  void _showDeleteConfirmation({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                onConfirm();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ============================================================
+  // HELPER WIDGETS
+  // ============================================================
+  Widget _buildEmptyWidget({
+    required IconData icon,
+    required String message,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 60,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+            ),
+          ),
+        ],
       ),
-      onTap: onTap,
+    );
+  }
+
+  Widget _buildErrorWidget({
+    required String message,
+    required VoidCallback onRetry,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 50,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 }

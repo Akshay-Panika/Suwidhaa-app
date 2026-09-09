@@ -1,4 +1,3 @@
-// lib/feature/college/models/room_model.dart
 import 'package:flutter/material.dart';
 
 class RoomListResponse {
@@ -33,6 +32,7 @@ class RoomListResponse {
 
 class Room {
   final int id;
+  final String? userId;
   final String title;
   final String description;
   final String address;
@@ -53,6 +53,7 @@ class Room {
 
   Room({
     required this.id,
+    this.userId,
     required this.title,
     required this.description,
     required this.address,
@@ -75,31 +76,48 @@ class Room {
   factory Room.fromJson(Map<String, dynamic> json) {
     return Room(
       id: json['id'] ?? 0,
+
+      // user_id API se String ya null aa sakta hai
+      userId: json['user_id']?.toString(),
+
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       address: json['address'] ?? '',
-      price: json['price'] ?? '0',
+      price: json['price']?.toString() ?? '0',
       isBooking: json['is_booking'] ?? false,
+
       roomType: json['room_type'],
       contactNumber: json['contact_number'],
+
       wifi: json['wifi'] ?? false,
       ac: json['ac'] ?? false,
       parking: json['parking'] ?? false,
       security: json['security'] ?? false,
       laundry: json['laundry'] ?? false,
       water: json['water'] ?? false,
+
       nearCollege: json['near_college'],
+
       roomImages: (json['room_images'] as List? ?? [])
           .map((item) => RoomImage.fromJson(item))
           .toList(),
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
+
+      createdAt: DateTime.tryParse(
+        json['created_at'] ?? '',
+      ) ??
+          DateTime.now(),
+
+      updatedAt: DateTime.tryParse(
+        json['updated_at'] ?? '',
+      ) ??
+          DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'title': title,
       'description': description,
       'address': address,
@@ -120,14 +138,20 @@ class Room {
     };
   }
 
-  // Helper getters for UI
+  // =========================
+  // Helper Getters
+  // =========================
+
   String get formattedPrice {
     final priceNum = double.tryParse(price) ?? 0;
     return '₹${priceNum.toStringAsFixed(0)}/month';
   }
 
   String get roomTypeDisplay {
-    if (roomType == null || roomType!.isEmpty) return '';
+    if (roomType == null || roomType!.isEmpty) {
+      return '';
+    }
+
     return roomType!.toUpperCase();
   }
 
@@ -135,16 +159,24 @@ class Room {
     return contactNumber ?? 'Not Available';
   }
 
-  bool get hasContact => contactNumber != null && contactNumber!.isNotEmpty;
+  bool get hasContact {
+    return contactNumber != null && contactNumber!.isNotEmpty;
+  }
+
+  bool get hasUser {
+    return userId != null && userId!.isNotEmpty;
+  }
 
   List<String> get amenities {
     final List<String> list = [];
+
     if (wifi) list.add('WiFi');
     if (ac) list.add('AC');
     if (parking) list.add('Parking');
     if (security) list.add('Security');
     if (laundry) list.add('Laundry');
     if (water) list.add('Water');
+
     return list;
   }
 
@@ -174,7 +206,10 @@ class RoomImage {
     return RoomImage(
       id: json['id'] ?? 0,
       url: json['url'] ?? '',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(
+        json['created_at'] ?? '',
+      ) ??
+          DateTime.now(),
     );
   }
 
@@ -187,11 +222,32 @@ class RoomImage {
   }
 }
 
-// Extension for Room
-extension RoomExtension on Room {
-  String get firstImageUrl {
-    return roomImages.isNotEmpty ? roomImages.first.url : '';
+class RoomActionResponse {
+  final bool success;
+  final String message;
+  final Room? data;
+
+  RoomActionResponse({
+    required this.success,
+    required this.message,
+    this.data,
+  });
+
+  factory RoomActionResponse.fromJson(Map<String, dynamic> json) {
+    return RoomActionResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data: json['data'] is Map<String, dynamic>
+          ? Room.fromJson(json['data'])
+          : null,
+    );
   }
 
-  bool get hasImages => roomImages.isNotEmpty;
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'message': message,
+      'data': data?.toJson(),
+    };
+  }
 }
