@@ -8,9 +8,20 @@ import '../../../core/widget/flutter_toast.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../controller/room_controller.dart';
 import '../controller/tiffin_controller.dart';
+import '../model/room_model.dart';
+import '../model/tiffin_model.dart';
 
 class AddRoomTiffinCenterScreen extends StatefulWidget {
-  const AddRoomTiffinCenterScreen({super.key});
+  const AddRoomTiffinCenterScreen({
+    super.key,
+    this.roomData,
+    this.tiffinData,
+    this.isEdit = false,
+  });
+
+  final Room? roomData;
+  final Tiffin? tiffinData;
+  final bool isEdit;
 
   @override
   State<AddRoomTiffinCenterScreen> createState() =>
@@ -34,7 +45,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   TextEditingController();
   final TextEditingController _roomAddressController = TextEditingController();
 
-  // Amenities Controllers (using TextEditingController for checkbox values)
+  // Amenities Controllers
   final TextEditingController _roomWifiController = TextEditingController();
   final TextEditingController _roomAcController = TextEditingController();
   final TextEditingController _roomParkingController = TextEditingController();
@@ -45,8 +56,10 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   String _selectedRoomType = '3BHK';
   bool _isRoomBooking = false;
   List<File> _roomImages = [];
+  List<String> _existingRoomImages = [];
+  List<String> _removedRoomImages = []; // Track removed image URLs
+  int? _editingRoomId;
 
-  // Room options
   final List<String> _roomTypes = [
     '1BHK',
     '2BHK',
@@ -75,16 +88,12 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   String _selectedNonVegType = 'true';
   bool _isTiffinBooking = false;
   List<File> _tiffinImages = [];
+  List<String> _existingTiffinImages = [];
+  List<String> _removedTiffinImages = []; // Track removed image URLs
+  int? _editingTiffinId;
 
-  // Tiffin options
-  final List<String> _vegOptions = [
-    'true',
-    'false',
-  ];
-  final List<String> _nonVegOptions = [
-    'true',
-    'false',
-  ];
+  final List<String> _vegOptions = ['true', 'false'];
+  final List<String> _nonVegOptions = ['true', 'false'];
 
   // ============================================================
   // COMMON
@@ -98,12 +107,73 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Check if editing room
+    if (widget.isEdit && widget.roomData != null) {
+      _loadRoomData(widget.roomData!);
+    }
+
+    // Check if editing tiffin
+    if (widget.isEdit && widget.tiffinData != null) {
+      _loadTiffinData(widget.tiffinData!);
+    }
+
+    // Set initial tab based on data
+    if (widget.isEdit) {
+      if (widget.roomData != null) {
+        _tabController.index = 0;
+      } else if (widget.tiffinData != null) {
+        _tabController.index = 1;
+      }
+    }
+  }
+
+  // ============================================================
+  // LOAD DATA FOR EDIT
+  // ============================================================
+  void _loadRoomData(Room room) {
+    _editingRoomId = room.id;
+    _roomTitleController.text = room.title;
+    _roomDescriptionController.text = room.description;
+    _roomPriceController.text = room.price;
+    _roomAddressController.text = room.address;
+    _roomContactController.text = room.contactNumber ?? '';
+    _roomNearCollegeController.text = room.nearCollege ?? '';
+    _selectedRoomType = room.roomType ?? '3BHK';
+    _isRoomBooking = room.isBooking;
+
+    // Load amenities
+    _roomWifiController.text = room.wifi == true ? 'true' : 'false';
+    _roomAcController.text = room.ac == true ? 'true' : 'false';
+    _roomParkingController.text = room.parking == true ? 'true' : 'false';
+    _roomSecurityController.text = room.security == true ? 'true' : 'false';
+    _roomLaundryController.text = room.laundry == true ? 'true' : 'false';
+    _roomWaterController.text = room.water == true ? 'true' : 'false';
+
+    // Load existing images URLs
+    _existingRoomImages = room.roomImages.map((img) => img.url).toList();
+    _removedRoomImages = [];
+  }
+
+  void _loadTiffinData(Tiffin tiffin) {
+    _editingTiffinId = tiffin.id;
+    _tiffinTitleController.text = tiffin.title;
+    _tiffinDescriptionController.text = tiffin.description;
+    _tiffinPriceController.text = tiffin.price;
+    _tiffinContactController.text = tiffin.contactNumber ?? '';
+    _tiffinNearCollegeController.text = tiffin.nearCollege ?? '';
+    _selectedVegType = tiffin.isVeg;
+    _selectedNonVegType = tiffin.isNonveg;
+    _isTiffinBooking = tiffin.isBooking;
+
+    // Load existing images URLs
+    _existingTiffinImages = tiffin.tiffinImages.map((img) => img.url).toList();
+    _removedTiffinImages = [];
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    // Room controllers
     _roomTitleController.dispose();
     _roomDescriptionController.dispose();
     _roomPriceController.dispose();
@@ -116,7 +186,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     _roomSecurityController.dispose();
     _roomLaundryController.dispose();
     _roomWaterController.dispose();
-    // Tiffin controllers
     _tiffinTitleController.dispose();
     _tiffinDescriptionController.dispose();
     _tiffinPriceController.dispose();
@@ -127,12 +196,15 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.isEdit;
+    final title = isEdit ? 'Edit Listing' : 'Add Listing';
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          'Add Listing',
-          style: TextStyle(
+        title: Text(
+          title,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
@@ -149,14 +221,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(
-              icon: Icon(Icons.bed_rounded),
-              text: 'Room',
-            ),
-            Tab(
-              icon: Icon(Icons.restaurant_rounded),
-              text: 'Tiffin',
-            ),
+            Tab(icon: Icon(Icons.bed_rounded), text: 'Room'),
+            Tab(icon: Icon(Icons.restaurant_rounded), text: 'Tiffin'),
           ],
         ),
       ),
@@ -185,12 +251,13 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           children: [
             _buildSectionHeader(
               icon: Icons.bed_rounded,
-              title: 'Room Details',
-              subtitle: 'Fill in the details to add a new room/PG',
+              title: widget.isEdit ? 'Edit Room' : 'Room Details',
+              subtitle: widget.isEdit
+                  ? 'Update your room details'
+                  : 'Fill in the details to add a new room/PG',
             ),
             const SizedBox(height: 24),
 
-            // Room Type Dropdown
             _buildDropdownField(
               label: 'Room Type',
               hint: 'Select room type',
@@ -210,7 +277,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Title
             _buildTextField(
               controller: _roomTitleController,
               label: 'Title',
@@ -225,7 +291,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Description
             _buildTextField(
               controller: _roomDescriptionController,
               label: 'Description',
@@ -242,7 +307,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Address
             _buildTextField(
               controller: _roomAddressController,
               label: 'Address',
@@ -258,7 +322,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Price
             _buildTextField(
               controller: _roomPriceController,
               label: 'Price (per month)',
@@ -274,7 +337,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Contact Number
             _buildTextField(
               controller: _roomContactController,
               label: 'Contact Number',
@@ -293,7 +355,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Near College
             _buildTextField(
               controller: _roomNearCollegeController,
               label: 'Near College',
@@ -308,11 +369,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Amenities Section
             _buildAmenitiesSection(),
             const SizedBox(height: 16),
 
-            // Booking Toggle
             _buildSwitchTile(
               icon: Icons.book_online_rounded,
               title: 'Available for Booking',
@@ -325,22 +384,28 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Image Upload
             _buildImageUploadSection(
               images: _roomImages,
+              existingImages: _existingRoomImages,
               onImagesSelected: (images) {
                 setState(() {
                   _roomImages = images;
+                });
+              },
+              onExistingImageRemoved: (index, imageUrl) {
+                setState(() {
+                  // Add to removed list
+                  _removedRoomImages.add(imageUrl);
+                  _existingRoomImages.removeAt(index);
                 });
               },
               label: 'Room Images',
             ),
             const SizedBox(height: 24),
 
-            // Submit Button
             _buildSubmitButton(
               onPressed: _isLoading ? null : _submitRoomForm,
-              label: 'Add Room',
+              label: widget.isEdit ? 'Update Room' : 'Add Room',
             ),
             const SizedBox(height: 8),
             _buildRequiredText(),
@@ -379,7 +444,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ],
           ),
           const SizedBox(height: 12),
-          // Amenities Grid
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -470,12 +534,13 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           children: [
             _buildSectionHeader(
               icon: Icons.restaurant_rounded,
-              title: 'Tiffin Center Details',
-              subtitle: 'Fill in the details to add a new tiffin center',
+              title: widget.isEdit ? 'Edit Tiffin' : 'Tiffin Center Details',
+              subtitle: widget.isEdit
+                  ? 'Update your tiffin center details'
+                  : 'Fill in the details to add a new tiffin center',
             ),
             const SizedBox(height: 24),
 
-            // Title
             _buildTextField(
               controller: _tiffinTitleController,
               label: 'Title',
@@ -490,7 +555,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Description
             _buildTextField(
               controller: _tiffinDescriptionController,
               label: 'Description',
@@ -506,7 +570,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Price
             _buildTextField(
               controller: _tiffinPriceController,
               label: 'Price (per month)',
@@ -522,7 +585,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Near College
             _buildTextField(
               controller: _tiffinNearCollegeController,
               label: 'Near College',
@@ -538,7 +600,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Veg Type Dropdown
             _buildDropdownField(
               label: 'Is Veg',
               hint: 'Select veg availability',
@@ -558,7 +619,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Non-Veg Type Dropdown
             _buildDropdownField(
               label: 'Is Non-Veg',
               hint: 'Select non-veg availability',
@@ -578,7 +638,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Contact Number
             _buildTextField(
               controller: _tiffinContactController,
               label: 'Contact Number',
@@ -597,7 +656,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Booking Toggle
             _buildSwitchTile(
               icon: Icons.book_online_rounded,
               title: 'Available for Booking',
@@ -610,22 +668,28 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            // Image Upload
             _buildImageUploadSection(
               images: _tiffinImages,
+              existingImages: _existingTiffinImages,
               onImagesSelected: (images) {
                 setState(() {
                   _tiffinImages = images;
+                });
+              },
+              onExistingImageRemoved: (index, imageUrl) {
+                setState(() {
+                  // Add to removed list
+                  _removedTiffinImages.add(imageUrl);
+                  _existingTiffinImages.removeAt(index);
                 });
               },
               label: 'Tiffin Images',
             ),
             const SizedBox(height: 24),
 
-            // Submit Button
             _buildSubmitButton(
               onPressed: _isLoading ? null : _submitTiffinForm,
-              label: 'Add Tiffin Center',
+              label: widget.isEdit ? 'Update Tiffin' : 'Add Tiffin Center',
             ),
             const SizedBox(height: 8),
             _buildRequiredText(),
@@ -637,13 +701,17 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   }
 
   // ============================================================
-  // IMAGE UPLOAD SECTION
+  // IMAGE UPLOAD SECTION (WITH EXISTING IMAGES SUPPORT)
   // ============================================================
   Widget _buildImageUploadSection({
     required List<File> images,
+    required List<String> existingImages,
     required Function(List<File>) onImagesSelected,
+    required Function(int, String) onExistingImageRemoved,
     required String label,
   }) {
+    final totalImages = existingImages.length + images.length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -668,7 +736,79 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ],
           ),
           const SizedBox(height: 12),
-          // Image preview
+
+          // Existing Images Preview
+          if (existingImages.isNotEmpty)
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: existingImages.length,
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade300),
+                          image: DecorationImage(
+                            image: NetworkImage(existingImages[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: () => onExistingImageRemoved(index, existingImages[index]),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(8),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Existing',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+          // New Images Preview
           if (images.isNotEmpty)
             SizedBox(
               height: 80,
@@ -684,6 +824,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                         height: 80,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade300),
                           image: DecorationImage(
                             image: FileImage(images[index]),
                             fit: BoxFit.cover,
@@ -714,19 +855,44 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                           ),
                         ),
                       ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(8),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'New',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },
               ),
             ),
+
           const SizedBox(height: 8),
+
           // Upload button
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _pickImages(onImagesSelected),
               icon: const Icon(Icons.upload_file),
-              label: Text(images.isEmpty ? 'Upload Images' : 'Add More Images'),
+              label: Text(totalImages > 0 ? 'Add More Images' : 'Upload Images'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: BorderSide(color: AppColors.primary),
@@ -734,7 +900,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               ),
             ),
           ),
-          if (images.isEmpty)
+          if (totalImages == 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -1000,7 +1166,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   }
 
   // ============================================================
-  // SUBMIT METHODS - USING EXISTING CONTROLLER METHODS
+  // SUBMIT METHODS - CREATE & UPDATE
   // ============================================================
 
   void _submitRoomForm() {
@@ -1014,39 +1180,80 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
       for (var file in _roomImages) {
         imagePaths.add(file.path);
       }
-      // Call existing roomController.createRoom method
-      roomController
-          .createRoom(
-        userId: userId,
-        title: _roomTitleController.text.trim(),
-        description: _roomDescriptionController.text.trim(),
-        address: _roomAddressController.text.trim(),
-        price: _roomPriceController.text.trim(),
-        roomType: _selectedRoomType,
-        contactNumber: _roomContactController.text.trim(),
-        wifi: _roomWifiController.text.toLowerCase() == 'true',
-        ac: _roomAcController.text.toLowerCase() == 'true',
-        parking: _roomParkingController.text.toLowerCase() == 'true',
-        security: _roomSecurityController.text.toLowerCase() == 'true',
-        laundry: _roomLaundryController.text.toLowerCase() == 'true',
-        water: _roomWaterController.text.toLowerCase() == 'true',
-        nearCollege: _roomNearCollegeController.text.trim(),
-        imagePaths:imagePaths,
-      )
-          .then((success) {
-        setState(() {
-          _isLoading = false;
+
+      if (widget.isEdit && _editingRoomId != null) {
+        // UPDATE ROOM - Keep existing images, add new ones, remove deleted ones
+        // Note: The API will handle image management based on the data sent
+        roomController
+            .updateRoom(
+          roomId: _editingRoomId!,
+          userId: userId,
+          title: _roomTitleController.text.trim(),
+          description: _roomDescriptionController.text.trim(),
+          address: _roomAddressController.text.trim(),
+          price: _roomPriceController.text.trim(),
+          roomType: _selectedRoomType,
+          contactNumber: _roomContactController.text.trim(),
+          wifi: _roomWifiController.text.toLowerCase() == 'true',
+          ac: _roomAcController.text.toLowerCase() == 'true',
+          parking: _roomParkingController.text.toLowerCase() == 'true',
+          security: _roomSecurityController.text.toLowerCase() == 'true',
+          laundry: _roomLaundryController.text.toLowerCase() == 'true',
+          water: _roomWaterController.text.toLowerCase() == 'true',
+          nearCollege: _roomNearCollegeController.text.trim(),
+          imagePaths: imagePaths, // New images to add
+        )
+            .then((success) {
+          setState(() {
+            _isLoading = false;
+          });
+          if (success) {
+            roomController.fetchRoomsByUserId(userId);
+            Navigator.pop(context, true);
+          }
+        })
+            .catchError((error) {
+          setState(() {
+            _isLoading = false;
+          });
+          FlutterToast.error('Error: $error');
         });
-        if (success) {
-          Navigator.pop(context);
-        }
-      })
-          .catchError((error) {
-        setState(() {
-          _isLoading = false;
+      } else {
+        // CREATE ROOM
+        roomController
+            .createRoom(
+          userId: userId,
+          title: _roomTitleController.text.trim(),
+          description: _roomDescriptionController.text.trim(),
+          address: _roomAddressController.text.trim(),
+          price: _roomPriceController.text.trim(),
+          roomType: _selectedRoomType,
+          contactNumber: _roomContactController.text.trim(),
+          wifi: _roomWifiController.text.toLowerCase() == 'true',
+          ac: _roomAcController.text.toLowerCase() == 'true',
+          parking: _roomParkingController.text.toLowerCase() == 'true',
+          security: _roomSecurityController.text.toLowerCase() == 'true',
+          laundry: _roomLaundryController.text.toLowerCase() == 'true',
+          water: _roomWaterController.text.toLowerCase() == 'true',
+          nearCollege: _roomNearCollegeController.text.trim(),
+          imagePaths: imagePaths,
+        )
+            .then((success) {
+          setState(() {
+            _isLoading = false;
+          });
+          if (success) {
+            roomController.fetchRoomsByUserId(userId);
+            Navigator.pop(context, true);
+          }
+        })
+            .catchError((error) {
+          setState(() {
+            _isLoading = false;
+          });
+          FlutterToast.error('Error: $error');
         });
-        FlutterToast.error('Error: $error');
-      });
+      }
     }
   }
 
@@ -1058,33 +1265,67 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
       final userId = authController.getUserId.toString();
 
-      // Call existing tiffinController.createTiffin method
-      tiffinController
-          .createTiffin(
-        title: _tiffinTitleController.text.trim(),
-        description: _tiffinDescriptionController.text.trim(),
-        price: _tiffinPriceController.text.trim(),
-        nearCollege: _tiffinNearCollegeController.text.trim(),
-        isVeg: _selectedVegType,
-        isNonveg: _selectedNonVegType,
-        contactNumber: _tiffinContactController.text.trim(),
-        userId: userId,
-        images: _tiffinImages,
-      )
-          .then((success) {
-        setState(() {
-          _isLoading = false;
+      if (widget.isEdit && _editingTiffinId != null) {
+        // UPDATE TIFFIN - Keep existing images, add new ones
+        // Note: The API will handle image management
+        tiffinController
+            .updateTiffin(
+          tiffinId: _editingTiffinId!,
+          title: _tiffinTitleController.text.trim(),
+          description: _tiffinDescriptionController.text.trim(),
+          price: _tiffinPriceController.text.trim(),
+          nearCollege: _tiffinNearCollegeController.text.trim(),
+          isVeg: _selectedVegType,
+          isNonveg: _selectedNonVegType,
+          contactNumber: _tiffinContactController.text.trim(),
+          userId: userId,
+          images: _tiffinImages.isNotEmpty ? _tiffinImages : null,
+        )
+            .then((success) {
+          setState(() {
+            _isLoading = false;
+          });
+          if (success) {
+            tiffinController.fetchTiffinsByUserId(userId);
+            Navigator.pop(context, true);
+          }
+        })
+            .catchError((error) {
+          setState(() {
+            _isLoading = false;
+          });
+          FlutterToast.error('Error: $error');
         });
-        if (success) {
-          Navigator.pop(context);
-        }
-      })
-          .catchError((error) {
-        setState(() {
-          _isLoading = false;
+      } else {
+        // CREATE TIFFIN
+        tiffinController
+            .createTiffin(
+          title: _tiffinTitleController.text.trim(),
+          description: _tiffinDescriptionController.text.trim(),
+          price: _tiffinPriceController.text.trim(),
+          nearCollege: _tiffinNearCollegeController.text.trim(),
+          isVeg: _selectedVegType,
+          isNonveg: _selectedNonVegType,
+          contactNumber: _tiffinContactController.text.trim(),
+          userId: userId,
+          images: _tiffinImages,
+        )
+            .then((success) {
+          setState(() {
+            _isLoading = false;
+          });
+          if (success) {
+            tiffinController.fetchTiffinsByUserId(userId);
+            Navigator.pop(context, true);
+          }
+        })
+            .catchError((error) {
+          setState(() {
+            _isLoading = false;
+          });
+          FlutterToast.error('Error: $error');
         });
-        FlutterToast.error('Error: $error');
-      });
+      }
     }
   }
 }

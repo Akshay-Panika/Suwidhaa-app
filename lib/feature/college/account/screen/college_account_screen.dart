@@ -6,6 +6,7 @@ import '../../controller/room_controller.dart';
 import '../../controller/tiffin_controller.dart';
 import '../../model/room_model.dart';
 import '../../model/tiffin_model.dart';
+import '../../screen/add_room_tiffin_senter_screen.dart';
 
 class CollegeAccountScreen extends StatelessWidget {
   CollegeAccountScreen({super.key});
@@ -26,6 +27,27 @@ class CollegeAccountScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Navigate to Add screen
+          Get.to(
+                () => const AddRoomTiffinCenterScreen(),
+            transition: Transition.rightToLeft,
+          )?.then((value) {
+            if (value == true) {
+              // Refresh both lists after adding
+              roomController.fetchRoomsByUserId(userId.toString());
+              tiffinController.fetchTiffinsByUserId(userId.toString());
+            }
+          });
+        },
+        backgroundColor: AppColors.primary,
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
       body: Column(
         children: [
           // ============================================================
@@ -178,6 +200,7 @@ class CollegeAccountScreen extends StatelessWidget {
         return _buildEmptyWidget(
           icon: Icons.meeting_room_outlined,
           message: 'No Room Listings',
+          subtitle: 'Tap the + button to add a room',
         );
       }
 
@@ -329,16 +352,21 @@ class CollegeAccountScreen extends StatelessWidget {
                   constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 4),
-                // Edit Button
+                // Edit Button - Navigate to Edit Screen
                 IconButton(
                   onPressed: () {
-                    // Navigate to edit room screen
-                    Get.snackbar(
-                      'Edit',
-                      'Edit room: ${room.title}',
-                      backgroundColor: AppColors.primary,
-                      colorText: Colors.white,
-                    );
+                    Get.to(
+                          () => AddRoomTiffinCenterScreen(
+                        roomData: room,
+                        isEdit: true,
+                      ),
+                      transition: Transition.rightToLeft,
+                    )?.then((value) {
+                      if (value == true) {
+                        // Refresh after edit
+                        roomController.fetchRoomsByUserId(userId.toString());
+                      }
+                    });
                   },
                   icon: const Icon(
                     Icons.edit_outlined,
@@ -390,6 +418,7 @@ class CollegeAccountScreen extends StatelessWidget {
         return _buildEmptyWidget(
           icon: Icons.restaurant,
           message: 'No Tiffin Services',
+          subtitle: 'Tap the + button to add a tiffin service',
         );
       }
 
@@ -608,16 +637,21 @@ class CollegeAccountScreen extends StatelessWidget {
                       constraints: const BoxConstraints(),
                     ),
                     const SizedBox(width: 4),
-                    // Edit Button
+                    // Edit Button - Navigate to Edit Screen
                     IconButton(
                       onPressed: () {
-                        // Navigate to edit tiffin screen
-                        Get.snackbar(
-                          'Edit',
-                          'Edit tiffin: ${tiffin.title}',
-                          backgroundColor: AppColors.primary,
-                          colorText: Colors.white,
-                        );
+                        Get.to(
+                              () => AddRoomTiffinCenterScreen(
+                            tiffinData: tiffin,
+                            isEdit: true,
+                          ),
+                          transition: Transition.rightToLeft,
+                        )?.then((value) {
+                          if (value == true) {
+                            // Refresh after edit
+                            tiffinController.fetchTiffinsByUserId(userId.toString());
+                          }
+                        });
                       },
                       icon: const Icon(
                         Icons.edit_outlined,
@@ -646,7 +680,13 @@ class CollegeAccountScreen extends StatelessWidget {
       if (success) {
         // Refresh the list
         roomController.fetchRoomsByUserId(userId.toString());
-
+        Get.snackbar(
+          'Success',
+          'Room deleted successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     });
   }
@@ -656,7 +696,13 @@ class CollegeAccountScreen extends StatelessWidget {
       if (success) {
         // Refresh the list
         tiffinController.fetchTiffinsByUserId(userId.toString());
-
+        Get.snackbar(
+          'Success',
+          'Tiffin deleted successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     });
   }
@@ -736,6 +782,7 @@ class CollegeAccountScreen extends StatelessWidget {
   Widget _buildEmptyWidget({
     required IconData icon,
     required String message,
+    String? subtitle,
   }) {
     return Center(
       child: Column(
@@ -754,6 +801,17 @@ class CollegeAccountScreen extends StatelessWidget {
               color: Colors.grey.shade500,
             ),
           ),
+          if (subtitle != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ),
         ],
       ),
     );
