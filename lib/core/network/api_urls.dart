@@ -55,4 +55,31 @@ class ApiUrls {
   static const String tiffinCreate = 'v1/college/tiffins/create/';
   static const String tiffinList = 'v1/college/tiffins/list/';
   static const String tiffinDetail = 'v1/college/tiffins/';
+
+  // Ott content
+  static const String ottBanner = 'v1/ott/banner/list';
+  static const String ottContent = 'v1/ott/content/list';
+
+  static const String ottMovieDetail   = 'v1/ott/movies/';
+  static const String ottCartoonDetail = 'v1/ott/cartoons/';
+  static const String ottSciFiDetail   = 'v1/ott/sci-fi/';
+  static const String ottSportDetail   = 'v1/ott/sports/';
+  static const String ottWebSeriesDetail = 'v1/ott/web-series/';
+
+  static String ottDetailPath(String contentType) {
+    switch (contentType) {
+      case 'movie':
+        return ottMovieDetail;
+      case 'cartoon':
+        return ottCartoonDetail;
+      case 'sci_fi':
+        return ottSciFiDetail;
+      case 'sport':
+        return ottSportDetail;
+      case 'web_series':
+        return ottWebSeriesDetail;
+      default:
+        return ottContent;
+    }
+  }
 }

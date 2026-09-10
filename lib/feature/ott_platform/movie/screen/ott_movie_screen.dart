@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../controller/ott_content_controller.dart';
 
 class OttMovieScreen extends StatefulWidget {
   const OttMovieScreen({super.key});
@@ -8,60 +11,15 @@ class OttMovieScreen extends StatefulWidget {
 }
 
 class _OttMovieScreenState extends State<OttMovieScreen> {
-  final List<String> _categories = [
-    'All',
-    'Action',
-    'Comedy',
-    'Drama',
-    'Sci-Fi',
-    'Thriller',
-    'Romance',
-    'Animation',
-  ];
+  final OttContentController controller = Get.find<OttContentController>();
 
-  final List<Map<String, String>> _movies = [
-    {
-      'title': 'The Dark Knight',
-      'year': '2008',
-      'rating': '9.0',
-      'duration': '2h 32m',
-      'image': 'https://picsum.photos/seed/darkknight/200/300',
-    },
-    {
-      'title': 'Inception',
-      'year': '2010',
-      'rating': '8.8',
-      'duration': '2h 28m',
-      'image': 'https://picsum.photos/seed/inception/200/300',
-    },
-    {
-      'title': 'Interstellar',
-      'year': '2014',
-      'rating': '8.6',
-      'duration': '2h 49m',
-      'image': 'https://picsum.photos/seed/interstellar/200/300',
-    },
-    {
-      'title': 'The Matrix',
-      'year': '1999',
-      'rating': '8.7',
-      'duration': '2h 16m',
-      'image': 'https://picsum.photos/seed/matrix/200/300',
-    },
-    {
-      'title': 'Avatar',
-      'year': '2009',
-      'rating': '7.9',
-      'duration': '2h 42m',
-      'image': 'https://picsum.photos/seed/avatar/200/300',
-    },
-    {
-      'title': 'Titanic',
-      'year': '1997',
-      'rating': '7.9',
-      'duration': '3h 14m',
-      'image': 'https://picsum.photos/seed/titanic/200/300',
-    },
+  final List<Map<String, String?>> _categories = [
+    {'label': 'Home', 'type': null},
+    {'label': 'Movies', 'type': 'movie'},
+    {'label': 'SCI-FI', 'type': 'sci_fi'},
+    {'label': 'WebSeries', 'type': 'web_series'},
+    {'label': 'Sports', 'type': 'sport'},
+    {'label': 'Cartoons', 'type': 'cartoon'},
   ];
 
   int _selectedCategory = 0;
@@ -102,21 +60,71 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
   }
 
   Widget _buildBody() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          // Categories
-          _buildCategories(),
-          const SizedBox(height: 16),
-          // Movies Grid
-          _buildMovieGrid(),
-        ],
+    return Obx(() {
+      // 🔹 Loading — only when nothing has loaded yet
+      if (controller.isLoading.value && controller.contents.isEmpty) {
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.red),
+        );
+      }
+
+      // 🔹 Filter logic
+      final selectedType = _categories[_selectedCategory]['type'];
+
+      final filteredContents = selectedType == null
+          ? controller.contents.toList()
+          : controller.contents
+          .where((c) => c.contentType == selectedType)
+          .toList();
+
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+
+            // 🔹 Categories — ALWAYS visible
+            _buildCategories(),
+            const SizedBox(height: 16),
+
+            // 🔹 Grid OR empty message (only this part changes)
+            if (filteredContents.isEmpty)
+              _buildEmptyState()
+            else
+              _buildMovieGrid(filteredContents),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      );
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // EMPTY STATE (inside the body, below categories)
+  // ---------------------------------------------------------------
+  Widget _buildEmptyState() {
+    return SizedBox(
+      height: 300,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.movie, color: Colors.grey, size: 60),
+            const SizedBox(height: 12),
+            Text(
+              'No ${_categories[_selectedCategory]['label']} available',
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // ---------------------------------------------------------------
+  // CATEGORIES
+  // ---------------------------------------------------------------
   Widget _buildCategories() {
     return SizedBox(
       height: 40,
@@ -127,11 +135,7 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
         itemBuilder: (context, index) {
           final isSelected = _selectedCategory == index;
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = index;
-              });
-            },
+            onTap: () => setState(() => _selectedCategory = index),
             child: Container(
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(
@@ -146,12 +150,15 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
                   width: 1,
                 ),
               ),
-              child: Text(
-                _categories[index],
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
+              child: Center(
+                child: Text(
+                  _categories[index]['label']!,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey,
+                    fontWeight:
+                    isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
@@ -161,7 +168,10 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
     );
   }
 
-  Widget _buildMovieGrid() {
+  // ---------------------------------------------------------------
+  // GRID
+  // ---------------------------------------------------------------
+  Widget _buildMovieGrid(List<dynamic> contents) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
@@ -171,171 +181,130 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.7,
+          childAspectRatio: 0.9,
         ),
-        itemCount: _movies.length,
+        itemCount: contents.length,
         itemBuilder: (context, index) {
-          final movie = _movies[index];
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey[900],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Movie Poster
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        movie['image']!,
+          return _buildMovieCard(contents[index]);
+        },
+      ),
+    );
+  }
+  Widget _buildMovieCard(dynamic content) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[900],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              child: Stack(
+                children: [
+                  Image.network(
+                    content.thumbnailVertical,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
                         height: 160,
                         width: double.infinity,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 160,
-                            width: double.infinity,
-                            color: Colors.grey[900],
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.red,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 160,
-                            width: double.infinity,
-                            color: Colors.grey[800],
-                            child: const Icon(
-                              Icons.movie,
-                              color: Colors.grey,
-                              size: 50,
-                            ),
-                          );
-                        },
-                      ),
-                      // Duration Badge
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            movie['duration']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        color: Colors.grey[900],
+                        child: const Center(
+                          child: CircularProgressIndicator(color: Colors.red),
                         ),
-                      ),
-                      // Play Button Overlay (on hover/tap)
-                      Positioned.fill(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Playing: ${movie['title']}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.play_circle_outline,
-                                  color: Colors.white,
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-                          ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 160,
+                        width: double.infinity,
+                        color: Colors.grey[800],
+                        child: const Icon(
+                          Icons.movie,
+                          color: Colors.grey,
+                          size: 50,
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-                // Movie Info
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        movie['title']!,
+                  
+                  // Content type badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        (content.contentType ?? '').toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            movie['rating']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              movie['year']!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                  
+                ],
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    content.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      content.rating,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  
+                  ],
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

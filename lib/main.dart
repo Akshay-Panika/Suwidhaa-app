@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:untitled/router/app_binding.dart';
 import 'package:untitled/router/app_pages.dart';
@@ -10,6 +11,11 @@ import 'feature/auth/controller/auth_controller.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   WebViewPlatform.instance = AndroidWebViewPlatform();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   runApp(const MyApp());
 }
 

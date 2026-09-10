@@ -73,7 +73,7 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.tv),
-            label: 'TV Shows',
+            label: 'YouTube',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.movie),
