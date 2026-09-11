@@ -10,6 +10,7 @@ import '../feature/college/controller/tiffin_controller.dart';
 import '../feature/ott_platform/controller/ott_banner_controller.dart';
 import '../feature/ott_platform/controller/ott_content_controller.dart';
 import '../feature/ott_platform/controller/ott_controller.dart';
+import '../feature/ott_platform/controller/ott_reel_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
 import '../feature/school/homework/controller/homework_controller.dart';
@@ -37,5 +38,6 @@ class AppBindings implements Bindings {
     Get.lazyPut<OttBannerController>(() => OttBannerController(), fenix: true);
     Get.lazyPut<OttContentController>(() => OttContentController(), fenix: true);
     Get.lazyPut<OttController>(() => OttController(), fenix: true);
+    Get.lazyPut<OttReelController>(() => OttReelController(), fenix: true);
   }
 }

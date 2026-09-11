@@ -19,7 +19,9 @@ dependencies:
   table_calendar: ^3.2.0
   webview_flutter: ^4.14.0
   url_launcher: ^6.3.2
+  youtube_explode_dart: ^2.3.1
   youtube_player_iframe: ^6.0.2
+  youtube_player_flutter: ^9.1.1
   flutter_rating_bar: ^4.0.1
   cached_network_image: ^3.3.0
   font_awesome_flutter: ^11.0.0

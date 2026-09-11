@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../account/screen/ott_account_screen.dart';
 import '../../home/screen/ott_home_screen.dart';
 import '../../movie/screen/ott_movie_screen.dart';
+import '../../reels/screen/ott_reel_screen.dart';
 import '../../school/screen/ott_school_screen.dart';
-import '../../tv_show/screen/ott_tv_show_screen.dart';
 
 
 class OttDashboardScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _OttDashboardScreenState extends State<OttDashboardScreen> {
 
   final List<Widget> _screens = [
     const OttHomeScreen(),
-    const OttTvShowScreen(),
+    const OttReelScreen(),
     const OttMovieScreen(),
     const OttSchoolScreen(),
     const OttAccountScreen(),

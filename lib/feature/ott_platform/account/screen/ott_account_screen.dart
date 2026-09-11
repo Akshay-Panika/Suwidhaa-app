@@ -51,9 +51,9 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
         children: [
           // Profile Card
           _buildProfileCard(),
-          const SizedBox(height: 24),
+          // const SizedBox(height: 24),
           // Account Stats
-          _buildAccountStats(),
+          // _buildAccountStats(),
           const SizedBox(height: 24),
           // Settings
           _buildSettingsSection(),
@@ -71,7 +71,7 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-       color: Colors.red,
+       color: Colors.red.shade500,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

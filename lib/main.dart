@@ -11,11 +11,6 @@ import 'feature/auth/controller/auth_controller.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   WebViewPlatform.instance = AndroidWebViewPlatform();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
   runApp(const MyApp());
 }
 

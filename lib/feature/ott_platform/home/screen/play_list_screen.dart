@@ -97,7 +97,7 @@ class _PlayListScreenState extends State<PlayListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _buildAppBar(context),
+      appBar: _buildAppBar(),
       body: Obx(() {
         if (controller.isDetailLoading.value) {
           return const Center(
@@ -256,13 +256,19 @@ class _PlayListScreenState extends State<PlayListScreen> {
                       const SizedBox(height: 20),
                       if (content.description != null &&
                           content.description!.isNotEmpty) ...[
-                        const Text(
-                          'Overview',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          spacing: 10,
+                          children: [
+                            Container(color: Colors.red,height: 14,width: 3,),
+                            const Text(
+                              'Overview',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -275,13 +281,19 @@ class _PlayListScreenState extends State<PlayListScreen> {
                         ),
                       ],
                       const SizedBox(height: 20),
-                      const Text(
-                        'Details',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        spacing: 10,
+                        children: [
+                          Container(color: Colors.red,height: 14,width: 3,),
+                          const Text(
+                            'Details',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       _detailRow('Content Type', content.contentType),
@@ -359,11 +371,14 @@ class _PlayListScreenState extends State<PlayListScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.black,
       elevation: 0,
-      automaticallyImplyLeading: false,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+      ),
       title: Row(
         children: [
           Container(

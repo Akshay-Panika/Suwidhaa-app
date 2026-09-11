@@ -65,6 +65,7 @@ class ApiUrls {
   static const String ottSciFiDetail   = 'v1/ott/sci-fi/';
   static const String ottSportDetail   = 'v1/ott/sports/';
   static const String ottWebSeriesDetail = 'v1/ott/web-series/';
+  static const String ottReelList = 'v1/ott/reels/list/';
 
   static String ottDetailPath(String contentType) {
     switch (contentType) {
@@ -82,4 +83,6 @@ class ApiUrls {
         return ottContent;
     }
   }
+
+
 }
