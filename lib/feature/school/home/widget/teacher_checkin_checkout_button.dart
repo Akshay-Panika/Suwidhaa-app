@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../attendance/screen/school_student_daly_attendance_screen.dart';
+import '../../attendance/screen/teacher_checkin_checkout_screen.dart';
 
-class TeacherLeaveRequestButton extends StatelessWidget {
-  const TeacherLeaveRequestButton({super.key});
+class TeacherCheckinCheckoutButton extends StatelessWidget {
+  const TeacherCheckinCheckoutButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +13,7 @@ class TeacherLeaveRequestButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const SchoolStudentDailyAttendanceScreen(),
+            builder: (context) => const TeacherCheckinCheckoutScreen(),
           ),
         );
       },

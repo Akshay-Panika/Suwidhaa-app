@@ -135,6 +135,9 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
       await _videoController!.initialize();
       _videoController!.setLooping(true);
 
+      // 🔹 Listen for play/pause/buffering changes to update the overlay icon
+      _videoController!.addListener(_onVideoTick);
+
       if (!mounted) return;
 
       setState(() => _isLoading = false);
@@ -146,6 +149,11 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
       debugPrint('Video load error: $e');
       if (mounted) setState(() => _hasError = true);
     }
+  }
+
+  void _onVideoTick() {
+    // Rebuild so the play/pause icon overlay stays in sync
+    if (mounted) setState(() {});
   }
 
   @override
@@ -181,6 +189,7 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
 
   @override
   void dispose() {
+    _videoController?.removeListener(_onVideoTick);
     _videoController?.dispose();
     super.dispose();
   }
@@ -198,6 +207,9 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
 
   @override
   Widget build(BuildContext context) {
+    final isPlaying = _videoController?.value.isPlaying ?? false;
+    final isInitialized = _videoController?.value.isInitialized ?? false;
+
     return GestureDetector(
       onTap: _togglePlayPause,
       child: Stack(
@@ -222,6 +234,17 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
                 child: VideoPlayer(_videoController!),
               ),
             ),
+
+          // 🔹 Play/Pause icon overlay — shown whenever the video is paused
+          if (isInitialized && !isPlaying && !_hasError)
+            const Center(
+              child: Icon(
+                Icons.play_arrow,
+                color: Colors.white70,
+                size: 70,
+              ),
+            ),
+
           Positioned(
             left: 14,
             right: 70,

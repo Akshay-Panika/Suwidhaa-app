@@ -4,6 +4,7 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:untitled/feature/school/home/widget/teacher_attendance_dashboard_card.dart';
 
 import '../../../../router/app_routes.dart';
+import '../../attendance/screen/school_student_daly_attendance_screen.dart';
 import '../../event/widget/school_event_dashboard_card.dart';
 
 class TeacherDashboardCard extends StatelessWidget {
@@ -60,7 +61,8 @@ class TeacherDashboardCard extends StatelessWidget {
                       // Students Count
                       InkWell(
                         onTap: () {
-                          Get.toNamed(AppRoutes.studentList);
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => SchoolStudentDailyAttendanceScreen(),));
+                          // Get.toNamed(AppRoutes.studentList);
                         },
                         child: _dashboardBox(
                           icon: Icons.people_outline,

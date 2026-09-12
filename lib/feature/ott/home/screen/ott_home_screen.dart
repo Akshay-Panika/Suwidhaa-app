@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:untitled/feature/ott_platform/home/screen/play_list_screen.dart';
-
+import 'package:untitled/feature/ott/home/screen/play_dashboard_screen.dart';
 import '../../controller/ott_content_controller.dart';
 import '../../search/screen/search_movie_screen.dart';
 import '../widget/movie_banner.dart';
+import 'ott_view_all_screen.dart';
 
 class OttHomeScreen extends StatefulWidget {
   const OttHomeScreen({super.key});
@@ -23,7 +23,7 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     {'label': 'Home', 'type': null},
     {'label': 'Movies', 'type': 'movie'},
     {'label': 'SCI-FI', 'type': 'sci_fi'},
-    {'label': 'WebSeries', 'type': 'web_series'},
+    {'label': 'WebSeries', 'type': 'webseries'},
     {'label': 'Sports', 'type': 'sport'},
     {'label': 'Cartoons', 'type': 'cartoon'},
   ];
@@ -143,13 +143,23 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
             const SizedBox(height: 24),
 
             // Trending Now
-            _buildSectionHeader('Trending Now', 'View All'),
+            _buildSectionHeader(
+              'Trending Now',
+              'View All',
+              categoryType: selectedType,
+              filterType: 'trending',
+            ),
             const SizedBox(height: 12),
             _buildTrendingSlider(trendingContents),
             const SizedBox(height: 24),
 
             // Recommended Shows
-            _buildSectionHeader('Recommended Shows', 'View All'),
+            _buildSectionHeader(
+              'Recommended Shows',
+              'View All',
+              categoryType: selectedType,
+              filterType: 'recommended',
+            ),
             const SizedBox(height: 12),
             _buildRecommendedGrid(recommendedContents),
             const SizedBox(height: 20),
@@ -159,9 +169,6 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     });
   }
 
-  // ---------------------------------------------------------------
-  // CATEGORIES
-  // ---------------------------------------------------------------
   Widget _buildCategories() {
     return SizedBox(
       height: 40,
@@ -178,7 +185,7 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected ? Colors.white : Colors.grey[900],
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected ? Colors.white : Colors.grey[800]!,
                   width: 1,
@@ -205,7 +212,12 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
   // ---------------------------------------------------------------
   // SECTION HEADER
   // ---------------------------------------------------------------
-  Widget _buildSectionHeader(String title, String action) {
+  Widget _buildSectionHeader(
+      String title,
+      String action, {
+        String? categoryType,
+        required String filterType,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -221,7 +233,16 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
           ),
           GestureDetector(
             onTap: () {
-              // TODO: navigate to "View All" screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OttViewAllScreen(
+                    categoryType: categoryType,
+                    filterType: filterType,
+                    title: title,
+                  ),
+                ),
+              );
             },
             child: Text(
               action,
@@ -253,23 +274,32 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
       );
     }
 
-    return SizedBox(
-      height: 150,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      height: 320,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: GridView.builder(
+        // shrinkWrap: true,
+        // physics: const NeverScrollableScrollPhysics(),
+        scrollDirection:Axis.horizontal,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.2,
+        ),
         itemCount: trendingContents.length,
         itemBuilder: (context, index) {
           final content = trendingContents[index];
           return _buildMovieCard(
             contentId: content.id,
+            title: content.title,
             categoryId: content.categoryId,
             contentType: content.contentType,
-            title: content.title,
             rating: content.rating,
             imageUrl: content.thumbnailVertical,
-            width: 200,
-            imageHeight: 150,
+            width: double.infinity,
+            imageHeight: 160,
+            isGrid: true,
           );
         },
       ),
@@ -292,16 +322,18 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Container(
+      height: 380,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+         scrollDirection: Axis.horizontal,
+        // shrinkWrap: true,
+        // physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.8,
+          crossAxisCount: 3,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.6,
         ),
         itemCount: recommendedContents.length,
         itemBuilder: (context, index) {
@@ -322,9 +354,6 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     );
   }
 
-  // ---------------------------------------------------------------
-  // REUSABLE MOVIE CARD
-  // ---------------------------------------------------------------
   Widget _buildMovieCard({
     required String title,
     required int contentId,
@@ -336,125 +365,48 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     required double imageHeight,
     bool isGrid = false,
   }) {
-    return Container(
-      width: isGrid ? null : width,
-      margin: isGrid ? null : const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[900],
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PlayListScreen(
-            contentId: categoryId,
-            contentType: contentType,
-          ),));
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Poster
-            Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    child: Image.network(
-                      imageUrl,
-                      height: imageHeight,
-                      width: isGrid ? double.infinity : width,
-                      fit: BoxFit.fill,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: imageHeight,
-                          width: isGrid ? double.infinity : width,
-                          color: Colors.grey[900],
-                          child: const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: imageHeight,
-                          width: isGrid ? double.infinity : width,
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.movie,
-                            color: Colors.grey,
-                            size: 50,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        (contentType ?? '').toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                ],
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
+          contentId: categoryId,
+          contentType: contentType,
+        ),));
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: isGrid ? null : width,
+            margin: isGrid ? null : const EdgeInsets.only(right: 0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.grey[900],
+              image:  DecorationImage(image: NetworkImage(imageUrl),fit: BoxFit.fill)
+            ),
+            child: imageUrl.isEmpty?Center(child: Icon(Icons.movie,color: Colors.grey,size: 40,)):null,
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                (contentType ?? '').toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: isGrid ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

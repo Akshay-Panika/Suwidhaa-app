@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controller/ott_content_controller.dart';
-import '../../home/screen/play_list_screen.dart';
+import '../../home/screen/play_dashboard_screen.dart';
+import '../../home/screen/play_movie_screen.dart';
 
 class OttMovieScreen extends StatefulWidget {
   const OttMovieScreen({super.key});
@@ -174,15 +175,15 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
   // ---------------------------------------------------------------
   Widget _buildMovieGrid(List<dynamic> contents) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.9,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.3,
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -194,12 +195,12 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
   Widget _buildMovieCard(dynamic content) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         color: Colors.grey[900],
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PlayListScreen(
+          Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
             contentId: content.categoryId,
             contentType: content.contentType,
           ),));

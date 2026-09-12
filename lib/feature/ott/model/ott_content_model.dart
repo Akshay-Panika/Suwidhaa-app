@@ -1,6 +1,6 @@
 class OttContentModel {
   final int id;
-  final int categoryId;                // 🔹 derived from content_type
+  final int categoryId;
   final String title;
   final String thumbnailHorizontal;
   final String thumbnailVertical;
@@ -16,6 +16,7 @@ class OttContentModel {
   final int? cartoon;
   final int? sport;
   final int? sciFi;
+  final int? webseries;   // ⬅️ NEW
 
   OttContentModel({
     required this.id,
@@ -35,16 +36,18 @@ class OttContentModel {
     this.cartoon,
     this.sport,
     this.sciFi,
+    this.webseries,       // ⬅️ NEW
   });
 
   factory OttContentModel.fromJson(Map<String, dynamic> json) {
     final contentType = json['content_type'] ?? '';
 
     // 🔹 Read category-specific IDs
-    final movieId   = json['movie']   as int?;
-    final cartoonId = json['cartoon'] as int?;
-    final sportId   = json['sport']   as int?;
-    final sciFiId   = json['sci_fi']  as int?;
+    final movieId     = json['movie']     as int?;
+    final cartoonId   = json['cartoon']   as int?;
+    final sportId     = json['sport']     as int?;
+    final sciFiId     = json['sci_fi']    as int?;
+    final webseriesId = json['webseries'] as int?;   // ⬅️ NEW
 
     // 🔹 Pick the categoryId based on content_type
     int categoryId = 0;
@@ -61,13 +64,16 @@ class OttContentModel {
       case 'sci_fi':
         categoryId = sciFiId ?? 0;
         break;
+      case 'webseries':                    // ⬅️ NEW case
+        categoryId = webseriesId ?? 0;
+        break;
       default:
         categoryId = json['id'] ?? 0;
     }
 
     return OttContentModel(
       id: json['id'] ?? 0,
-      categoryId: categoryId,          // ✅ now set correctly
+      categoryId: categoryId,
       title: json['title'] ?? '',
       thumbnailHorizontal: json['thumbnail_horizontal'] ?? '',
       thumbnailVertical: json['thumbnail_vertical'] ?? '',
@@ -87,6 +93,7 @@ class OttContentModel {
       cartoon: cartoonId,
       sport: sportId,
       sciFi: sciFiId,
+      webseries: webseriesId,
     );
   }
 }

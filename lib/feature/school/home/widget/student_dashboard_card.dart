@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:untitled/core/utils/app_color.dart';
-import 'package:untitled/feature/school/payment/screen/student_fee_screen.dart';
 import 'package:untitled/feature/school/home/widget/student_attendance_dashboard_card.dart';
-import '../../../ott_platform/dashboard/screen/ott_dashboard_screen.dart';
+import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../event/widget/school_event_dashboard_card.dart';
 import '../../payment/widget/school_student_fee_dashboard_card.dart';
 

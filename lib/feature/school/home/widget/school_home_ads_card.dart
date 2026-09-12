@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 
-import '../../../ott_platform/dashboard/screen/ott_dashboard_screen.dart';
+import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
+
 // import 'package:your_app/path/to/ott_dashboard_screen.dart';
 
 class SchoolHomeAdsCard extends StatefulWidget {

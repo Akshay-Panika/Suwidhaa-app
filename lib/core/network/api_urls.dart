@@ -64,8 +64,9 @@ class ApiUrls {
   static const String ottCartoonDetail = 'v1/ott/cartoons/';
   static const String ottSciFiDetail   = 'v1/ott/sci-fi/';
   static const String ottSportDetail   = 'v1/ott/sports/';
-  static const String ottWebSeriesDetail = 'v1/ott/web-series/';
+  static const String ottWebSeriesDetail = 'v1/ott/webseries/';
   static const String ottReelList = 'v1/ott/reels/list/';
+  static const String ottWebSeriesList = 'v1/ott/webseries/list/';
 
   static String ottDetailPath(String contentType) {
     switch (contentType) {
@@ -77,7 +78,7 @@ class ApiUrls {
         return ottSciFiDetail;
       case 'sport':
         return ottSportDetail;
-      case 'web_series':
+      case 'webseries':
         return ottWebSeriesDetail;
       default:
         return ottContent;

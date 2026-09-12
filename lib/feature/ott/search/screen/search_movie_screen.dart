@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controller/ott_content_controller.dart';
-import '../../home/screen/play_list_screen.dart';
+import '../../home/screen/play_dashboard_screen.dart';
+import '../../home/screen/play_movie_screen.dart';
 
 class SearchMovieScreen extends StatefulWidget {
   const SearchMovieScreen({super.key});
@@ -289,7 +290,7 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PlayListScreen(
+              builder: (context) => PlayDashboardScreen(
                 contentId: content.categoryId,
                 contentType: content.contentType,
               ),
