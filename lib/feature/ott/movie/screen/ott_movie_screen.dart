@@ -180,10 +180,10 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+          crossAxisCount: 3,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 1.3,
+          childAspectRatio: 0.8,
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -193,128 +193,46 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
     );
   }
   Widget _buildMovieCard(dynamic content) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.grey[900],
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
-            contentId: content.categoryId,
-            contentType: content.contentType,
-          ),));
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      content.thumbnailVertical,
-                      height: 160,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 160,
-                          width: double.infinity,
-                          color: Colors.grey[900],
-                          child: const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 160,
-                          width: double.infinity,
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.movie,
-                            color: Colors.grey,
-                            size: 50,
-                          ),
-                        );
-                      },
-                    ),
-
-                    // Content type badge
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          (content.contentType ?? '').toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  ],
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
+          contentId: content.categoryId,
+          contentType: content.contentType,
+        ),));
+      },
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.grey[900],
+                image:  DecorationImage(image: NetworkImage(content.thumbnailVertical),fit: BoxFit.fill)
+            ),
+            child: content.thumbnailVertical.isEmpty?Center(child: Icon(Icons.movie,color: Colors.grey,size: 40,)):null,
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                (content.contentType ?? '').toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      content.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        content.rating,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

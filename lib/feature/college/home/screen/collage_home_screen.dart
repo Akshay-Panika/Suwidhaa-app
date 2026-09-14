@@ -638,7 +638,10 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CollegeViewScreen(college: college),
+            builder: (context) => CollegeViewScreen(
+              collegeId: college.id.toString(),
+              collegeName: college.name,
+            ),
           ),
         ),
         child: Column(
@@ -752,7 +755,10 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => CollegeViewScreen(college: college),
+                builder: (context) => CollegeViewScreen(
+                  collegeId: college.id.toString(),
+                  collegeName: college.name,
+                ),
               ),
             ),
             child: Column(

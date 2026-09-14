@@ -4,6 +4,7 @@ import 'package:get/get_instance/src/bindings_interface.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import '../feature/auth/controller/auth_controller.dart';
 import '../feature/college/controller/college_banner_controller.dart';
+import '../feature/college/controller/college_booking_controller.dart';
 import '../feature/college/controller/college_controller.dart';
 import '../feature/college/controller/room_controller.dart';
 import '../feature/college/controller/tiffin_controller.dart';
@@ -41,5 +42,6 @@ class AppBindings implements Bindings {
     Get.lazyPut<OttController>(() => OttController(), fenix: true);
     Get.lazyPut<OttReelController>(() => OttReelController(), fenix: true);
     Get.lazyPut<WebseriesController>(() => WebseriesController(), fenix: true);
+    Get.lazyPut<CollegeBookingController>(() => CollegeBookingController(), fenix: true);
   }
 }

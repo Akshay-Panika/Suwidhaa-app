@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import 'package:untitled/feature/college/screen/room_view_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/contact_helper.dart';
+import '../../auth/controller/auth_controller.dart';
+import '../controller/college_booking_controller.dart';
+import '../controller/college_controller.dart';
 import '../controller/room_controller.dart';
 import '../controller/tiffin_controller.dart';
 import '../model/college_model.dart';
@@ -11,8 +14,13 @@ import '../model/room_model.dart';
 import '../model/tiffin_model.dart';
 
 class CollegeViewScreen extends StatefulWidget {
-  final College college;
-  const CollegeViewScreen({super.key, required this.college});
+  final String collegeId;
+  final String collegeName;
+  const CollegeViewScreen({
+    super.key,
+    required this.collegeId,
+    required this.collegeName,
+  });
 
   @override
   State<CollegeViewScreen> createState() => _CollegeViewScreenState();
@@ -24,23 +32,27 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
   String _selectedTiffinType = 'All';
   int _selectedImageIndex = 0;
 
+  final AuthController authController = Get.find<AuthController>();
   final RoomController _roomController = Get.find<RoomController>();
   final TiffinController _tiffinController = Get.find<TiffinController>();
+  final CollegeController _collegeController = Get.find<CollegeController>();
+  final CollegeBookingController _bookingController = Get.find<CollegeBookingController>();
 
-  // Get gallery images from college
-  List<String> get _galleryImages {
-    if (widget.college.images.isNotEmpty) {
-      return widget.college.images.map((image) => image.url).toList();
-    }
-    // Fallback images if no images available
-    return [
-      "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&h=500&fit=crop",
-      "https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=800&h=500&fit=crop",
-    ];
-  }
+
+  bool _isBooking = false;
+  College? _college;
+  bool _isCollegeLoading = true;
+  String _collegeError = '';
 
   // Room type filters
-  final List<String> _roomTypes = ['All', 'Single Room', '1bhk', '2bhk', '3bhk', 'pg'];
+  final List<String> _roomTypes = [
+    'All',
+    'Single Room',
+    '1bhk',
+    '2bhk',
+    '3bhk',
+    'pg'
+  ];
 
   // Tiffin type filters
   final List<String> _tiffinTypes = ['All', 'Veg', 'Non-Veg', 'Both'];
@@ -82,20 +94,81 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch rooms by college name
-    _roomController.fetchRoomsByCollege(widget.college.name);
-    // Fetch tiffins by college name
-    _tiffinController.fetchTiffinsByCollege(widget.college.name);
+    _roomController.fetchRoomsByCollege(widget.collegeName);
+    _tiffinController.fetchTiffinsByCollege(widget.collegeName);
+    Get.find<CollegeBookingController>();
+
+    // ✅ Build complete hone ke baad call karo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchCollegeDetails();
+    });
   }
+
+  Future<void> _fetchCollegeDetails() async {
+    try {
+
+      final id = int.tryParse(widget.collegeId);
+      if (id == null) {
+        if (mounted) {
+          setState(() {
+            _collegeError = 'Invalid college ID';
+            _isCollegeLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Reset selected college first
+      _collegeController.clearSelectedCollege();
+
+      await _collegeController.fetchCollegeById(id);
+
+      if (mounted) {
+        setState(() {
+          _college = _collegeController.selectedCollege.value;
+          _isCollegeLoading = false;
+          if (_college == null) {
+            _collegeError = 'College not found';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _collegeError = e.toString();
+          _isCollegeLoading = false;
+        });
+      }
+    }
+  }
+
+// ✅ Retry — alag method jo safely setState call karta hai
+  Future<void> _retryFetchCollege() async {
+    setState(() {
+      _isCollegeLoading = true;
+      _collegeError = '';
+      _college = null;
+    });
+    await _fetchCollegeDetails();
+  }
+
+  // Helper getters for college data with null safety
+  String get _collegeWebsite => _college?.website ?? '';
+  String get _collegeAddress => _college?.address ?? '';
+  String get _collegeCategory => _college?.category ?? 'General';
+  String? get _collegeContactNumber => _college?.contactNumber;
+  String? get _collegeLogoUrl => _college?.logoUrl;
+  List<CollegeImage> get _collegeImages => _college?.images ?? [];
+  String get _collegeName => _college?.name ?? widget.collegeName;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.college.name),
+        title: Text(widget.collegeName),
         titleTextStyle: const TextStyle(
-          fontSize: 20,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
@@ -104,380 +177,532 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
-        actions: [
-
-        ],
+        actions: [],
       ),
-      body: Obx(() {
-        final bool isLoading = (_roomController.isLoading.value && _roomController.rooms.isEmpty) &&
-            (_tiffinController.isLoading.value && _tiffinController.tiffins.isEmpty);
-
-        if (isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
-        return CustomScrollView(
-          slivers: [
-            // College Header Image with Gallery
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  // Main Image with Gallery Indicator
-                  Stack(
-                    children: [
-                      Container(
-                        height: 250,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          image: DecorationImage(
-                            image: NetworkImage(_galleryImages[_selectedImageIndex]),
-                            fit: BoxFit.cover,
-                            onError: (exception, stackTrace) {
-                              // Handle image load error silently
-                            },
-                          ),
-                        ),
-                      ),
-                      // Gradient overlay
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 80,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withOpacity(0.7),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Gallery Navigation Arrows (only if more than 1 image)
-                      if (_galleryImages.length > 1) ...[
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          left: 8,
-                          child: Center(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedImageIndex = (_selectedImageIndex - 1 + _galleryImages.length) % _galleryImages.length;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.chevron_left,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          bottom: 0,
-                          right: 8,
-                          child: Center(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedImageIndex = (_selectedImageIndex + 1) % _galleryImages.length;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.chevron_right,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                      // Image Counter
-                      Positioned(
-                        bottom: 16,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            "${_selectedImageIndex + 1}/${_galleryImages.length}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Gallery Indicator Dots
-                      Positioned(
-                        bottom: 16,
-                        left: 0,
-                        right: 0,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            _galleryImages.length,
-                                (index) => Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: _selectedImageIndex == index ? 20 : 8,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(3),
-                                color: _selectedImageIndex == index
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.4),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 10,
-                        bottom: 0,
-                        child: Container(
-                          height: 50,
-                          width: 50,
-                          margin: EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border, width: 0.3),
-                            image: DecorationImage(
-                              image: NetworkImage(widget.college.logoUrl.toString()),
-                              fit: BoxFit.fill,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Thumbnail Gallery (only if more than 1 image)
-                  if (_galleryImages.length > 1)
-                    Container(
-                      height: 70,
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                      color: Colors.grey.shade50,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _galleryImages.length,
-                        itemBuilder: (context, index) {
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedImageIndex = index;
-                              });
-                            },
-                            child: Container(
-                              width: 80,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: _selectedImageIndex == index
-                                      ? AppColors.primary
-                                      : Colors.transparent,
-                                  width: 3,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: Image.network(
-                                  _galleryImages[index],
-                                  width: 80,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 80,
-                                      height: 60,
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // College Info
-            SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade100)
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          widget.college.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        _buildInfoChip(
-                            Icons.category_rounded,
-                            widget.college.category ?? 'General',
-                            Colors.blue
-                        ),
-                      ],
-                    ),
-                    if (widget.college.website.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.language_rounded,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          InkWell(
-                            onTap: () => ContactHelper.openWebsite(widget.college.website),
-                            child: Text(
-                              widget.college.website,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            widget.college.address,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            _buildInfoChip(
-                                Icons.home,
-                                "${_roomController.rooms.length} Rooms",
-                                AppColors.primary
-                            ),
-                            const SizedBox(width: 8),
-                            _buildInfoChip(
-                                Icons.fastfood_outlined,
-                                "${_tiffinController.tiffins.length} Tiffin",
-                                Colors.green
-                            ),
-
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: InkWell(
-                              onTap: () {
-                                ContactHelper.whatsapp('+918989207770', "Hello Sir I want to more information of this ${widget.college.name}");
-                              },
-                              child: FaIcon(FontAwesomeIcons.whatsapp,size: 30,color: Colors.green,)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Tabs: Room & Tiffin
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyTabDelegate(
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Main Tabs
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildTabButton("Rooms", 0),
-                          _buildTabButton("Tiffin", 1),
-                        ],
-                      ),
-                      // Filter Chips for selected tab
-                      _buildFilterChips(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(child: SizedBox(height: 10,),),
-            // Content based on selected tab
-            _selectedTab == 0
-                ? _buildRoomGrid()
-                : _buildTiffinGrid(),
-          ],
-        );
-      }),
+      body: _buildBody(),
     );
   }
 
+  Widget _buildBody() {
+    // ✅ 1. College loading — Obx ke BAHAR (setState variable)
+    if (_isCollegeLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // ✅ 2. College error — Obx ke BAHAR (setState variable)
+    if (_collegeError.isNotEmpty || _college == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 60,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _collegeError.isNotEmpty ? _collegeError : 'College not found',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _retryFetchCollege,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ✅ 3. Ab Obx sirf room/tiffin observables ke liye
+    return Obx(() {
+      final bool isLoading =
+          (_roomController.isLoading.value && _roomController.rooms.isEmpty) &&
+              (_tiffinController.isLoading.value &&
+                  _tiffinController.tiffins.isEmpty);
+
+      if (isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      return Column(
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                // College Header Image with Gallery
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          // ✅ Main Image using college images
+                          Container(
+                            height: 180,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              image: DecorationImage(
+                                image: NetworkImage(
+                                  _collegeImages.isNotEmpty
+                                      ? _collegeImages[_selectedImageIndex].url
+                                      : 'https://via.placeholder.com/400x300?text=No+Image',
+                                ),
+                                fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {
+                                  // Handle image load error silently
+                                },
+                              ),
+                            ),
+                          ),
+                          // Gradient overlay
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.7),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Gallery Navigation Arrows (only if more than 1 image)
+                          if (_collegeImages.length > 1) ...[
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 8,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImageIndex =
+                                          (_selectedImageIndex - 1 +
+                                              _collegeImages.length) %
+                                              _collegeImages.length;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              right: 8,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImageIndex =
+                                          (_selectedImageIndex + 1) %
+                                              _collegeImages.length;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          // Image Counter
+                          Positioned(
+                            bottom: 16,
+                            right: 16,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                "${_selectedImageIndex + 1}/${_collegeImages.isNotEmpty ? _collegeImages.length : 1}",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Gallery Indicator Dots
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                _collegeImages.length,
+                                    (index) => Container(
+                                  margin:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                                  width: _selectedImageIndex == index ? 20 : 8,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(3),
+                                    color: _selectedImageIndex == index
+                                        ? Colors.white
+                                        : Colors.white.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // ✅ Logo
+                          Positioned(
+                            left: 10,
+                            bottom: 0,
+                            child: Container(
+                              height: 50,
+                              width: 50,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: AppColors.border, width: 0.3),
+                                image: DecorationImage(
+                                  image: NetworkImage(
+                                    _collegeLogoUrl != null &&
+                                        _collegeLogoUrl!.isNotEmpty
+                                        ? _collegeLogoUrl!
+                                        : 'https://via.placeholder.com/100x100?text=Logo',
+                                  ),
+                                  fit: BoxFit.fill,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Thumbnail Gallery (only if more than 1 image)
+                      if (_collegeImages.length > 1)
+                        Container(
+                          height: 70,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 4),
+                          color: Colors.grey.shade50,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _collegeImages.length,
+                            itemBuilder: (context, index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedImageIndex = index;
+                                  });
+                                },
+                                child: Container(
+                                  width: 80,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _selectedImageIndex == index
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      _collegeImages[index].url,
+                                      width: 80,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          width: 80,
+                                          height: 60,
+                                          color: Colors.grey.shade200,
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // College Info
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _collegeName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildInfoChip(
+                              Icons.category_rounded,
+                              _collegeCategory,
+                              Colors.blue,
+                            ),
+                          ],
+                        ),
+                        if (_collegeWebsite.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.language_rounded,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => ContactHelper.openWebsite(
+                                      _collegeWebsite),
+                                  child: Text(
+                                    _collegeWebsite,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _collegeAddress,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Tabs: Room & Tiffin
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTabDelegate(
+                    child: Container(
+                      color: Colors.white,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Main Tabs
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildTabButton(
+                                  "${_roomController.rooms.length} Rooms", 0),
+                              _buildTabButton(
+                                  "${_tiffinController.tiffins.length} Tiffin",
+                                  1),
+                            ],
+                          ),
+                          // Filter Chips for selected tab
+                          _buildFilterChips(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 10),
+                ),
+                // Content based on selected tab
+                _selectedTab == 0 ? _buildRoomGrid() : _buildTiffinGrid(),
+              ],
+            ),
+          ),
+          SafeArea(
+            child: Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                spacing: 16,
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      // ✅ Already booked ya loading ho to disable
+                      onTap: (_college == null || _college!.booking || _isBooking)
+                          ? null
+                          : () async {
+                        setState(() => _isBooking = true);
+
+                        try {
+                          final success = await _bookingController.bookCollege(
+                            collegeId: _college!.id,
+                            message:
+                            'Hi Suwidhaa:\n'
+                                'Name: ${authController.getUserName}\n'
+                                'Phone: ${authController.getUserPhone}\n'
+                                'I am interested in admission to this college - ${_college!.name}',
+                          );
+
+                          if (success) {
+                            // ✅ Fresh college data fetch karo
+                            await _collegeController.fetchCollegeById(_college!.id);
+
+                            if (mounted) {
+                              setState(() {
+                                // ✅ Local _college update karo
+                                _college = _collegeController.selectedCollege.value;
+                                _isBooking = false;
+                              });
+                            }
+                          } else {
+                            if (mounted) {
+                              setState(() => _isBooking = false);
+                            }
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() => _isBooking = false);
+                          }
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          // ✅ Booked hone pe grey
+                          color: _college!.booking ? Colors.grey : AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: _isBooking
+                              ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                              : Text(
+                            _college!.booking
+                                ? "College Enquiry Booked"
+                                : "College Enquiry",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        final phone = _college?.contactNumber;
+                        if (phone != null && phone.isNotEmpty) {
+                          ContactHelper.call(phone);
+                        }
+                      },
+                      icon: const FaIcon(
+                        FontAwesomeIcons.phone,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
 
   Widget _buildFilterChips() {
     return Container(
@@ -486,16 +711,21 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: _selectedTab == 0
-            ? _roomTypes.map((type) => _buildChip(type, _selectedRoomType == type, () {
+            ? _roomTypes
+            .map((type) => _buildChip(type, _selectedRoomType == type, () {
           setState(() {
             _selectedRoomType = type;
           });
-        })).toList()
-            : _tiffinTypes.map((type) => _buildChip(type, _selectedTiffinType == type, () {
-          setState(() {
-            _selectedTiffinType = type;
-          });
-        })).toList(),
+        }))
+            .toList()
+            : _tiffinTypes
+            .map((type) => _buildChip(type, _selectedTiffinType == type,
+                () {
+              setState(() {
+                _selectedTiffinType = type;
+              });
+            }))
+            .toList(),
       ),
     );
   }
@@ -511,7 +741,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
             borderRadius: BorderRadius.circular(12),
             color: isSelected ? AppColors.primary : Colors.grey.shade100,
             border: Border.all(
-              color: isSelected ? AppColors.primary :AppColors.border,
+              color: isSelected ? AppColors.primary : AppColors.border,
               width: 0.3,
             ),
           ),
@@ -595,11 +825,10 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
 
     // Show loading if rooms are being fetched
     if (_roomController.isLoading.value && rooms.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Container(
+      return const SliverToBoxAdapter(
+        child: SizedBox(
           height: 200,
-          alignment: Alignment.center,
-          child: const CircularProgressIndicator(),
+          child: Center(child: CircularProgressIndicator()),
         ),
       );
     }
@@ -619,7 +848,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _selectedRoomType == 'All'
-                      ? 'No rooms available near ${widget.college.name}'
+                      ? 'No rooms available near $_collegeName'
                       : 'No rooms found for "$_selectedRoomType"',
                   style: TextStyle(
                     fontSize: 16,
@@ -644,7 +873,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 4,
           mainAxisSpacing: 4,
-          childAspectRatio: 0.9,
+          childAspectRatio: 1,
         ),
         itemBuilder: (context, index) {
           final room = rooms[index];
@@ -716,9 +945,11 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                     ),
                   ),
                   Positioned(
-                    top: 4,right: 4,
+                    top: 4,
+                    right: 4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: room.availabilityColor,
                         borderRadius: BorderRadius.circular(10),
@@ -767,24 +998,23 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                     children: [
                       Row(
                         children: [
-                          if(room.roomTypeDisplay!='')
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              room.roomTypeDisplay,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w600,
+                          if (room.roomTypeDisplay != '')
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                room.roomTypeDisplay,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-
-
                         ],
                       ),
                       Text(
@@ -812,11 +1042,10 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
 
     // Show loading if tiffins are being fetched
     if (_tiffinController.isLoading.value && tiffins.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Container(
+      return const SliverToBoxAdapter(
+        child: SizedBox(
           height: 200,
-          alignment: Alignment.center,
-          child: const CircularProgressIndicator(),
+          child: Center(child: CircularProgressIndicator()),
         ),
       );
     }
@@ -836,7 +1065,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _selectedTiffinType == 'All'
-                      ? 'No tiffins available near ${widget.college.name}'
+                      ? 'No tiffins available near $_collegeName'
                       : 'No tiffins found for "$_selectedTiffinType"',
                   style: TextStyle(
                     fontSize: 16,
@@ -910,8 +1139,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                       return Container(
                         height: 120,
                         color: Colors.grey.shade200,
-                        child: Center(
-                          child: const Icon(
+                        child: const Center(
+                          child: Icon(
                             Icons.food_bank_rounded,
                             size: 40,
                             color: Colors.grey,
@@ -925,7 +1154,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                     top: 6,
                     left: 6,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: _getTiffinTypeColor(tiffin),
                         borderRadius: BorderRadius.circular(10),
@@ -940,13 +1170,14 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                       ),
                     ),
                   ),
-            
+
                   // Availability
                   Positioned(
                     top: 6,
                     right: 6,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: tiffin.availabilityColor,
                         borderRadius: BorderRadius.circular(10),
@@ -1005,11 +1236,14 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: tiffin.isBooking ? null : () {
+                    onPressed: tiffin.isBooking
+                        ? null
+                        : () {
                       _showTiffinDetails(tiffin);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: tiffin.isBooking ? Colors.grey : AppColors.primary,
+                      backgroundColor:
+                      tiffin.isBooking ? Colors.grey : AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       minimumSize: const Size(double.infinity, 28),
                       shape: RoundedRectangleBorder(
@@ -1079,7 +1313,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _getTiffinTypeColor(tiffin).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -1094,20 +1329,26 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              _buildDetailRow(Icons.price_change_rounded, tiffin.formattedPrice),
+              _buildDetailRow(
+                  Icons.price_change_rounded, tiffin.formattedPrice),
               if (tiffin.nearCollege != null && tiffin.nearCollege!.isNotEmpty)
-                _buildDetailRow(Icons.school_rounded, 'Near: ${tiffin.nearCollege}'),
+                _buildDetailRow(
+                    Icons.school_rounded, 'Near: ${tiffin.nearCollege}'),
               if (tiffin.hasContact)
                 _buildDetailRow(Icons.phone_rounded, tiffin.contactDisplay),
-              _buildDetailRow(Icons.info_outline_rounded,
-                  tiffin.description.isEmpty ? 'Delicious tiffin service available' : tiffin.description),
+              _buildDetailRow(
+                  Icons.info_outline_rounded,
+                  tiffin.description.isEmpty
+                      ? 'Delicious tiffin service available'
+                      : tiffin.description),
               const SizedBox(height: 20),
               if (tiffin.hasContact) ...[
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => ContactHelper.call(tiffin.contactNumber!),
+                        onPressed: () =>
+                            ContactHelper.call(tiffin.contactNumber!),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1115,7 +1356,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        icon: const Icon(Icons.call, color: Colors.white, size: 18),
+                        icon: const Icon(Icons.call,
+                            color: Colors.white, size: 18),
                         label: const Text(
                           'Call',
                           style: TextStyle(color: Colors.white),
@@ -1136,7 +1378,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        icon: const Icon(Icons.message, color: Colors.white, size: 18),
+                        icon: const Icon(Icons.message,
+                            color: Colors.white, size: 18),
                         label: const Text(
                           'WhatsApp',
                           style: TextStyle(color: Colors.white),
@@ -1183,7 +1426,8 @@ class _StickyTabDelegate extends SliverPersistentHeaderDelegate {
   _StickyTabDelegate({required this.child});
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return child;
   }
 

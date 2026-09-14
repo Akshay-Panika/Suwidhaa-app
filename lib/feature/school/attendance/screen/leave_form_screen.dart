@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class StudentLeaveFormScreen extends StatefulWidget {
-  const StudentLeaveFormScreen({super.key});
+class LeaveFormScreen extends StatefulWidget {
+  const LeaveFormScreen({super.key});
 
   @override
-  State<StudentLeaveFormScreen> createState() => _StudentLeaveFormScreenState();
+  State<LeaveFormScreen> createState() => _LeaveFormScreenState();
 }
 
-class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
+class _LeaveFormScreenState extends State<LeaveFormScreen> {
   final _formKey = GlobalKey<FormState>();
   String? leaveType;
   DateTime? fromDate;

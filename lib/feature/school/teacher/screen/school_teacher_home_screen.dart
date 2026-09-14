@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../widget/school_home_ads_card.dart';
-import '../widget/teacher_attendance_card.dart';
-import '../widget/teacher_dashboard_card.dart';
+
 import '../../homework/widget/teacher_home_work.dart';
+import '../../student/widget/school_home_ads_card.dart';
 import '../widget/teacher_checkin_checkout_button.dart';
+import '../widget/teacher_dashboard_card.dart';
 import '../widget/teacher_profile_card.dart';
+
 
 class SchoolTeacherHomeScreen extends StatelessWidget {
   const SchoolTeacherHomeScreen({super.key});

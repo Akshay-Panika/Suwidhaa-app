@@ -411,7 +411,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => CollegeViewScreen(
-                college: college,
+                collegeId: college.id.toString(),
+                collegeName: college.name,
               ),
             ),
           );
@@ -529,7 +530,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => CollegeViewScreen(
-                college: college,
+                collegeId: college.id.toString(),
+                collegeName: college.name,
               ),
             ),
           );

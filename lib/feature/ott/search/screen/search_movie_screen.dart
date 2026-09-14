@@ -213,8 +213,8 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
       );
     }
 
-    const cardWidth = 150.0;
-    const rowHeight = 200.0;
+    const cardWidth = 120.0;
+    const rowHeight = 160.0;
     const spacing = 12.0;
     const rows = 2;
 
@@ -261,15 +261,15 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.9,
+          crossAxisCount: 3,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio:0.7,
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -280,126 +280,48 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
   }
 
   Widget _buildMovieCard(dynamic content) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[900],
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PlayDashboardScreen(
-                contentId: content.categoryId,
-                contentType: content.contentType,
-              ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
+          contentId: content.categoryId,
+          contentType: content.contentType,
+        ),));
+      },
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.grey[900],
+                image:  DecorationImage(image: NetworkImage(content.thumbnailVertical),fit: BoxFit.fill)
             ),
-          );
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      content.thumbnailVertical,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return Container(
-                          color: Colors.grey[900],
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.red,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stack) => Container(
-                        color: Colors.grey[800],
-                        child: const Icon(
-                          Icons.movie,
-                          color: Colors.grey,
-                          size: 40,
-                        ),
-                      ),
-                    ),
-
-                    // 🔹 CONTENT TYPE BADGE (top-left)
-                    if (content.contentType != null &&
-                        content.contentType.toString().isNotEmpty)
-                      Positioned(
-                        top: 6,
-                        left: 6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            content.contentType.toString().toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+            child: content.thumbnailVertical.isEmpty?Center(child: Icon(Icons.movie,color: Colors.grey,size: 40,)):null,
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                (content.contentType ?? '').toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      content.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 12),
-                      const SizedBox(width: 3),
-                      Text(
-                        content.rating,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+
   }
 }

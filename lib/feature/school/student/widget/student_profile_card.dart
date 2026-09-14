@@ -35,12 +35,15 @@ class StudentProfileCard extends StatelessWidget {
 
   Widget _buildShimmerEffect() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
       ),
       child: Shimmer.fromColors(
         baseColor: Colors.grey.shade300,
@@ -90,12 +93,15 @@ class StudentProfileCard extends StatelessWidget {
 
   Widget _buildErrorState(StudentController controller) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
       ),
       child: Row(
         children: [
@@ -163,12 +169,15 @@ class StudentProfileCard extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
       ),
       child: Row(
         children: [
@@ -212,19 +221,15 @@ class StudentProfileCard extends StatelessWidget {
 
   Widget _buildProfileContent(StudentData student, StudentController controller) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
       ),
       child: Row(
         children: [

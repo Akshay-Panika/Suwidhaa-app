@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/widget/contact_helper.dart';
 import '../../auth/controller/school_auth_controller.dart';
-import '../../home/widget/student_attendance_card.dart';
+import '../../student/widget/student_attendance_card.dart';
 import '../controller/student_controller.dart';
 import '../model/student_model.dart';
 import '../widget/school_facilitie_card.dart';
