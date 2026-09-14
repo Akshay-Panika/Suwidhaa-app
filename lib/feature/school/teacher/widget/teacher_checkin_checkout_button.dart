@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../../attendance/screen/school_student_daly_attendance_screen.dart';
 import '../../attendance/screen/teacher_checkin_checkout_screen.dart';
 
 class TeacherCheckinCheckoutButton extends StatelessWidget {

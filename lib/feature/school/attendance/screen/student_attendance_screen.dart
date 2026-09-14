@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/attendance/screen/student_leave_form_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/leave_form_screen.dart';
 
-class SchoolStudentAttendanceScreen extends StatefulWidget {
-  const SchoolStudentAttendanceScreen({super.key});
+class StudentAttendanceScreen extends StatefulWidget {
+  const StudentAttendanceScreen({super.key});
 
   @override
-  State<SchoolStudentAttendanceScreen> createState() =>
-      _SchoolStudentAttendanceScreenState();
+  State<StudentAttendanceScreen> createState() =>
+      _StudentAttendanceScreenState();
 }
 
-class _SchoolStudentAttendanceScreenState extends State<SchoolStudentAttendanceScreen> {
+class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   DateTime _focusedDay = DateTime(2026, 8);
 
   // Sample attendance data
@@ -336,7 +336,7 @@ class _SchoolStudentAttendanceScreenState extends State<SchoolStudentAttendanceS
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>  StudentLeaveFormScreen(),
+                      builder: (context) =>  LeaveFormScreen(),
                     ),
                   );
                 },

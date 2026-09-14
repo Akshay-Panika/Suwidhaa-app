@@ -45,6 +45,8 @@ class ApiUrls {
   // College endpoints
   static const String collegeList = 'v1/college/colleges/list/';
   static const String collegeDetail = 'v1/college/colleges/';
+  static const String collegeBooking = 'v1/college/college_booking/create/';
+  static const String collegeBookingList = 'v1/college/college_booking/list/';
 
   // Room endpoints
   static const String roomCreate = 'v1/college/rooms/create/';

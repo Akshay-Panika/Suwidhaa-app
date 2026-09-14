@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -13,26 +14,48 @@ class PromotionalBottomSheet extends StatefulWidget {
 class _PromotionalBottomSheetState extends State<PromotionalBottomSheet> {
   int _timerSeconds = 30;
   bool _isSheetShown = false;
+  Timer? _countdownTimer;      // ✅ Timer instance
+  Timer? _openSheetTimer;      // ✅ Open delay timer
 
   @override
   void initState() {
     super.initState();
     _startTimer();
-
   }
 
   void _startTimer() {
     // Show bottom sheet after 30 seconds
-    Future.delayed(const Duration(seconds: 30), () {
+    _openSheetTimer = Timer(const Duration(seconds: 30), () {
       if (mounted) {
-        _isSheetShown = true;
+        setState(() {
+          _isSheetShown = true;
+        });
         _showBottomSheet();
       }
     });
   }
 
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_timerSeconds > 0) {
+          _timerSeconds--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
   void _showBottomSheet() {
     if (!mounted) return;
+
+    _startCountdown();   // ✅ Countdown start karo jab sheet khule
 
     showModalBottomSheet(
       context: context,
@@ -41,7 +64,10 @@ class _PromotionalBottomSheetState extends State<PromotionalBottomSheet> {
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.6),
       builder: (context) => _buildPromotionalContent(context),
-    );
+    ).whenComplete(() {
+      // ✅ Sheet band hone pe countdown rok do
+      _countdownTimer?.cancel();
+    });
   }
 
   Widget _buildPromotionalContent(BuildContext context) {
@@ -105,7 +131,7 @@ class _PromotionalBottomSheetState extends State<PromotionalBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildTimer(context),
+                _buildTimer(),   // ✅ No context needed
                 const SizedBox(height: 20),
                 _buildClaimButton(context),
                 const SizedBox(height: 12),
@@ -166,44 +192,29 @@ class _PromotionalBottomSheetState extends State<PromotionalBottomSheet> {
     );
   }
 
-  // ✅ FIXED: Real countdown timer
-  Widget _buildTimer(BuildContext context) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        // Start countdown only if sheet is shown
-        if (_isSheetShown && _timerSeconds > 0) {
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              setState(() {
-                if (_timerSeconds > 0) _timerSeconds--;
-              });
-            }
-          });
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(30),
+  // ✅ FIXED: Simple stateless timer widget — no StatefulBuilder, no Future.delayed
+  Widget _buildTimer() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.timer, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
+          Text(
+            'Offer ends in: ${_timerSeconds ~/ 60}:${(_timerSeconds % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.timer, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'Offer ends in: ${_timerSeconds ~/ 60}:${(_timerSeconds % 60).toString().padLeft(2, '0')}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -249,13 +260,14 @@ class _PromotionalBottomSheetState extends State<PromotionalBottomSheet> {
     );
   }
 
-
   void _closeBottomSheet(BuildContext context) {
     Navigator.pop(context);
   }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();   // ✅ Cancel countdown
+    _openSheetTimer?.cancel();   // ✅ Cancel open timer
     super.dispose();
   }
 

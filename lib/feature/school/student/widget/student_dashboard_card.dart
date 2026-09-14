@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:untitled/feature/school/home/widget/teacher_attendance_dashboard_card.dart';
-
-import '../../../../router/app_routes.dart';
-import '../../attendance/screen/school_student_daly_attendance_screen.dart';
+import 'package:untitled/feature/school/student/widget/student_attendance_dashboard_card.dart';
+import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../event/widget/school_event_dashboard_card.dart';
+import '../../payment/widget/school_student_fee_dashboard_card.dart';
 
-class TeacherDashboardCard extends StatelessWidget {
-  const TeacherDashboardCard({super.key});
+class StudentDashboardCard extends StatelessWidget {
+  const StudentDashboardCard({super.key});
 
 
   @override
@@ -55,23 +52,11 @@ class TeacherDashboardCard extends StatelessWidget {
 
                       // Attendance Graph
                       Expanded(
-                        child: TeacherAttendanceDashboardCard(),
+                        child: StudentAttendanceDashboardCard(),
                       ),
 
-                      // Students Count
-                      InkWell(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => SchoolStudentDailyAttendanceScreen(),));
-                          // Get.toNamed(AppRoutes.studentList);
-                        },
-                        child: _dashboardBox(
-                          icon: Icons.people_outline,
-                          title: "Total Students",
-                          value: "120 Students",
-                          subtitle: "Class 10 - 12",
-                          iconColor: Colors.blue,
-                        ),
-                      ),
+                      // Fee Status
+                      SchoolStudentFeeDashboardCard(),
                     ],
                   ),
                 ),
@@ -82,19 +67,67 @@ class TeacherDashboardCard extends StatelessWidget {
                     spacing: 10,
                     children: [
 
-                      // Classes Today
+                      // Class Teacher
                       _dashboardBox(
-                        icon: Icons.class_,
-                        title: "Classes Today",
-                        value: "4 Classes",
-                        subtitle: "8:00 AM - 2:00 PM",
-                        iconColor: Colors.orange,
+                        icon: Icons.person_outline,
+                        title: "Class Teacher",
+                        value: "Mrs. Priya Sharma",
+                        subtitle: "Class 10 • Section A",
+                        iconColor: Colors.blue,
                       ),
 
                       // Events Carousel
                       Expanded(
-                        child:  SchoolEventDashboardCard(),
+                        child: SchoolEventDashboardCard(),
                       ),
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                          ),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => OttDashboardScreen(currentIndex: 3,),));
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.movie_outlined,
+                                  size: 24,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  "OTT",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                               Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                 color: Colors.blue,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
                     ],
                   ),
                 ),
@@ -105,8 +138,6 @@ class TeacherDashboardCard extends StatelessWidget {
       ],
     );
   }
-
-  // ================= DASHBOARD BOX =================
 
   Widget _dashboardBox({
     required IconData icon,
@@ -183,5 +214,4 @@ class TeacherDashboardCard extends StatelessWidget {
       ),
     );
   }
-
 }

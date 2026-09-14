@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 
-import '../../attendance/screen/school_teacher_attendance_screen.dart';
-import '../../home/screen/school_teacher_home_screen.dart';
+import '../../../../router/app_routes.dart';
+import '../../attendance/screen/teacher_attendance_screen.dart';
+import '../../teacher/screen/school_teacher_home_screen.dart';
 import '../../profile/screen/school_teacher_profile_screen.dart';
 import '../../transport/screen/school_student_transport_screen.dart';
 
@@ -14,69 +17,199 @@ class SchoolTeacherDashboardScreen extends StatefulWidget {
 
 class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScreen> {
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
     SchoolTeacherHomeScreen(),
-    SchoolTeacherAttendanceScreen(),
+    TeacherAttendanceScreen(),
     SchoolStudentTransportScreen(),
     SchoolTeacherProfileScreen(),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+  /// Handle back navigation logic
+  Future<void> _handleBack() async {
+    if (_currentIndex != 0) {
+      setState(() {
+        _currentIndex = 0;
+      });
+      return;
+    }
 
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.blue,
-        automaticallyImplyLeading: false,
+    _showExitBottomSheet();
+  }
 
-        titleSpacing: 16,
-
-        title: Row(
+  void _showExitBottomSheet() {
+    _scaffoldKey.currentState?.showBottomSheet(
+          (context) => Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(10),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(15)),
+          border: Border.symmetric(
+            horizontal: BorderSide(color: Colors.green),
+            vertical: BorderSide(color: Colors.green),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.school_outlined,
-                size: 24,
-                color: Colors.white,
-              ),
+            Row(
+              children: const [
+                Icon(Icons.exit_to_app, color: Colors.red, size: 20),
+                SizedBox(width: 6),
+                Text(
+                  'Exit App?',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-
-            const SizedBox(width: 10),
-
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Suwidhaa School",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+            const SizedBox(height: 6),
+            const Text(
+              'Do you really want to close the app?',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.red),
                     ),
                   ),
-                  SizedBox(height: 2),
-                  Text(
-                    "Student Portal",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(true);
+                      Get.offAllNamed(AppRoutes.dashboard);
+                    },
+                    child: const Text(
+                      'Exit',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBack();
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: Colors.grey.shade50,
+
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.blue,
+          automaticallyImplyLeading: false,
+
+          titleSpacing: 16,
+
+          title: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.school_outlined,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Suwidhaa School",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Teacher Portal",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      // Notification screen
+                    },
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Colors.white,
+                      size: 25,
+                    ),
+                  ),
+
+                  Positioned(
+                    right: 7,
+                    top: 7,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -85,141 +218,103 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
           ],
         ),
 
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    // Notification screen
-                  },
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Colors.white,
-                    size: 25,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+
+              backgroundColor: Colors.white,
+
+              elevation: 0,
+
+              type: BottomNavigationBarType.fixed,
+
+              selectedItemColor: Colors.blue,
+
+              unselectedItemColor: Colors.grey.shade500,
+
+              selectedFontSize: 11,
+
+              unselectedFontSize: 11,
+
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w400,
+              ),
+
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.home_outlined,
+                    size: 23,
                   ),
+                  activeIcon: Icon(
+                    Icons.home_rounded,
+                    size: 23,
+                  ),
+                  label: 'Home',
                 ),
 
-                Positioned(
-                  right: 7,
-                  top: 7,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.blue,
-                        width: 1.5,
-                      ),
-                    ),
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.fact_check_outlined,
+                    size: 23,
                   ),
+                  activeIcon: Icon(
+                    Icons.fact_check_rounded,
+                    size: 23,
+                  ),
+                  label: 'Attendance',
+                ),
+
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.directions_bus_outlined,
+                    size: 23,
+                  ),
+                  activeIcon: Icon(
+                    Icons.directions_bus_rounded,
+                    size: 23,
+                  ),
+                  label: 'Transport',
+                ),
+
+                BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.person_outline_rounded,
+                    size: 23,
+                  ),
+                  activeIcon: Icon(
+                    Icons.person_rounded,
+                    size: 23,
+                  ),
+                  label: 'Profile',
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-
-            backgroundColor: Colors.white,
-
-            elevation: 0,
-
-            type: BottomNavigationBarType.fixed,
-
-            selectedItemColor: Colors.blue,
-
-            unselectedItemColor: Colors.grey.shade500,
-
-            selectedFontSize: 11,
-
-            unselectedFontSize: 11,
-
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-            ),
-
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w400,
-            ),
-
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.home_outlined,
-                  size: 23,
-                ),
-                activeIcon: Icon(
-                  Icons.home_rounded,
-                  size: 23,
-                ),
-                label: 'Home',
-              ),
-
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.fact_check_outlined,
-                  size: 23,
-                ),
-                activeIcon: Icon(
-                  Icons.fact_check_rounded,
-                  size: 23,
-                ),
-                label: 'Attendance',
-              ),
-
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.directions_bus_outlined,
-                  size: 23,
-                ),
-                activeIcon: Icon(
-                  Icons.directions_bus_rounded,
-                  size: 23,
-                ),
-                label: 'Transport',
-              ),
-
-              BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.person_outline_rounded,
-                  size: 23,
-                ),
-                activeIcon: Icon(
-                  Icons.person_rounded,
-                  size: 23,
-                ),
-                label: 'Profile',
-              ),
-            ],
           ),
         ),
       ),

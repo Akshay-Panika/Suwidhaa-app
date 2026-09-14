@@ -27,7 +27,6 @@ class CollegeBannerController extends GetxController {
 
       if (response.success && response.data.isNotEmpty) {
         banners.assignAll(response.data);
-        FlutterToast.success('${response.count} banners loaded successfully');
       } else {
         errorMessage.value = 'No banners available';
         FlutterToast.warning('No banners available');
