@@ -8,6 +8,7 @@ import '../feature/college/controller/college_booking_controller.dart';
 import '../feature/college/controller/college_controller.dart';
 import '../feature/college/controller/room_controller.dart';
 import '../feature/college/controller/tiffin_controller.dart';
+import '../feature/location/controller/location_controller.dart';
 import '../feature/ott/controller/ott_banner_controller.dart';
 import '../feature/ott/controller/ott_content_controller.dart';
 import '../feature/ott/controller/ott_controller.dart';
@@ -25,6 +26,7 @@ class AppBindings implements Bindings {
   @override
   void dependencies() {
     // Use lazyPut for most controllers (they'll be created when first used)
+    Get.lazyPut<LocationController>(() => LocationController(), fenix: true);
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     Get.lazyPut<SchoolAuthController>(() => SchoolAuthController(), fenix: true);
     Get.lazyPut<StudentController>(() => StudentController(), fenix: true);

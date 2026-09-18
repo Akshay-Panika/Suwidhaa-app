@@ -4,6 +4,7 @@ import 'package:untitled/feature/dashboard/screen/dashboard_screen.dart';
 import 'package:untitled/feature/school/dashboard/screen/school_student_dashboard_screen.dart';
 import '../feature/auth/screen/auth_screen.dart';
 import '../feature/auth/screen/intro_screen.dart';
+import '../feature/location/screen/location_permission_screen.dart';
 import '../feature/school/auth/screen/school_auth_screen.dart';
 import '../feature/school/dashboard/screen/school_teacher_dashboard_screen.dart';
 import '../feature/school/student/screen/student_screen.dart';
@@ -19,6 +20,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.auth,
       page: () => AuthScreen(),
+      transition: Transition.fade,
+    ),
+    GetPage(
+      name: AppRoutes.location,
+      page: () => LocationPermissionScreen(),
       transition: Transition.fade,
     ),
     GetPage(

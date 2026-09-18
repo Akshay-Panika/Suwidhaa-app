@@ -29,7 +29,7 @@ class CollegeBannerController extends GetxController {
         banners.assignAll(response.data);
       } else {
         errorMessage.value = 'No banners available';
-        FlutterToast.warning('No banners available');
+        // FlutterToast.warning('No banners available');
       }
     } catch (e) {
       errorMessage.value = e.toString().replaceAll('Exception: ', '');

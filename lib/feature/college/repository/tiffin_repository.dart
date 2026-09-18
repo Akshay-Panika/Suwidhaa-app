@@ -8,6 +8,69 @@ import '../model/tiffin_model.dart';
 class TiffinRepository {
   final Dio _dio = ApiClient.dio;
 
+  Future<TiffinListResponse> getAllTiffins({
+    String? userId,
+    String? nearCollege,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {};
+
+      if (userId != null && userId.isNotEmpty) {
+        queryParams['user_id'] = userId;
+      }
+
+      if (nearCollege != null && nearCollege.isNotEmpty) {
+        queryParams['near_college'] = nearCollege;
+      }
+
+      print('🌐 GET ${ApiUrls.tiffinAllList} | params: $queryParams');
+
+      final response = await _dio.get(
+        ApiUrls.tiffinAllList,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        return TiffinListResponse.fromJson(response.data);
+      }
+
+      throw Exception('Failed to load tiffins: ${response.statusCode}');
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  Future<TiffinDetailResponse> getTiffinByIdWithUserId({
+    required int tiffinId,
+    String? userId,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {};
+
+      if (userId != null && userId.isNotEmpty) {
+        queryParams['user_id'] = userId;
+      }
+
+      print('🌐 GET ${ApiUrls.tiffinDetail}$tiffinId/ | params: $queryParams');
+
+      final response = await _dio.get(
+        '${ApiUrls.tiffinDetail}$tiffinId/',
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        return TiffinDetailResponse.fromJson(response.data);
+      }
+
+      throw Exception('Failed to load tiffin: ${response.statusCode}');
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
   // ============================================================
   Future<TiffinListResponse> getTiffins({String? userId}) async {
     try {
@@ -50,6 +113,8 @@ class TiffinRepository {
     required String title,
     required String description,
     required String price,
+    required String latitude,
+    required String longitude,
     required String nearCollege,
     required String isVeg,
     required String isNonveg,
@@ -63,6 +128,8 @@ class TiffinRepository {
         'title': title,
         'description': description,
         'price': price,
+        'latitude': latitude,
+        'longitude': longitude,
         'near_college': nearCollege,
         'is_veg': isVeg,
         'is_nonveg': isNonveg,
@@ -114,6 +181,8 @@ class TiffinRepository {
     String? title,
     String? description,
     String? price,
+    String? latitude,
+    String? longitude,
     String? nearCollege,
     String? isVeg,
     String? isNonveg,
@@ -129,6 +198,8 @@ class TiffinRepository {
       if (title != null) data['title'] = title;
       if (description != null) data['description'] = description;
       if (price != null) data['price'] = price;
+      if (latitude != null) data['latitude'] = latitude;
+      if (longitude != null) data['longitude'] = longitude;
       if (nearCollege != null) data['near_college'] = nearCollege;
       if (isVeg != null) data['is_veg'] = isVeg;
       if (isNonveg != null) data['is_nonveg'] = isNonveg;

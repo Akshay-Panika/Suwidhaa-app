@@ -3,6 +3,7 @@ class AppRoutes {
   // School Auth Routes
   static const String intro = '/intro';
   static const String auth = '/auth';
+  static const String location = '/location';
   static const String dashboard = '/';
   static const String schoolLogin = '/school-login';
   static const String studentDashboard = '/student-dashboard';

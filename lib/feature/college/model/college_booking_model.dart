@@ -36,13 +36,19 @@ class CollegeBookingResponse {
   }
 }
 
-
+// ============================================================
+// CollegeBookingData
+// ============================================================
 class CollegeBookingData {
   final int id;
   final int collegeId;
   final String userId;
   final bool booking;
   final String? message;
+
+  final BookingRoom? room;
+  final BookingTiffin? tiffin;
+
   final String? whatsappStatus;
   final String? whatsappSid;
   final String? whatsappError;
@@ -55,6 +61,8 @@ class CollegeBookingData {
     required this.userId,
     required this.booking,
     this.message,
+    this.room,
+    this.tiffin,
     this.whatsappStatus,
     this.whatsappSid,
     this.whatsappError,
@@ -69,6 +77,15 @@ class CollegeBookingData {
       userId: json['user_id']?.toString() ?? '',
       booking: json['booking'] ?? false,
       message: json['message'],
+
+      room: json['room'] != null
+          ? BookingRoom.fromJson(json['room'])
+          : null,
+
+      tiffin: json['tiffin'] != null
+          ? BookingTiffin.fromJson(json['tiffin'])
+          : null,
+
       whatsappStatus: json['whatsapp_status'],
       whatsappSid: json['whatsapp_sid'],
       whatsappError: json['whatsapp_error'],
@@ -86,6 +103,8 @@ class CollegeBookingData {
       'user_id': userId,
       'booking': booking,
       'message': message,
+      'room': room?.toJson(),
+      'tiffin': tiffin?.toJson(),
       'whatsapp_status': whatsappStatus,
       'whatsapp_sid': whatsappSid,
       'whatsapp_error': whatsappError,
@@ -95,7 +114,9 @@ class CollegeBookingData {
   }
 }
 
-
+// ============================================================
+// WhatsAppResult
+// ============================================================
 class WhatsAppResult {
   final bool success;
   final String? messageSid;
@@ -136,7 +157,9 @@ class WhatsAppResult {
   }
 }
 
-/// -------------
+// ============================================================
+// CollegeBookingListResponse
+// ============================================================
 class CollegeBookingListResponse {
   final bool success;
   final int count;
@@ -159,12 +182,24 @@ class CollegeBookingListResponse {
   }
 }
 
+// ============================================================
+// CollegeBooking (list item)
+// ============================================================
 class CollegeBooking {
   final int id;
   final int collegeId;
   final String userId;
   final bool booking;
   final String message;
+
+  final BookingRoom? room;
+  final BookingTiffin? tiffin;
+
+  // ✅ ADDED: whatsapp fields (backend response me hain ya nahi, dono handle)
+  final String? whatsappStatus;
+  final String? whatsappSid;
+  final String? whatsappError;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -174,6 +209,11 @@ class CollegeBooking {
     required this.userId,
     required this.booking,
     required this.message,
+    required this.room,
+    required this.tiffin,
+    this.whatsappStatus,     // ✅ ADDED
+    this.whatsappSid,        // ✅ ADDED
+    this.whatsappError,      // ✅ ADDED
     required this.createdAt,
     required this.updatedAt,
   });
@@ -185,22 +225,137 @@ class CollegeBooking {
       userId: json['user_id']?.toString() ?? '',
       booking: json['booking'] ?? false,
       message: json['message'] ?? '',
-      createdAt: DateTime.parse(
-          json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(
-          json['updated_at'] ?? DateTime.now().toIso8601String()),
+
+      room: json['room'] != null
+          ? BookingRoom.fromJson(json['room'])
+          : null,
+
+      tiffin: json['tiffin'] != null
+          ? BookingTiffin.fromJson(json['tiffin'])
+          : null,
+
+      // ✅ ADDED: parse whatsapp fields
+      whatsappStatus: json['whatsapp_status'],
+      whatsappSid: json['whatsapp_sid'],
+      whatsappError: json['whatsapp_error'],
+
+      createdAt: DateTime.tryParse(
+        json['created_at']?.toString() ?? '',
+      ) ??
+          DateTime.now(),
+
+      updatedAt: DateTime.tryParse(
+        json['updated_at']?.toString() ?? '',
+      ) ??
+          DateTime.now(),
     );
   }
 
-  // Helper: formatted date
-  String get formattedDate {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${createdAt.day} ${months[createdAt.month - 1]} ${createdAt.year}';
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'college_id': collegeId,
+      'user_id': userId,
+      'booking': booking,
+      'message': message,
+      'room': room?.toJson(),
+      'tiffin': tiffin?.toJson(),
+      'whatsapp_status': whatsappStatus,    // ✅ ADDED
+      'whatsapp_sid': whatsappSid,          // ✅ ADDED
+      'whatsapp_error': whatsappError,      // ✅ ADDED
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
   }
 
-  // Helper: booking status text
-  String get bookingStatusText => booking ? 'Booked' : 'Not Booked';
+  // ============================================================
+  // Helper Getters (bonus — UI me kaam aayenge)
+  // ============================================================
+
+  /// Room booking hai kya?
+  bool get isRoomBooking => room != null;
+
+  /// Tiffin booking hai kya?
+  bool get isTiffinBooking => tiffin != null;
+
+  /// Sirf college booking hai kya?
+  bool get isCollegeOnly => room == null && tiffin == null;
+
+  /// Booking type label
+  String get bookingTypeLabel {
+    if (isRoomBooking && isTiffinBooking) return 'Room + Tiffin';
+    if (isRoomBooking) return 'Room';
+    if (isTiffinBooking) return 'Tiffin';
+    return 'College Enquiry';
+  }
+}
+
+// ============================================================
+// BookingRoom
+// ============================================================
+class BookingRoom {
+  final int roomId;
+  final String roomName;
+  final String roomType;
+  final String roomAmount;
+
+  BookingRoom({
+    required this.roomId,
+    required this.roomName,
+    required this.roomType,
+    required this.roomAmount,
+  });
+
+  factory BookingRoom.fromJson(Map<String, dynamic> json) {
+    return BookingRoom(
+      roomId: json['room_id'] ?? 0,
+      roomName: json['room_name']?.toString() ?? '',
+      roomType: json['room_type']?.toString() ?? '',
+      roomAmount: json['room_amount']?.toString() ?? '0.00',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'room_id': roomId,
+      'room_name': roomName,
+      'room_type': roomType,
+      'room_amount': roomAmount,
+    };
+  }
+}
+
+// ============================================================
+// BookingTiffin
+// ============================================================
+class BookingTiffin {
+  final int tiffinId;
+  final String tiffinName;
+  final String tiffinType;
+  final String tiffinAmount;
+
+  BookingTiffin({
+    required this.tiffinId,
+    required this.tiffinName,
+    required this.tiffinType,
+    required this.tiffinAmount,
+  });
+
+  factory BookingTiffin.fromJson(Map<String, dynamic> json) {
+    return BookingTiffin(
+      tiffinId: json['tiffin_id'] ?? 0,
+      tiffinName: json['tiffin_name']?.toString() ?? '',
+      tiffinType: json['tiffin_type']?.toString() ?? '',
+      tiffinAmount: json['tiffin_amount']?.toString() ?? '0.00',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'tiffin_id': tiffinId,
+      'tiffin_name': tiffinName,
+      'tiffin_type': tiffinType,
+      'tiffin_amount': tiffinAmount,
+    };
+  }
 }

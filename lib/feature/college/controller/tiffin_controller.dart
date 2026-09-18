@@ -90,6 +90,71 @@ class TiffinController extends GetxController {
     }
   }
 
+  Future<void> fetchAllTiffins({
+    String? userId,
+    String? nearCollege,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      print('🔍 Fetching all tiffins — user_id: $userId, near: $nearCollege');
+
+      final response = await _repository.getAllTiffins(
+        userId: userId,
+        nearCollege: nearCollege,
+      );
+
+      if (response.success) {
+        tiffins.value = response.data;
+        print('✅ All tiffins loaded: ${tiffins.length}');
+      } else {
+        errorMessage.value = 'Failed to load tiffins';
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      print('❌ Error fetching tiffins: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<Tiffin?> fetchTiffinByIdWithUserId({
+    required int tiffinId,
+    String? userId,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      print('🔍 Fetching tiffin: $tiffinId, userId: $userId');
+
+      final response = await _repository.getTiffinByIdWithUserId(
+        tiffinId: tiffinId,
+        userId: userId,
+      );
+
+      if (response.success && response.data != null) {
+        selectedTiffin.value = response.data;
+
+        print('✅ Tiffin loaded: id=${response.data!.id}, '
+            'booking=${response.data!.booking}');
+
+        return response.data;
+      } else {
+        errorMessage.value = 'Tiffin not found';
+        return null;
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      print('❌ Error fetching tiffin: $e');
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
   /// Fetch tiffins by user ID
   Future<void> fetchTiffinsByUserId(String userId) async {
     try {
@@ -178,6 +243,8 @@ class TiffinController extends GetxController {
     required String title,
     required String description,
     required String price,
+    required String latitude,
+    required String longitude,
     required String nearCollege,
     required String isVeg,
     required String isNonveg,
@@ -195,6 +262,8 @@ class TiffinController extends GetxController {
         title: title,
         description: description,
         price: price,
+        latitude: latitude,
+        longitude: longitude,
         nearCollege: nearCollege,
         isVeg: isVeg,
         isNonveg: isNonveg,
@@ -229,6 +298,8 @@ class TiffinController extends GetxController {
     String? title,
     String? description,
     String? price,
+    String? latitude,
+    String? longitude,
     String? nearCollege,
     String? isVeg,
     String? isNonveg,
@@ -248,6 +319,8 @@ class TiffinController extends GetxController {
         title: title,
         description: description,
         price: price,
+        latitude: latitude,
+        longitude: longitude,
         nearCollege: nearCollege,
         isVeg: isVeg,
         isNonveg: isNonveg,

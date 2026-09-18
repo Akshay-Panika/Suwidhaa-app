@@ -30,6 +30,32 @@ class RoomListResponse {
   }
 }
 
+class RoomDetailResponse {
+  final bool success;
+  final Room? data;
+
+  RoomDetailResponse({
+    required this.success,
+    this.data,
+  });
+
+  factory RoomDetailResponse.fromJson(Map<String, dynamic> json) {
+    return RoomDetailResponse(
+      success: json['success'] ?? false,
+      data: json['data'] is Map<String, dynamic>
+          ? Room.fromJson(json['data'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'data': data?.toJson(),
+    };
+  }
+}
+
 class Room {
   final int id;
   final String? userId;
@@ -37,7 +63,12 @@ class Room {
   final String description;
   final String address;
   final String price;
+  final String latitude;
+  final String longitude;
+
   final bool isBooking;
+  final bool booking;
+
   final String? roomType;
   final String? contactNumber;
   final bool wifi;
@@ -58,7 +89,10 @@ class Room {
     required this.description,
     required this.address,
     required this.price,
-    required this.isBooking,
+    required this.latitude,
+    required this.longitude,
+    required this.isBooking,     // ✅ owner/global
+    required this.booking,       // ✅ user-wise (NEW)
     this.roomType,
     this.contactNumber,
     required this.wifi,
@@ -84,7 +118,14 @@ class Room {
       description: json['description'] ?? '',
       address: json['address'] ?? '',
       price: json['price']?.toString() ?? '0',
+      latitude: json['latitude']?.toString() ?? '0',
+      longitude: json['longitude']?.toString() ?? '0',
+
+      // ✅ is_booking parse
       isBooking: json['is_booking'] ?? false,
+
+      // ✅ booking parse (NEW)
+      booking: json['booking'] ?? false,
 
       roomType: json['room_type'],
       contactNumber: json['contact_number'],
@@ -122,7 +163,10 @@ class Room {
       'description': description,
       'address': address,
       'price': price,
+      'latitude': latitude,
+      'longitude': longitude,
       'is_booking': isBooking,
+      'booking': booking,          // ✅ ADDED
       'room_type': roomType,
       'contact_number': contactNumber,
       'wifi': wifi,
@@ -151,7 +195,6 @@ class Room {
     if (roomType == null || roomType!.isEmpty) {
       return '';
     }
-
     return roomType!.toUpperCase();
   }
 
@@ -182,6 +225,7 @@ class Room {
 
   int get amenityCount => amenities.length;
 
+  // ✅ is_booking se availability (owner/global)
   String get availabilityStatus {
     return isBooking ? 'Booked' : 'Available';
   }
@@ -189,6 +233,12 @@ class Room {
   Color get availabilityColor {
     return isBooking ? Colors.red : Colors.green;
   }
+
+  // ✅ NEW: user-wise booking check
+  bool get isBookedByMe => booking;
+
+  // ✅ NEW: combined check — button disabled karne ke liye
+  bool get isNotBookable => booking || isBooking;
 }
 
 class RoomImage {

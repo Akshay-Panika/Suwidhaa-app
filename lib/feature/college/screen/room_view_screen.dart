@@ -3,12 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/contact_helper.dart';
+import '../../auth/controller/auth_controller.dart';
+import '../controller/college_booking_controller.dart';
+import '../controller/room_controller.dart';
+import '../model/college_booking_model.dart';
 import '../model/room_model.dart';
-import 'college_view_screen.dart';
 
 class RoomViewScreen extends StatefulWidget {
-  final Room room;
-  const RoomViewScreen({super.key, required this.room});
+  final int roomId;        // ✅ Sirf room ID
+  final int collegeId;     // ✅ College ID
+
+  const RoomViewScreen({
+    super.key,
+    required this.roomId,
+    required this.collegeId,
+  });
 
   @override
   State<RoomViewScreen> createState() => _RoomViewScreenState();
@@ -17,49 +26,116 @@ class RoomViewScreen extends StatefulWidget {
 class _RoomViewScreenState extends State<RoomViewScreen> {
   int _selectedImageIndex = 0;
 
-  // Get gallery images from room
-  List<String> get _galleryImages {
-    if (widget.room.roomImages.isNotEmpty) {
-      return widget.room.roomImages.map((image) => image.url).toList();
+  // ✅ Controllers
+  final CollegeBookingController _bookingController =
+  Get.find<CollegeBookingController>();
+  final AuthController authController = Get.find<AuthController>();
+  final RoomController _roomController = Get.find<RoomController>();
+
+  bool _isBooking = false;
+
+  // ✅ Room state — fresh fetch ke baad set hoga
+  Room? _room;
+  bool _isLoadingRoom = true;
+  String _roomError = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchRoom();
+    });
+  }
+
+  // ✅ Room fetch karo user-wise
+  Future<void> _fetchRoom() async {
+    setState(() {
+      _isLoadingRoom = true;
+      _roomError = '';
+    });
+
+    try {
+      final userId = authController.getUserId > 0
+          ? authController.getUserId.toString()
+          : null;
+
+      print('🔍 Fetching room: ${widget.roomId}, userId: $userId');
+
+      // ✅ Nayi API use karo
+      final room = await _roomController.fetchRoomByIdWithUserId(
+        roomId: widget.roomId,
+        userId: userId,
+      );
+
+      if (room != null && mounted) {
+        setState(() {
+          _room = room;
+          _isLoadingRoom = false;
+        });
+
+        print('✅ Room loaded: id=${room.id}, booking=${room.booking}');
+      } else {
+        if (mounted) {
+          setState(() {
+            _roomError = 'Room not found';
+            _isLoadingRoom = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _roomError = e.toString();
+          _isLoadingRoom = false;
+        });
+      }
+      print('❌ Error fetching room: $e');
     }
-    // Fallback images if no images available
+  }
+
+  // ==================== GALLERY ====================
+
+  List<String> get _galleryImages {
+    if (_room!.roomImages.isNotEmpty) {
+      return _room!.roomImages.map((image) => image.url).toList();
+    }
     return [
       "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&h=500&fit=crop",
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&h=500&fit=crop",
     ];
   }
 
-  // Generate room details for sharing
   String get _shareMessage {
     final buffer = StringBuffer();
-    buffer.writeln('🏠 *${widget.room.title}*');
+    buffer.writeln('🏠 *${_room!.title}*');
     buffer.writeln();
-    buffer.writeln('📍 *Location:* ${widget.room.address}');
-    if (widget.room.nearCollege != null && widget.room.nearCollege!.isNotEmpty) {
-      buffer.writeln('🏫 *Near:* ${widget.room.nearCollege}');
+    buffer.writeln('📍 *Location:* ${_room!.address}');
+    if (_room!.nearCollege != null && _room!.nearCollege!.isNotEmpty) {
+      buffer.writeln('🏫 *Near:* ${_room!.nearCollege}');
     }
-    buffer.writeln('💰 *Price:* ${widget.room.formattedPrice}');
-    buffer.writeln('🏷️ *Room Type:* ${widget.room.roomTypeDisplay}');
-    buffer.writeln('📊 *Status:* ${widget.room.availabilityStatus}');
+    buffer.writeln('💰 *Price:* ${_room!.formattedPrice}');
+    buffer.writeln('🏷️ *Room Type:* ${_room!.roomTypeDisplay}');
+    buffer.writeln('📊 *Status:* ${_room!.availabilityStatus}');
 
-    if (widget.room.amenityCount > 0) {
+    if (_room!.amenityCount > 0) {
       buffer.writeln();
       buffer.writeln('✅ *Amenities:*');
-      for (var amenity in widget.room.amenities) {
+      for (var amenity in _room!.amenities) {
         buffer.writeln('   • $amenity');
       }
     }
 
-    if (widget.room.hasContact) {
+    if (_room!.hasContact) {
       buffer.writeln();
-      buffer.writeln('📞 *Contact:* ${widget.room.contactDisplay}');
+      buffer.writeln('📞 *Contact:* ${_room!.contactDisplay}');
     }
 
     buffer.writeln();
     buffer.writeln('📝 *Description:*');
-    buffer.writeln(widget.room.description.isNotEmpty
-        ? widget.room.description
-        : 'This ${widget.room.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities.');
+    buffer.writeln(_room!.description.isNotEmpty
+        ? _room!.description
+        : 'This ${_room!.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities.');
 
     buffer.writeln();
     buffer.writeln('🔗 *Shared from Suwidhaa App*');
@@ -67,8 +143,127 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     return buffer.toString();
   }
 
+  // ==================== BOOKING API CALL ====================
+
+  Future<void> _bookRoomWithCollege() async {
+    setState(() => _isBooking = true);
+
+    try {
+      final BookingRoom bookingRoom = BookingRoom(
+        roomId: _room!.id,
+        roomName: _room!.title,
+        roomType: _room!.roomTypeDisplay,
+        roomAmount: _room!.price,
+      );
+
+      final String message = 'Hi Suwidhaa:\n'
+          'Name: ${authController.getUserName}\n'
+          'Phone: ${authController.getUserPhone}\n'
+          'I am interested in this room:\n'
+          'Room: ${_room!.title}\n'
+          'Type: ${_room!.roomTypeDisplay}\n'
+          'Price: ${_room!.formattedPrice}';
+
+      final bool success = await _bookingController.bookCollege(
+        collegeId: widget.collegeId,
+        message: message,
+        room: bookingRoom,
+      );
+
+      if (!mounted) return;
+
+      setState(() => _isBooking = false);
+
+      if (success) {
+        print('✅ Room booking success');
+
+        // ✅ Fresh room data fetch karo
+        await _fetchRoom();
+
+        // ✅ Room list bhi refresh karo
+        final userId = authController.getUserId > 0
+            ? authController.getUserId.toString()
+            : null;
+
+        await _roomController.fetchAllRooms(
+          userId: userId,
+          nearCollege: _room!.nearCollege,
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isBooking = false);
+      print('❌ _bookRoomWithCollege error: $e');
+    }
+  }
+
+  // ==================== BUILD ====================
+
   @override
   Widget build(BuildContext context) {
+    // ✅ Loading
+    if (_isLoadingRoom) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          ),
+          title: const Text(
+            'Loading...',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // ✅ Error
+    if (_roomError.isNotEmpty || _room == null) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          backgroundColor: AppColors.primary,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          ),
+          title: const Text(
+            'Room',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 60, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(_roomError.isNotEmpty ? _roomError : 'Room not found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchRoom,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ✅ Success
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -79,7 +274,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         title: Text(
-          widget.room.title,
+          _room!.title,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -100,7 +295,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Room Image Gallery
+                  // ---- Image Gallery ----
                   Stack(
                     children: [
                       Image.network(
@@ -130,7 +325,6 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           );
                         },
                       ),
-                      // Gradient overlay
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -149,7 +343,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                       ),
-                      // Gallery Navigation Arrows (only if more than 1 image)
+                      // Arrows
                       if (_galleryImages.length > 1) ...[
                         Positioned(
                           top: 0,
@@ -159,7 +353,10 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  _selectedImageIndex = (_selectedImageIndex - 1 + _galleryImages.length) % _galleryImages.length;
+                                  _selectedImageIndex = (_selectedImageIndex -
+                                      1 +
+                                      _galleryImages.length) %
+                                      _galleryImages.length;
                                 });
                               },
                               child: Container(
@@ -168,11 +365,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                   color: Colors.black.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
-                                  Icons.chevron_left,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
+                                child: const Icon(Icons.chevron_left,
+                                    color: Colors.white, size: 28),
                               ),
                             ),
                           ),
@@ -185,7 +379,9 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  _selectedImageIndex = (_selectedImageIndex + 1) % _galleryImages.length;
+                                  _selectedImageIndex =
+                                      (_selectedImageIndex + 1) %
+                                          _galleryImages.length;
                                 });
                               },
                               child: Container(
@@ -194,22 +390,20 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                   color: Colors.black.withOpacity(0.5),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
-                                  Icons.chevron_right,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
+                                child: const Icon(Icons.chevron_right,
+                                    color: Colors.white, size: 28),
                               ),
                             ),
                           ),
                         ),
                       ],
-                      // Image Counter
+                      // Counter
                       Positioned(
                         bottom: 16,
                         right: 16,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.6),
                             borderRadius: BorderRadius.circular(12),
@@ -229,9 +423,14 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         top: 16,
                         right: 16,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: widget.room.availabilityColor,
+                            color: _room!.booking
+                                ? Colors.green
+                                : _room!.isBooking
+                                ? Colors.red
+                                : Colors.green,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
@@ -241,7 +440,11 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             ],
                           ),
                           child: Text(
-                            widget.room.availabilityStatus,
+                            _room!.booking
+                                ? 'Booked'
+                                : _room!.isBooking
+                                ? 'Unavailable'
+                                : 'Available',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -255,7 +458,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         top: 16,
                         left: 16,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(20),
@@ -267,7 +471,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             ],
                           ),
                           child: Text(
-                            widget.room.roomTypeDisplay,
+                            _room!.roomTypeDisplay,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -276,7 +480,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                       ),
-                      // Thumbnail Gallery Indicator
+                      // Dots
                       if (_galleryImages.length > 1)
                         Positioned(
                           bottom: 16,
@@ -287,7 +491,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             children: List.generate(
                               _galleryImages.length,
                                   (index) => Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                margin:
+                                const EdgeInsets.symmetric(horizontal: 4),
                                 width: _selectedImageIndex == index ? 20 : 8,
                                 height: 6,
                                 decoration: BoxDecoration(
@@ -302,12 +507,13 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         ),
                     ],
                   ),
-            
-                  // Thumbnail Gallery
+
+                  // ---- Thumbnail Gallery ----
                   if (_galleryImages.length > 1)
                     Container(
                       height: 60,
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 6, horizontal: 8),
                       color: Colors.grey.shade50,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -357,18 +563,18 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         },
                       ),
                     ),
-            
-                  // Details Container
+
+                  // ---- Details Container ----
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Room Name & Price
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -377,7 +583,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.room.title,
+                                    _room!.title,
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -387,15 +593,13 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(
-                                        Icons.location_on_rounded,
-                                        size: 14,
-                                        color: Colors.grey.shade600,
-                                      ),
+                                      Icon(Icons.location_on_rounded,
+                                          size: 14,
+                                          color: Colors.grey.shade600),
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          widget.room.address,
+                                          _room!.address,
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.grey.shade600,
@@ -406,19 +610,18 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (widget.room.nearCollege != null && widget.room.nearCollege!.isNotEmpty)
+                                  if (_room!.nearCollege != null &&
+                                      _room!.nearCollege!.isNotEmpty)
                                     Row(
                                       children: [
-                                        Icon(
-                                          Icons.school_rounded,
-                                          size: 12,
-                                          color: AppColors.primary,
-                                        ),
+                                        const Icon(Icons.school_rounded,
+                                            size: 12,
+                                            color: AppColors.primary),
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
-                                            "Near: ${widget.room.nearCollege}",
-                                            style: TextStyle(
+                                            "Near: ${_room!.nearCollege}",
+                                            style: const TextStyle(
                                               fontSize: 12,
                                               color: AppColors.primary,
                                               fontWeight: FontWeight.w500,
@@ -434,8 +637,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  widget.room.formattedPrice,
-                                  style: TextStyle(
+                                  _room!.formattedPrice,
+                                  style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.primary,
@@ -452,8 +655,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             ),
                           ],
                         ),
-            
-                        // All Amenities Section
+
+                        // Amenities
                         const SizedBox(height: 20),
                         const Divider(),
                         const SizedBox(height: 16),
@@ -466,15 +669,14 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        // All amenities grid
                         _buildAllAmenitiesGrid(),
-            
+
                         const SizedBox(height: 20),
                         const Divider(),
                         const SizedBox(height: 16),
-            
-                        // Contact Information
-                        if (widget.room.hasContact) ...[
+
+                        // Contact Info
+                        if (_room!.hasContact) ...[
                           const Text(
                             "Contact Information",
                             style: TextStyle(
@@ -492,15 +694,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
-                                  Icons.phone_rounded,
-                                  color: AppColors.primary,
-                                  size: 20,
-                                ),
+                                const Icon(Icons.phone_rounded,
+                                    color: AppColors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    widget.room.contactDisplay,
+                                    _room!.contactDisplay,
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -509,11 +708,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
-                                    ContactHelper.call(widget.room.contactNumber!);
+                                    ContactHelper.call(_room!.contactNumber!);
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
@@ -532,13 +732,14 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 ElevatedButton(
                                   onPressed: () {
                                     ContactHelper.whatsapp(
-                                      widget.room.contactNumber!,
-                                      "Hi, I'm interested in ${widget.room.title}",
+                                      _room!.contactNumber!,
+                                      "Hi, I'm interested in ${_room!.title}",
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green.shade700,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
@@ -560,7 +761,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           const Divider(),
                           const SizedBox(height: 16),
                         ],
-            
+
                         // Description
                         const Text(
                           "About this Room",
@@ -572,19 +773,16 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          widget.room.description.isNotEmpty
-                              ? widget.room.description
-                              : "This ${widget.room.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities. The room is well-furnished and maintained with all modern facilities.",
+                          _room!.description.isNotEmpty
+                              ? _room!.description
+                              : "This ${_room!.roomTypeDisplay} room is located in a prime location with easy access to college and local amenities. The room is well-furnished and maintained with all modern facilities.",
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade700,
                             height: 1.5,
                           ),
                         ),
-            
                         const SizedBox(height: 24),
-            
-                       
                       ],
                     ),
                   ),
@@ -592,29 +790,47 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               ),
             ),
           ),
+
+          // ---- Bottom Book Now Button ----
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               children: [
-                // Book Now Button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: !widget.room.isBooking
+                    onPressed: (!_room!.booking &&
+                        !_room!.isBooking &&
+                        !_isBooking)
                         ? () => _showBookingDialog(context)
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: widget.room.isBooking ? Colors.grey : AppColors.primary,
+                      backgroundColor:
+                      (_room!.booking || _room!.isBooking || _isBooking)
+                          ? Colors.grey
+                          : AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 2,
                     ),
-                    child: Text(
-                      widget.room.isBooking
+                    child: _isBooking
+                        ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white),
+                      ),
+                    )
+                        : Text(
+                      _room!.booking
                           ? "Booked"
-                          : "Book Now - ${widget.room.formattedPrice}",
+                          : _room!.isBooking
+                          ? "Unavailable"
+                          : "Book Now - ${_room!.formattedPrice}",
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -635,26 +851,30 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 const SizedBox(height: 20),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  // New method to show all amenities with green for true ones
+  // ==================== AMENITIES GRID ====================
+
   Widget _buildAllAmenitiesGrid() {
-    // Define all possible amenities
     final allAmenities = [
       {'key': 'wifi', 'label': 'WiFi', 'icon': Icons.wifi},
       {'key': 'ac', 'label': 'AC', 'icon': Icons.ac_unit},
       {'key': 'parking', 'label': 'Parking', 'icon': Icons.local_parking},
       {'key': 'security', 'label': 'Security', 'icon': Icons.security},
-      {'key': 'laundry', 'label': 'Laundry', 'icon': Icons.local_laundry_service},
+      {
+        'key': 'laundry',
+        'label': 'Laundry',
+        'icon': Icons.local_laundry_service
+      },
       {'key': 'water', 'label': 'Water', 'icon': Icons.water_drop},
     ];
 
-    // Get available amenities from room
-    final availableAmenities = widget.room.amenities.map((e) => e.toLowerCase()).toList();
+    final availableAmenities =
+    _room!.amenities.map((e) => e.toLowerCase()).toList();
 
     return Wrap(
       spacing: 8,
@@ -665,7 +885,9 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isAvailable ? Colors.green.withOpacity(0.1) : Colors.grey.shade50,
+            color: isAvailable
+                ? Colors.green.withOpacity(0.1)
+                : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isAvailable ? Colors.green : Colors.grey.shade300,
@@ -685,8 +907,11 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 amenity['label'] as String,
                 style: TextStyle(
                   fontSize: 11,
-                  color: isAvailable ? Colors.green.shade700 : Colors.grey.shade500,
-                  fontWeight: isAvailable ? FontWeight.w600 : FontWeight.w400,
+                  color: isAvailable
+                      ? Colors.green.shade700
+                      : Colors.grey.shade500,
+                  fontWeight:
+                  isAvailable ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
               if (isAvailable) ...[
@@ -711,44 +936,19 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     );
   }
 
-  // Direct share via WhatsApp
+  // ==================== SHARE ====================
+
   void _shareRoomDetails() {
     final String message = _shareMessage;
 
-    // If room has contact number, share with that contact
-    if (widget.room.hasContact) {
-      ContactHelper.whatsapp(
-        widget.room.contactNumber!,
-        message,
-      );
+    if (_room!.hasContact) {
+      ContactHelper.whatsapp(_room!.contactNumber!, message);
     } else {
-      // If no contact number, share to any WhatsApp contact
-      // User can select contact from WhatsApp
-      ContactHelper.whatsapp(
-        '', // Empty phone number will open WhatsApp contact picker
-        message,
-      );
+      ContactHelper.whatsapp('', message);
     }
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    switch (amenity.toLowerCase()) {
-      case 'wifi':
-        return Icons.wifi;
-      case 'ac':
-        return Icons.ac_unit;
-      case 'parking':
-        return Icons.local_parking;
-      case 'security':
-        return Icons.security;
-      case 'laundry':
-        return Icons.local_laundry_service;
-      case 'water':
-        return Icons.water_drop;
-      default:
-        return Icons.check_circle_rounded;
-    }
-  }
+  // ==================== BOOKING DIALOG ====================
 
   void _showBookingDialog(BuildContext context) {
     showDialog(
@@ -772,7 +972,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.room.title,
+                _room!.title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -798,8 +998,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         Text(
-                          widget.room.formattedPrice,
-                          style: TextStyle(
+                          _room!.formattedPrice,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
@@ -819,7 +1019,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         Text(
-                          widget.room.roomTypeDisplay,
+                          _room!.roomTypeDisplay,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -839,8 +1039,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           ),
                         ),
                         Text(
-                          widget.room.formattedPrice,
-                          style: TextStyle(
+                          _room!.formattedPrice,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,
@@ -864,31 +1064,15 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                // Send booking confirmation via WhatsApp
-                final String bookingMessage = '''
-🏠 *Booking Confirmation*
-📍 *Room:* ${widget.room.title}
-💰 *Price:* ${widget.room.formattedPrice}
-📅 *Status:* Booked
-
-✅ Your booking has been confirmed!
-📞 Contact: ${widget.room.contactDisplay}
-
-Thank you for choosing Suwidhaa!''';
-
-                if (widget.room.hasContact) {
-                  ContactHelper.whatsapp(
-                    widget.room.contactNumber!,
-                    bookingMessage,
-                  );
-                }
+                _bookRoomWithCollege();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
               child: const Text(
                 "Confirm Booking",

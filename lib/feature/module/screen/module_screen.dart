@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:untitled/feature/location/screen/location_permission_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../widget/module_banner_card.dart';
@@ -149,25 +150,30 @@ class _ModuleScreenState extends State<ModuleScreen> {
         ),
       ],
       centerTitle: true,
-      title: Column(
-        children: [
-          Text(
-            "Welcome Back!",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 10,
-              fontWeight: FontWeight.w400,
+      title: InkWell(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => LocationPermissionScreen(),));
+        },
+        child: Column(
+          children: [
+            Text(
+              "Welcome Back!",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10,
+                fontWeight: FontWeight.w400,
+              ),
             ),
-          ),
-           Text(
-             authController.getUserName,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+             Text(
+               authController.getUserName,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

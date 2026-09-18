@@ -45,18 +45,20 @@ class ApiUrls {
   // College endpoints
   static const String collegeList = 'v1/college/colleges/list/';
   static const String collegeDetail = 'v1/college/colleges/';
-  static const String collegeBooking = 'v1/college/college_booking/create/';
-  static const String collegeBookingList = 'v1/college/college_booking/list/';
+  static const String collegeBooking = 'v1/college/college-booking/create/';
+  static const String collegeBookingList = 'v1/college/college-booking/list/';
 
   // Room endpoints
   static const String roomCreate = 'v1/college/rooms/create/';
   static const String roomList = 'v1/college/rooms/list/';
   static const String roomDetail = 'v1/college/rooms/';
+  static const String roomAllList = 'v1/college/rooms/';
 
   // Tiffin endpoints
   static const String tiffinCreate = 'v1/college/tiffins/create/';
   static const String tiffinList = 'v1/college/tiffins/list/';
   static const String tiffinDetail = 'v1/college/tiffins/';
+  static const String tiffinAllList = 'v1/college/tiffins/';
 
   // Ott content
   static const String ottBanner = 'v1/ott/banner/list';

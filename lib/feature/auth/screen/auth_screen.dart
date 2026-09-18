@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/app_color.dart';
-import '../../../core/widget/flutter_toast.dart';
-import '../../../router/app_routes.dart';
-import '../binding/auth_binding.dart';
 import '../controller/auth_controller.dart';
 
 class AuthScreen extends StatefulWidget {

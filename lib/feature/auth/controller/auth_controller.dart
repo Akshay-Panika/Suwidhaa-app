@@ -167,7 +167,8 @@ class AuthController extends GetxController {
   // Navigation
   void _navigateToDashboard() {
     // Navigate to your dashboard
-    Get.offAllNamed('/');
+    // Get.offAllNamed('/');
+    Get.offAllNamed(AppRoutes.location);
   }
 
   // Getters

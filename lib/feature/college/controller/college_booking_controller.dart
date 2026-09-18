@@ -1,3 +1,5 @@
+// lib/feature/college/controller/college_booking_controller.dart
+
 import 'package:get/get.dart';
 import '../../../core/widget/flutter_toast.dart';
 import '../../auth/controller/auth_controller.dart';
@@ -7,13 +9,11 @@ import '../repository/college_booking_repository.dart';
 class CollegeBookingController extends GetxController {
   final CollegeBookingRepository _repository = CollegeBookingRepository();
 
-  // Existing observables
   final RxBool isLoading = false.obs;
   final Rx<CollegeBookingResponse?> lastBookingResponse =
   Rx<CollegeBookingResponse?>(null);
   final RxBool lastBookingSuccess = false.obs;
 
-  // ✅ NEW: Bookings list observables
   final RxList<CollegeBooking> bookings = <CollegeBooking>[].obs;
   final RxBool isBookingsLoading = false.obs;
   final RxString bookingsError = ''.obs;
@@ -21,14 +21,15 @@ class CollegeBookingController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // ✅ Auto-fetch bookings on init (optional)
     fetchBookings();
   }
 
-  // Existing bookCollege method (no change)
+  /// Create College Booking (College / College+Room / College+Tiffin)
   Future<bool> bookCollege({
     required int collegeId,
     required String message,
+    BookingRoom? room,
+    BookingTiffin? tiffin,
   }) async {
     lastBookingSuccess.value = false;
     lastBookingResponse.value = null;
@@ -53,27 +54,37 @@ class CollegeBookingController extends GetxController {
         collegeId: collegeId,
         userId: userId,
         message: message.trim(),
+        room: room,
+        tiffin: tiffin,
       );
 
       lastBookingResponse.value = response;
 
-      if (response.success && (response.data?.booking ?? false)) {
+      // ✅ Safe null check
+      final bool booked = response.success &&
+          response.data != null &&
+          response.data!.booking;
+
+      if (booked) {
         lastBookingSuccess.value = true;
+
         FlutterToast.success(
           response.message.isNotEmpty
               ? response.message
               : 'College booked successfully!',
         );
-        // ✅ Refresh bookings list after successful booking
+
         await fetchBookings();
         return true;
       } else {
         lastBookingSuccess.value = false;
+
         FlutterToast.error(
           response.message.isNotEmpty
               ? response.message
               : 'Booking failed. Please try again.',
         );
+
         return false;
       }
     } catch (e) {
@@ -86,7 +97,6 @@ class CollegeBookingController extends GetxController {
     }
   }
 
-  /// ✅ NEW: Fetch all bookings for current user
   Future<void> fetchBookings() async {
     try {
       isBookingsLoading.value = true;
@@ -107,7 +117,6 @@ class CollegeBookingController extends GetxController {
     }
   }
 
-  /// ✅ NEW: Refresh bookings
   Future<void> refreshBookings() async {
     await fetchBookings();
   }

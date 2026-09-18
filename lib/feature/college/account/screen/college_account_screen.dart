@@ -255,14 +255,17 @@ class CollegeAccountScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         spacing: 3,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(Icons.location_on,size: 14,color: Colors.green,),
-                          Text(
-                            room.address,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
+                          Expanded(
+                            child: Text(
+                              room.address,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                           ),
                         ],

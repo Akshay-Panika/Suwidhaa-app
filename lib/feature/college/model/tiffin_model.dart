@@ -1,3 +1,4 @@
+// lib/feature/college/model/tiffin_model.dart
 import 'package:flutter/material.dart';
 
 class TiffinListResponse {
@@ -36,9 +37,14 @@ class Tiffin {
   final String title;
   final String description;
   final String price;
+  final String latitude;
+  final String longitude;
   final String isVeg;
   final String isNonveg;
+
   final bool isBooking;
+  final bool booking;
+
   final String rating;
   final String? contactNumber;
   final String? nearCollege;
@@ -52,9 +58,12 @@ class Tiffin {
     required this.title,
     required this.description,
     required this.price,
+    required this.latitude,
+    required this.longitude,
     required this.isVeg,
     required this.isNonveg,
     required this.isBooking,
+    required this.booking,
     required this.rating,
     this.contactNumber,
     this.nearCollege,
@@ -69,18 +78,27 @@ class Tiffin {
       userId: json['user_id']?.toString(),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      price: json['price'] ?? '0',
-      isVeg: json['is_veg'] ?? 'false',
-      isNonveg: json['is_nonveg'] ?? 'false',
+      price: json['price']?.toString() ?? '0',
+      latitude: json['latitude']?.toString() ?? '0',
+      longitude: json['longitude']?.toString() ?? '0',
+      isVeg: json['is_veg']?.toString() ?? 'false',
+      isNonveg: json['is_nonveg']?.toString() ?? 'false',
+
       isBooking: json['is_booking'] ?? false,
-      rating: json['rating'] ?? '0.0',
+      booking: json['booking'] ?? false,
+
+      rating: json['rating']?.toString() ?? '0.0',
       contactNumber: json['contact_number'],
       nearCollege: json['near_college'],
       tiffinImages: (json['tiffin_images'] as List? ?? [])
           .map((item) => TiffinImage.fromJson(item))
           .toList(),
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(
+          json['created_at'] ?? '') ??
+          DateTime.now(),
+      updatedAt: DateTime.tryParse(
+          json['updated_at'] ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -91,9 +109,12 @@ class Tiffin {
       'title': title,
       'description': description,
       'price': price,
+      'latitude':latitude,
+      'longitude':longitude,
       'is_veg': isVeg,
       'is_nonveg': isNonveg,
       'is_booking': isBooking,
+      'booking': booking,          // ✅ ADDED
       'rating': rating,
       'contact_number': contactNumber,
       'near_college': nearCollege,
@@ -103,7 +124,10 @@ class Tiffin {
     };
   }
 
-  // Helper getters for UI
+  // =========================
+  // Helper Getters
+  // =========================
+
   String get formattedPrice {
     final priceNum = double.tryParse(price) ?? 0;
     return '₹${priceNum.toStringAsFixed(0)}/month';
@@ -130,6 +154,7 @@ class Tiffin {
     return 'Not Specified';
   }
 
+  // ✅ is_booking se availability (owner/global)
   String get availabilityStatus {
     return isBooking ? 'Booked' : 'Available';
   }
@@ -144,11 +169,13 @@ class Tiffin {
 
   bool get hasImages => tiffinImages.isNotEmpty;
 
-  bool get isVegOnly => isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() != 'true';
-  bool get isNonVegOnly => isNonveg.toLowerCase() == 'true' && isVeg.toLowerCase() != 'true';
-  bool get isBothVegNonVeg => isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() == 'true';
+  bool get isVegOnly =>
+      isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() != 'true';
+  bool get isNonVegOnly =>
+      isNonveg.toLowerCase() == 'true' && isVeg.toLowerCase() != 'true';
+  bool get isBothVegNonVeg =>
+      isVeg.toLowerCase() == 'true' && isNonveg.toLowerCase() == 'true';
 
-  // New getters for display
   String get location {
     return nearCollege ?? 'Location not specified';
   }
@@ -168,6 +195,12 @@ class Tiffin {
   }
 
   bool get isActive => !isBooking;
+
+  // ✅ NEW: user-wise booking check
+  bool get isBookedByMe => booking;
+
+  // ✅ NEW: combined check
+  bool get isNotBookable => booking || isBooking;
 }
 
 class TiffinImage {
@@ -185,7 +218,9 @@ class TiffinImage {
     return TiffinImage(
       id: json['id'] ?? 0,
       url: json['url'] ?? '',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(
+          json['created_at'] ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -194,6 +229,37 @@ class TiffinImage {
       'id': id,
       'url': url,
       'created_at': createdAt.toIso8601String(),
+    };
+  }
+}
+
+// ============================================================
+// ✅ NAYA — Tiffin Detail Response (single tiffin with booking)
+// URL: /api/v1/college/tiffins/1/?user_id=1
+// Response: { success: true, data: {...} }
+// ============================================================
+class TiffinDetailResponse {
+  final bool success;
+  final Tiffin? data;
+
+  TiffinDetailResponse({
+    required this.success,
+    this.data,
+  });
+
+  factory TiffinDetailResponse.fromJson(Map<String, dynamic> json) {
+    return TiffinDetailResponse(
+      success: json['success'] ?? false,
+      data: json['data'] is Map<String, dynamic>
+          ? Tiffin.fromJson(json['data'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'data': data?.toJson(),
     };
   }
 }

@@ -2,13 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:untitled/feature/location/screen/spot_picker_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/flutter_toast.dart';
 import '../../auth/controller/auth_controller.dart';
+import '../../college/controller/college_controller.dart';
+import '../../location/widget/location_card.dart';
 import '../controller/room_controller.dart';
 import '../controller/tiffin_controller.dart';
 import '../model/room_model.dart';
 import '../model/tiffin_model.dart';
+import '../../location/controller/location_controller.dart';
 
 class AddRoomTiffinCenterScreen extends StatefulWidget {
   const AddRoomTiffinCenterScreen({
@@ -27,7 +31,8 @@ class AddRoomTiffinCenterScreen extends StatefulWidget {
       _AddRoomTiffinCenterScreenState();
 }
 
-class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
+class _AddRoomTiffinCenterScreenState
+    extends State<AddRoomTiffinCenterScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -53,10 +58,14 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   final TextEditingController _roomWaterController = TextEditingController();
 
   String _selectedRoomType = '1RK';
-  bool _isRoomBooking = false;
+
+  // 🔥 College ID (unique) — dropdown value
+  int? _selectedRoomCollegeId;
+  int? _selectedTiffinCollegeId;
+
   List<File> _roomImages = [];
   List<String> _existingRoomImages = [];
-  List<String> _removedRoomImages = []; // Track removed image URLs
+  List<String> _removedRoomImages = [];
   int? _editingRoomId;
 
   final List<String> _roomTypes = [
@@ -82,27 +91,31 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
   String _selectedVegType = 'true';
   String _selectedNonVegType = 'true';
-  bool _isTiffinBooking = false;
   List<File> _tiffinImages = [];
   List<String> _existingTiffinImages = [];
-  List<String> _removedTiffinImages = []; // Track removed image URLs
+  List<String> _removedTiffinImages = [];
   int? _editingTiffinId;
 
   final List<String> _vegOptions = ['true', 'false'];
   final List<String> _nonVegOptions = ['true', 'false'];
 
-  // ============================================================
   // COMMON
-  // ============================================================
   bool _isLoading = false;
+  final LocationController locationController = Get.find<LocationController>();
   final AuthController authController = Get.find<AuthController>();
   final RoomController roomController = Get.put(RoomController());
   final TiffinController tiffinController = Get.put(TiffinController());
+  final CollegeController collegeController = Get.find<CollegeController>();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    _roomAddressController.text = locationController.address.value;
+
+    // ✅ No default college selection — user will select manually
+    // (edit mode me _loadRoomData / _loadTiffinData se set hoga)
 
     // Check if editing room
     if (widget.isEdit && widget.roomData != null) {
@@ -136,9 +149,15 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     _roomContactController.text = room.contactNumber ?? '';
     _roomNearCollegeController.text = room.nearCollege ?? '';
     _selectedRoomType = room.roomType ?? '1RK';
-    _isRoomBooking = room.isBooking;
 
-    // Load amenities
+    // 🔥 Find college by name → set id
+    if (room.nearCollege != null && room.nearCollege!.isNotEmpty) {
+      final match = _findCollegeByName(room.nearCollege!);
+      if (match != null) {
+        _selectedRoomCollegeId = match.id;
+      }
+    }
+
     _roomWifiController.text = room.wifi == true ? 'true' : 'false';
     _roomAcController.text = room.ac == true ? 'true' : 'false';
     _roomParkingController.text = room.parking == true ? 'true' : 'false';
@@ -146,7 +165,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     _roomLaundryController.text = room.laundry == true ? 'true' : 'false';
     _roomWaterController.text = room.water == true ? 'true' : 'false';
 
-    // Load existing images URLs
     _existingRoomImages = room.roomImages.map((img) => img.url).toList();
     _removedRoomImages = [];
   }
@@ -160,11 +178,26 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     _tiffinNearCollegeController.text = tiffin.nearCollege ?? '';
     _selectedVegType = tiffin.isVeg;
     _selectedNonVegType = tiffin.isNonveg;
-    _isTiffinBooking = tiffin.isBooking;
 
-    // Load existing images URLs
+    // 🔥 Find college by name → set id
+    if (tiffin.nearCollege != null && tiffin.nearCollege!.isNotEmpty) {
+      final match = _findCollegeByName(tiffin.nearCollege!);
+      if (match != null) {
+        _selectedTiffinCollegeId = match.id;
+      }
+    }
+
     _existingTiffinImages = tiffin.tiffinImages.map((img) => img.url).toList();
     _removedTiffinImages = [];
+  }
+
+  // 🔥 Helper: find college by name (first match)
+  dynamic _findCollegeByName(String name) {
+    try {
+      return collegeController.colleges.firstWhere((c) => c.name == name);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -202,6 +235,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           title,
           style: const TextStyle(
             color: Colors.white,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -239,7 +273,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
       child: Form(
         key: _roomFormKey,
         child: Column(
@@ -254,22 +288,44 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 24),
 
-            _buildDropdownField(
-              label: 'Room Type',
-              hint: 'Select room type',
-              icon: Icons.house_rounded,
-              value: _selectedRoomType,
-              items: _roomTypes.map((type) {
-                return DropdownMenuItem<String>(
-                  value: type,
-                  child: Text(type),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedRoomType = value!;
-                });
-              },
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Room Type',
+                    hint: 'Select room type',
+                    icon: Icons.house_rounded,
+                    value: _selectedRoomType,
+                    items: _roomTypes.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedRoomType = value!;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildTextField(
+                    controller: _roomPriceController,
+                    label: 'Price (per month)',
+                    hint: 'Enter monthly rent',
+                    icon: Icons.currency_rupee_rounded,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter price';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -290,8 +346,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             _buildTextField(
               controller: _roomDescriptionController,
               label: 'Description',
-              hint:
-              'Enter description (e.g., Room 3BHK Near Takshashila College...)',
+              hint: 'Enter description',
               icon: Icons.description_rounded,
               maxLines: 3,
               validator: (value) {
@@ -302,13 +357,27 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               },
             ),
             const SizedBox(height: 16),
-
             _buildTextField(
               controller: _roomAddressController,
               label: 'Address',
-              hint: 'Enter complete address (e.g., Jabalpur MP)',
+              hint: 'Enter complete address',
               icon: Icons.location_on_rounded,
               maxLines: 2,
+              readOnly: true,
+              onTap: () async {
+                // 🔥 Await Navigator.push
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SpotPickerScreen()),
+                );
+
+                // 🔥 Jab wapas aaye, address refresh karo
+                if (mounted) {
+                  setState(() {
+                    _roomAddressController.text = locationController.address.value;
+                  });
+                }
+              },
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter address';
@@ -319,24 +388,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             const SizedBox(height: 16),
 
             _buildTextField(
-              controller: _roomPriceController,
-              label: 'Price (per month)',
-              hint: 'Enter monthly rent (e.g., 9500)',
-              icon: Icons.currency_rupee_rounded,
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter price';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            _buildTextField(
               controller: _roomContactController,
               label: 'Contact Number',
-              hint: 'Enter contact number (e.g., 8989233770)',
+              hint: 'Enter contact number',
               icon: Icons.phone_rounded,
               keyboardType: TextInputType.phone,
               validator: (value) {
@@ -351,33 +405,20 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            _buildTextField(
-              controller: _roomNearCollegeController,
-              label: 'Near College',
-              hint: 'Enter nearby college name',
-              icon: Icons.school_rounded,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter nearby college';
-                }
-                return null;
+            // 🔥 COLLEGE DROPDOWN (Room) — API-based, manual select
+            _buildCollegeDropdown(
+              selectedValue: _selectedRoomCollegeId,
+              onChanged: (value) {
+                setState(() {
+                  _selectedRoomCollegeId = value;
+                  final selected = _findCollegeById(value);
+                  _roomNearCollegeController.text = selected?.name ?? '';
+                });
               },
             ),
             const SizedBox(height: 16),
 
             _buildAmenitiesSection(),
-            const SizedBox(height: 16),
-
-            _buildSwitchTile(
-              icon: Icons.book_online_rounded,
-              title: 'Available for Booking',
-              value: _isRoomBooking,
-              onChanged: (value) {
-                setState(() {
-                  _isRoomBooking = value;
-                });
-              },
-            ),
             const SizedBox(height: 16),
 
             _buildImageUploadSection(
@@ -390,7 +431,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               },
               onExistingImageRemoved: (index, imageUrl) {
                 setState(() {
-                  // Add to removed list
                   _removedRoomImages.add(imageUrl);
                   _existingRoomImages.removeAt(index);
                 });
@@ -410,6 +450,143 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
         ),
       ),
     );
+  }
+
+  // 🔥 Helper: find college by id
+  dynamic _findCollegeById(int? id) {
+    if (id == null) return null;
+    try {
+      return collegeController.colleges.firstWhere((c) => c.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ============================================================
+  // 🔥 COLLEGE DROPDOWN — API-based, unique by id, manual select
+  // ============================================================
+  Widget _buildCollegeDropdown({
+    required int? selectedValue,
+    required void Function(int?) onChanged,
+  }) {
+    return Obx(() {
+      // Loading state
+      if (collegeController.isLoading.value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.school_rounded, color: AppColors.primary),
+              const SizedBox(width: 12),
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              const Text('Loading colleges...'),
+            ],
+          ),
+        );
+      }
+
+      // No colleges from API
+      if (collegeController.colleges.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.school_rounded, color: AppColors.primary),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'No colleges available',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // 🔥 Deduplicate by id (safety)
+      final uniqueColleges = <int, dynamic>{};
+      for (final c in collegeController.colleges) {
+        uniqueColleges[c.id] = c;
+      }
+      final collegeList = uniqueColleges.values.toList();
+
+      // Dropdown with unique ids — manual select
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: DropdownButtonFormField<int>(
+          value: selectedValue != null &&
+              collegeList.any((c) => c.id == selectedValue)
+              ? selectedValue
+              : null,
+          isExpanded: true,
+          hint: const Text('Select nearby college'),
+          decoration: InputDecoration(
+            labelText: 'Near College',
+            prefixIcon: Icon(Icons.school_rounded, color: AppColors.primary),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            contentPadding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          ),
+          items: collegeList.map((college) {
+            return DropdownMenuItem<int>(
+              value: college.id,
+              child: Text(
+                college.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          validator: (value) {
+            if (value == null) {
+              return 'Please select nearby college';
+            }
+            return null;
+          },
+        ),
+      );
+    });
   }
 
   // ============================================================
@@ -432,10 +609,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               const SizedBox(width: 8),
               const Text(
                 'Amenities',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -449,35 +623,29 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             childAspectRatio: 4,
             children: [
               _buildAmenityCheckbox(
-                label: 'WiFi',
-                controller: _roomWifiController,
-                icon: Icons.wifi,
-              ),
+                  label: 'WiFi',
+                  controller: _roomWifiController,
+                  icon: Icons.wifi),
               _buildAmenityCheckbox(
-                label: 'AC',
-                controller: _roomAcController,
-                icon: Icons.ac_unit,
-              ),
+                  label: 'AC',
+                  controller: _roomAcController,
+                  icon: Icons.ac_unit),
               _buildAmenityCheckbox(
-                label: 'Parking',
-                controller: _roomParkingController,
-                icon: Icons.local_parking,
-              ),
+                  label: 'Parking',
+                  controller: _roomParkingController,
+                  icon: Icons.local_parking),
               _buildAmenityCheckbox(
-                label: 'Security',
-                controller: _roomSecurityController,
-                icon: Icons.security,
-              ),
+                  label: 'Security',
+                  controller: _roomSecurityController,
+                  icon: Icons.security),
               _buildAmenityCheckbox(
-                label: 'Laundry',
-                controller: _roomLaundryController,
-                icon: Icons.local_laundry_service,
-              ),
+                  label: 'Laundry',
+                  controller: _roomLaundryController,
+                  icon: Icons.local_laundry_service),
               _buildAmenityCheckbox(
-                label: 'Water',
-                controller: _roomWaterController,
-                icon: Icons.water_drop,
-              ),
+                  label: 'Water',
+                  controller: _roomWaterController,
+                  icon: Icons.water_drop),
             ],
           ),
         ],
@@ -506,10 +674,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade700,
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
         ),
       ],
     );
@@ -530,7 +695,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           children: [
             _buildSectionHeader(
               icon: Icons.restaurant_rounded,
-              title: widget.isEdit ? 'Edit Tiffin' : 'Tiffin Center Details',
+              title:
+              widget.isEdit ? 'Edit Tiffin' : 'Tiffin Center Details',
               subtitle: widget.isEdit
                   ? 'Update your tiffin center details'
                   : 'Fill in the details to add a new tiffin center',
@@ -540,7 +706,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             _buildTextField(
               controller: _tiffinTitleController,
               label: 'Title',
-              hint: 'Enter tiffin center name (e.g., Sonu Tiffin Center)',
+              hint: 'Enter tiffin center name',
               icon: Icons.title,
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -554,7 +720,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             _buildTextField(
               controller: _tiffinDescriptionController,
               label: 'Description',
-              hint: 'Enter description (e.g., Best food provider...)',
+              hint: 'Enter description',
               icon: Icons.description_rounded,
               maxLines: 3,
               validator: (value) {
@@ -569,7 +735,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             _buildTextField(
               controller: _tiffinPriceController,
               label: 'Price (per month)',
-              hint: 'Enter price (e.g., 3000)',
+              hint: 'Enter price',
               icon: Icons.currency_rupee_rounded,
               keyboardType: TextInputType.number,
               validator: (value) {
@@ -581,63 +747,69 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
             ),
             const SizedBox(height: 16),
 
-            _buildTextField(
-              controller: _tiffinNearCollegeController,
-              label: 'Near College',
-              hint:
-              'Enter nearby college (e.g., Jabalpur Engineering College)',
-              icon: Icons.school_rounded,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter nearby college';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            _buildDropdownField(
-              label: 'Is Veg',
-              hint: 'Select veg availability',
-              icon: Icons.eco,
-              value: _selectedVegType,
-              items: _vegOptions.map((type) {
-                return DropdownMenuItem<String>(
-                  value: type,
-                  child: Text(type == 'true' ? 'Yes' : 'No'),
-                );
-              }).toList(),
+            // 🔥 COLLEGE DROPDOWN (Tiffin) — API-based, manual select
+            _buildCollegeDropdown(
+              selectedValue: _selectedTiffinCollegeId,
               onChanged: (value) {
                 setState(() {
-                  _selectedVegType = value!;
+                  _selectedTiffinCollegeId = value;
+                  final selected = _findCollegeById(value);
+                  _tiffinNearCollegeController.text =
+                      selected?.name ?? '';
                 });
               },
             ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Is Veg',
+                    hint: 'Select veg availability',
+                    icon: Icons.eco,
+                    value: _selectedVegType,
+                    items: _vegOptions.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type == 'true' ? 'Yes' : 'No'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedVegType = value!;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
 
-            _buildDropdownField(
-              label: 'Is Non-Veg',
-              hint: 'Select non-veg availability',
-              icon: Icons.restaurant_menu,
-              value: _selectedNonVegType,
-              items: _nonVegOptions.map((type) {
-                return DropdownMenuItem<String>(
-                  value: type,
-                  child: Text(type == 'true' ? 'Yes' : 'No'),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedNonVegType = value!;
-                });
-              },
+                Expanded(
+                  child: _buildDropdownField(
+                    label: 'Is Non-Veg',
+                    hint: 'Select non-veg availability',
+                    icon: Icons.restaurant_menu,
+                    value: _selectedNonVegType,
+                    items: _nonVegOptions.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type == 'true' ? 'Yes' : 'No'),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedNonVegType = value!;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
             _buildTextField(
               controller: _tiffinContactController,
               label: 'Contact Number',
-              hint: 'Enter contact number (e.g., 8989207770)',
+              hint: 'Enter contact number',
               icon: Icons.phone_rounded,
               keyboardType: TextInputType.phone,
               validator: (value) {
@@ -651,18 +823,36 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               },
             ),
             const SizedBox(height: 16),
+            _buildTextField(
+              controller: _roomAddressController,
+              label: 'Address',
+              hint: 'Enter complete address',
+              icon: Icons.location_on_rounded,
+              maxLines: 2,
+              readOnly: true,
+              onTap: () async {
+                // 🔥 Await Navigator.push
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SpotPickerScreen()),
+                );
 
-            _buildSwitchTile(
-              icon: Icons.book_online_rounded,
-              title: 'Available for Booking',
-              value: _isTiffinBooking,
-              onChanged: (value) {
-                setState(() {
-                  _isTiffinBooking = value;
-                });
+                // 🔥 Jab wapas aaye, address refresh karo
+                if (mounted) {
+                  setState(() {
+                    _roomAddressController.text = locationController.address.value;
+                  });
+                }
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter address';
+                }
+                return null;
               },
             ),
             const SizedBox(height: 16),
+
 
             _buildImageUploadSection(
               images: _tiffinImages,
@@ -674,7 +864,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               },
               onExistingImageRemoved: (index, imageUrl) {
                 setState(() {
-                  // Add to removed list
                   _removedTiffinImages.add(imageUrl);
                   _existingTiffinImages.removeAt(index);
                 });
@@ -685,7 +874,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
             _buildSubmitButton(
               onPressed: _isLoading ? null : _submitTiffinForm,
-              label: widget.isEdit ? 'Update Tiffin' : 'Add Tiffin Center',
+              label:
+              widget.isEdit ? 'Update Tiffin' : 'Add Tiffin Center',
             ),
             const SizedBox(height: 8),
             _buildRequiredText(),
@@ -697,7 +887,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
   }
 
   // ============================================================
-  // IMAGE UPLOAD SECTION (WITH EXISTING IMAGES SUPPORT)
+  // IMAGE UPLOAD SECTION
   // ============================================================
   Widget _buildImageUploadSection({
     required List<File> images,
@@ -725,15 +915,12 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                    fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
           const SizedBox(height: 12),
 
-          // Existing Images Preview
           if (existingImages.isNotEmpty)
             SizedBox(
               height: 80,
@@ -761,41 +948,16 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                           top: 0,
                           right: 8,
                           child: GestureDetector(
-                            onTap: () => onExistingImageRemoved(index, existingImages[index]),
+                            onTap: () => onExistingImageRemoved(
+                                index, existingImages[index]),
                             child: Container(
                               padding: const EdgeInsets.all(2),
                               decoration: const BoxDecoration(
                                 color: Colors.red,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(8),
-                              ),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Existing',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                ),
-                              ),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 16),
                             ),
                           ),
                         ),
@@ -806,7 +968,6 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               ),
             ),
 
-          // New Images Preview
           if (images.isNotEmpty)
             Column(
               children: [
@@ -816,11 +977,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                     Icon(Icons.image, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Text(
-                      "New ${label}",
+                      "New $label",
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -840,7 +999,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                               height: 80,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue.shade300),
+                                border:
+                                Border.all(color: Colors.blue.shade300),
                                 image: DecorationImage(
                                   image: FileImage(images[index]),
                                   fit: BoxFit.cover,
@@ -863,34 +1023,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
                                     color: Colors.red,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
-                                  borderRadius: const BorderRadius.vertical(
-                                    bottom: Radius.circular(8),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'New',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                    ),
-                                  ),
+                                  child: const Icon(Icons.close,
+                                      color: Colors.white, size: 16),
                                 ),
                               ),
                             ),
@@ -905,13 +1039,13 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
 
           const SizedBox(height: 8),
 
-          // Upload button
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _pickImages(onImagesSelected),
               icon: const Icon(Icons.upload_file),
-              label: Text(totalImages > 0 ? 'Add More Images' : 'Upload Images'),
+              label:
+              Text(totalImages > 0 ? 'Add More Images' : 'Upload Images'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: BorderSide(color: AppColors.primary),
@@ -924,10 +1058,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'Upload at least one image (JPEG, PNG)',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
             ),
         ],
@@ -985,10 +1116,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               ),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -1002,9 +1130,11 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     required String label,
     required String hint,
     required IconData icon,
+    bool readOnly = false,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    void Function()? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1022,6 +1152,8 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        readOnly: readOnly,
+        onTap: onTap,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -1073,6 +1205,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
       ),
       child: DropdownButtonFormField<dynamic>(
         value: value,
+        isExpanded: true,
         hint: Text(hint),
         decoration: InputDecoration(
           labelText: label,
@@ -1125,9 +1258,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                    fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1173,18 +1304,14 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
     return Center(
       child: Text(
         'All fields are required',
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.grey.shade500,
-        ),
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
       ),
     );
   }
 
   // ============================================================
-  // SUBMIT METHODS - CREATE & UPDATE
+  // SUBMIT METHODS
   // ============================================================
-
   void _submitRoomForm() {
     if (_roomFormKey.currentState!.validate()) {
       setState(() {
@@ -1198,10 +1325,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
       }
 
       if (widget.isEdit && _editingRoomId != null) {
-        // UPDATE ROOM - Keep existing images, add new ones, remove deleted ones
-        // Note: The API will handle image management based on the data sent
-        roomController
-            .updateRoom(
+        roomController.updateRoom(
+          longitude: locationController.longitude.value.toString(),
+          latitude: locationController.latitude.value.toString(),
           roomId: _editingRoomId!,
           userId: userId,
           title: _roomTitleController.text.trim(),
@@ -1217,7 +1343,7 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           laundry: _roomLaundryController.text.toLowerCase() == 'true',
           water: _roomWaterController.text.toLowerCase() == 'true',
           nearCollege: _roomNearCollegeController.text.trim(),
-          imagePaths: imagePaths, // New images to add
+          imagePaths: imagePaths,
         )
             .then((success) {
           setState(() {
@@ -1235,9 +1361,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           FlutterToast.error('Error: $error');
         });
       } else {
-        // CREATE ROOM
-        roomController
-            .createRoom(
+        roomController.createRoom(
+          longitude: locationController.longitude.value.toString(),
+          latitude: locationController.latitude.value.toString(),
           userId: userId,
           title: _roomTitleController.text.trim(),
           description: _roomDescriptionController.text.trim(),
@@ -1282,10 +1408,10 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
       final userId = authController.getUserId.toString();
 
       if (widget.isEdit && _editingTiffinId != null) {
-        // UPDATE TIFFIN - Keep existing images, add new ones
-        // Note: The API will handle image management
         tiffinController
             .updateTiffin(
+          longitude: locationController.longitude.value.toString(),
+          latitude: locationController.latitude.value.toString(),
           tiffinId: _editingTiffinId!,
           title: _tiffinTitleController.text.trim(),
           description: _tiffinDescriptionController.text.trim(),
@@ -1313,9 +1439,9 @@ class _AddRoomTiffinCenterScreenState extends State<AddRoomTiffinCenterScreen>
           FlutterToast.error('Error: $error');
         });
       } else {
-        // CREATE TIFFIN
-        tiffinController
-            .createTiffin(
+        tiffinController.createTiffin(
+          longitude: locationController.longitude.value.toString(),
+          latitude: locationController.latitude.value.toString(),
           title: _tiffinTitleController.text.trim(),
           description: _tiffinDescriptionController.text.trim(),
           price: _tiffinPriceController.text.trim(),

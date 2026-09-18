@@ -9,23 +9,11 @@ import '../repository/room_repository.dart';
 class RoomController extends GetxController {
   final RoomRepository _repository = RoomRepository();
 
-  // ============================================================
-  // OBSERVABLE VARIABLES
-  // ============================================================
-
   final RxList<Room> rooms = <Room>[].obs;
-
   final RxBool isLoading = false.obs;
-
   final RxString errorMessage = ''.obs;
-
   final Rx<Room?> selectedRoom = Rx<Room?>(null);
-
   final RxString selectedFilter = 'All'.obs;
-
-  // ============================================================
-  // ROOM TYPES
-  // ============================================================
 
   final List<String> roomTypes = [
     'All',
@@ -35,10 +23,6 @@ class RoomController extends GetxController {
     'pg',
     'single room',
   ];
-
-  // ============================================================
-  // FILTERED ROOMS
-  // ============================================================
 
   List<Room> get filteredRooms {
     if (selectedFilter.value.toLowerCase() == 'all') {
@@ -51,237 +35,169 @@ class RoomController extends GetxController {
     }).toList();
   }
 
-  // ============================================================
-  // AVAILABLE ROOMS
-  // ============================================================
-
   List<Room> get availableRooms {
-    return rooms.where((room) {
-      return !room.isBooking;
-    }).toList();
+    return rooms.where((room) => !room.isBooking).toList();
   }
-
-  // ============================================================
-  // BOOKED ROOMS
-  // ============================================================
 
   List<Room> get bookedRooms {
-    return rooms.where((room) {
-      return room.isBooking;
-    }).toList();
+    return rooms.where((room) => room.isBooking).toList();
   }
-
-  // ============================================================
-  // INIT
-  // ============================================================
 
   @override
   void onInit() {
     super.onInit();
-
-    if (rooms.isEmpty) {
-      fetchRooms();
-    }
   }
 
-  // ============================================================
-  // GET ALL ROOMS
-  // ============================================================
-
-  /// GET
-  /// /api/v1/college/rooms/list/
-  Future<void> fetchRooms() async {
+  Future<void> fetchAllRooms({
+    String? userId,
+    String? nearCollege,
+  }) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response = await _repository.getRooms();
+      print('🔍 Fetching all rooms — user_id: $userId, near_college: $nearCollege');
+
+      final response = await _repository.getAllRooms(
+        userId: userId,
+        nearCollege: nearCollege,
+      );
 
       if (response.success) {
         rooms.assignAll(response.data);
-
-        print(
-          '✅ All rooms loaded: ${rooms.length}',
-        );
+        print('✅ All rooms loaded: ${rooms.length}');
       } else {
         errorMessage.value = 'Failed to load rooms';
-
-        FlutterToast.error(
-          'Failed to load rooms',
-        );
+        FlutterToast.error('Failed to load rooms');
       }
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error fetching rooms: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
+      print('❌ Error fetching all rooms: $e');
+      FlutterToast.error(e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ============================================================
-  // GET ROOMS BY USER ID
-  // ============================================================
 
-  /// GET
-  /// /api/v1/college/rooms/list/?user_id=9
-  Future<void> fetchRoomsByUserId(
-      String userId,
-      ) async {
+  Future<void> fetchRoomsByUserId(String userId) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      print(
-        '🔍 Fetching rooms for user_id: $userId',
-      );
+      print('🔍 Fetching owner rooms for user_id: $userId');
 
-      final response =
-      await _repository.getRoomsByUserId(userId);
+      final response = await _repository.getRoomsByUserId(userId);
 
       if (response.success) {
         rooms.assignAll(response.data);
-
-        print(
-          '✅ User rooms loaded: ${rooms.length}',
-        );
+        print('✅ Owner rooms loaded: ${rooms.length}');
       } else {
-        errorMessage.value =
-        'Failed to load user rooms';
-
-        FlutterToast.error(
-          'Failed to load user rooms',
-        );
+        errorMessage.value = 'Failed to load user rooms';
+        FlutterToast.error('Failed to load user rooms');
       }
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error fetching user rooms: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
+      print('❌ Error fetching user rooms: $e');
+      FlutterToast.error(e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ============================================================
-  // GET ROOM BY ID
-  // ============================================================
 
-  /// GET
-  /// /api/v1/college/rooms/{room_id}/
-  Future<void> fetchRoomById(
-      int id,
-      ) async {
+  Future<Room?> fetchRoomByIdWithUserId({
+    required int roomId,
+    String? userId,
+  }) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final room =
-      await _repository.getRoomById(id);
 
+      final response = await _repository.getRoomByIdWithUserId(
+        roomId: roomId,
+        userId: userId,
+      );
+
+      if (response.success && response.data != null) {
+        selectedRoom.value = response.data;
+
+        return response.data;
+      } else {
+        errorMessage.value = 'Room not found';
+        print('❌ Room not found: $roomId');
+        return null;
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      print('❌ Error fetching room: $e');
+      FlutterToast.error(e.toString());
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchRoomById(int id, {String? userId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final room = await _repository.getRoomById(id, userId: userId);
       selectedRoom.value = room;
 
-      print(
-        '✅ Room loaded: ${room.id}',
-      );
+      print('✅ Room loaded: ${room.id}');
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error fetching room: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
+      print('❌ Error fetching room: $e');
+      FlutterToast.error(e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ============================================================
-  // GET ROOMS BY COLLEGE
-  // ============================================================
 
-  /// Filter using near_college
   Future<void> fetchRoomsByCollege(
-      String collegeName,
-      ) async {
+      String collegeName, {
+        String? userId,
+      }) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-
-      print(
-        '🔍 Fetching rooms for college: $collegeName',
+      final response = await _repository.getAllRooms(
+        userId: userId,
+        nearCollege: collegeName,
       );
 
-      final response =
-      await _repository.getRooms();
-
       if (response.success) {
-        final filtered = response.data.where((room) {
-          if (room.nearCollege == null ||
-              room.nearCollege!.isEmpty) {
-            return false;
-          }
-
-          return room.nearCollege!
-              .toLowerCase()
-              .trim() ==
-              collegeName.toLowerCase().trim();
-        }).toList();
-
-        rooms.assignAll(filtered);
-
-        print(
-          '✅ College rooms loaded: ${rooms.length}',
-        );
+        rooms.assignAll(response.data);
+        print('✅ College rooms loaded: ${rooms.length}');
       } else {
-        errorMessage.value =
-        'Failed to load rooms';
-
-        FlutterToast.error(
-          'Failed to load rooms',
-        );
+        errorMessage.value = 'Failed to load rooms';
+        FlutterToast.error('Failed to load rooms');
       }
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error fetching college rooms: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
+      print('❌ Error fetching college rooms: $e');
+      FlutterToast.error(e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
   // ============================================================
-  // CREATE ROOM
+  // CREATE ROOM (updated — owner refetch)
   // ============================================================
 
-  /// POST
-  /// /api/v1/college/rooms/create/
   Future<bool> createRoom({
     required String userId,
     required String title,
     required String description,
     required String address,
     required String price,
+    required String latitude,
+    required String longitude,
     required String roomType,
     String? contactNumber,
     bool wifi = false,
@@ -297,13 +213,14 @@ class RoomController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response =
-      await _repository.createRoom(
+      final response = await _repository.createRoom(
         userId: userId,
         title: title,
         description: description,
         address: address,
         price: price,
+        latitude:latitude,
+        longitude: longitude,
         roomType: roomType,
         contactNumber: contactNumber,
         wifi: wifi,
@@ -323,54 +240,33 @@ class RoomController extends GetxController {
               : 'Room created successfully',
         );
 
-        // Refresh list
-        await fetchRooms();
+        // ✅ Owner ke rooms refetch karo
+        await fetchRoomsByUserId(userId);
 
-        // Select created room if available
         if (response.data != null) {
           selectedRoom.value = response.data;
         }
 
-        print(
-          '✅ Room created successfully',
-        );
-
         return true;
       }
 
-      errorMessage.value =
-      response.message.isNotEmpty
+      errorMessage.value = response.message.isNotEmpty
           ? response.message
           : 'Failed to create room';
 
-      FlutterToast.error(
-        errorMessage.value,
-      );
-
+      FlutterToast.error(errorMessage.value);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error creating room: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
-
+      print('❌ Error creating room: $e');
+      FlutterToast.error(e.toString());
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ============================================================
-  // UPDATE ROOM
-  // ============================================================
 
-  /// PUT
-  /// /api/v1/college/rooms/{room_id}/
   Future<bool> updateRoom({
     required int roomId,
     required String userId,
@@ -378,6 +274,8 @@ class RoomController extends GetxController {
     required String description,
     required String address,
     required String price,
+    required String latitude,
+    required String longitude,
     required String roomType,
     String? contactNumber,
     bool wifi = false,
@@ -393,14 +291,15 @@ class RoomController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response =
-      await _repository.updateRoom(
+      final response = await _repository.updateRoom(
         roomId: roomId,
         userId: userId,
         title: title,
         description: description,
         address: address,
         price: price,
+        latitude: latitude,
+        longitude: longitude,
         roomType: roomType,
         contactNumber: contactNumber,
         wifi: wifi,
@@ -420,107 +319,58 @@ class RoomController extends GetxController {
               : 'Room updated successfully',
         );
 
-        // Refresh list
-        await fetchRooms();
+        await fetchRoomsByUserId(userId);
 
-        // Update selected room
         if (response.data != null) {
           selectedRoom.value = response.data;
         } else {
-          await fetchRoomById(roomId);
+          await fetchRoomById(roomId, userId: userId);
         }
-
-        print(
-          '✅ Room updated successfully: $roomId',
-        );
 
         return true;
       }
 
-      errorMessage.value =
-      response.message.isNotEmpty
+      errorMessage.value = response.message.isNotEmpty
           ? response.message
           : 'Failed to update room';
 
-      FlutterToast.error(
-        errorMessage.value,
-      );
-
+      FlutterToast.error(errorMessage.value);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error updating room: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
-
+      print('❌ Error updating room: $e');
+      FlutterToast.error(e.toString());
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // ============================================================
-  // DELETE ROOM
-  // ============================================================
-
-  /// DELETE
-  /// /api/v1/college/rooms/{room_id}/
-  Future<bool> deleteRoom(
-      int roomId,
-      ) async {
+  Future<bool> deleteRoom(int roomId) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final success =
-      await _repository.deleteRoom(roomId);
+      final success = await _repository.deleteRoom(roomId);
 
       if (success) {
-        // Remove room from local list
-        rooms.removeWhere(
-              (room) => room.id == roomId,
-        );
+        rooms.removeWhere((room) => room.id == roomId);
 
-        // Clear selected room
         if (selectedRoom.value?.id == roomId) {
           selectedRoom.value = null;
         }
 
-        FlutterToast.success(
-          'Room deleted successfully',
-        );
-
-        print(
-          '✅ Room deleted successfully: $roomId',
-        );
-
+        FlutterToast.success('Room deleted successfully');
         return true;
       }
 
-      errorMessage.value =
-      'Failed to delete room';
-
-      FlutterToast.error(
-        errorMessage.value,
-      );
-
+      errorMessage.value = 'Failed to delete room';
+      FlutterToast.error(errorMessage.value);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
-
-      print(
-        '❌ Error deleting room: $e',
-      );
-
-      FlutterToast.error(
-        e.toString(),
-      );
-
+      print('❌ Error deleting room: $e');
+      FlutterToast.error(e.toString());
       return false;
     } finally {
       isLoading.value = false;
@@ -528,34 +378,20 @@ class RoomController extends GetxController {
   }
 
   // ============================================================
-  // SET FILTER
+  // SET FILTER / CLEAR / REFRESH
   // ============================================================
 
-  void setFilter(
-      String filter,
-      ) {
+  void setFilter(String filter) {
     selectedFilter.value = filter;
   }
 
-  // ============================================================
-  // REFRESH ROOMS
-  // ============================================================
-
   Future<void> refreshRooms() async {
-    await fetchRooms();
+    // Nothing — screen se call karo
   }
-
-  // ============================================================
-  // CLEAR SELECTED ROOM
-  // ============================================================
 
   void clearSelectedRoom() {
     selectedRoom.value = null;
   }
-
-  // ============================================================
-  // CLEAR ERROR
-  // ============================================================
 
   void clearError() {
     errorMessage.value = '';
