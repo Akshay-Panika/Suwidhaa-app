@@ -1,5 +1,5 @@
 // lib/feature/ott_platform/screen/play_webseries_screen.dart
-
+import 'package:readmore/readmore.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -398,17 +398,44 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                   padding: const EdgeInsets.only(bottom: 24),
                   children: [
                     if (webseries.description.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                        child: Text(
-                          webseries.description,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
-                        ),
+                      // Padding(
+                      //   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      //   child: Text(
+                      //     webseries.description,
+                      //     style: const TextStyle(
+                      //       color: Colors.white70,
+                      //       fontSize: 13,
+                      //       height: 1.5,
+                      //     ),
+                      //   ),
+                      // ),
+
+                    Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: ReadMoreText(
+                      webseries.description,
+                      trimLines: 3,
+                      colorClickableText: Colors.blue,
+                      trimMode: TrimMode.Line,
+                      trimCollapsedText: 'Read more',
+                      trimExpandedText: ' Show less',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.5,
                       ),
+                      moreStyle: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      lessStyle: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
 
                     const SizedBox(height: 12),
 

@@ -36,10 +36,16 @@ class _OttReelScreenState extends State<OttReelScreen> {
         }
 
         if (controller.reels.isEmpty) {
-          return const Center(
-            child: Text(
-              'No reels available',
-              style: TextStyle(color: Colors.white),
+          return  Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // const SizedBox(height: 50),
+                Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
+                const SizedBox(height: 12),
+                Text("No Reels",style: TextStyle(fontSize: 16,color: Colors.grey,fontWeight: FontWeight.w600),)
+              ],
             ),
           );
         }

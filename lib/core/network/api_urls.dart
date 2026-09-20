@@ -14,6 +14,12 @@ class ApiUrls {
   static const String teacherCreate = 'v1/school/teacher/create/';
   static const String teacherDetail = 'v1/school/teacher/';  // + id
 
+  // In your ApiUrls class, add:
+  static const String teacherAttendanceHistory = 'v1/school/teacher-attendance/history/';
+  static const String teacherAttendanceCheckIn  = 'v1/school/teacher-attendance/check-in/';
+  static const String teacherAttendanceCheckOut = 'v1/school/teacher-attendance/check-out/';
+  static const String teacherAttendanceToday    = 'v1/school/teacher-attendance/today/';
+
   // Class endpoints
   static const String classList = 'v1/school/class/list/';
   static const String classCreate = 'v1/school/class/create/';
@@ -63,7 +69,6 @@ class ApiUrls {
   // Ott content
   static const String ottBanner = 'v1/ott/banner/list';
   static const String ottContent = 'v1/ott/content/list';
-
   static const String ottMovieDetail   = 'v1/ott/movies/';
   static const String ottCartoonDetail = 'v1/ott/cartoons/';
   static const String ottSciFiDetail   = 'v1/ott/sci-fi/';

@@ -143,6 +143,7 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
             const SizedBox(height: 24),
 
             // Trending Now
+            if(controller.contents.isNotEmpty)
             _buildSectionHeader(
               'Trending Now',
               'View All',
@@ -150,10 +151,12 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
               filterType: 'trending',
             ),
             const SizedBox(height: 12),
+            if(controller.contents.isNotEmpty)
             _buildTrendingSlider(trendingContents),
             const SizedBox(height: 24),
 
             // Recommended Shows
+            if(controller.contents.isNotEmpty)
             _buildSectionHeader(
               'Recommended Shows',
               'View All',
@@ -161,8 +164,22 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
               filterType: 'recommended',
             ),
             const SizedBox(height: 12),
+            if(controller.contents.isNotEmpty)
             _buildRecommendedGrid(recommendedContents),
             const SizedBox(height: 20),
+            if(controller.contents.isEmpty)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 150),
+                  Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
+                  const SizedBox(height: 12),
+                  Text("No OTT",style: TextStyle(fontSize: 16,color: Colors.grey,fontWeight: FontWeight.w600),)
+                ],
+              ),
+            )
           ],
         ),
       );

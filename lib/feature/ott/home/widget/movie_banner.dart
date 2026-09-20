@@ -25,16 +25,7 @@ class _MovieBannerState extends State<MovieBanner> {
       }
 
       if (controller.banners.isEmpty) {
-        return const SizedBox(
-          height: 240,
-          child: Center(
-            child: Icon(
-              Icons.image_not_supported,
-              color: Colors.grey,
-              size: 50,
-            ),
-          ),
-        );
+        return const SizedBox.shrink();
       }
 
       if (_currentIndex >= controller.banners.length) {

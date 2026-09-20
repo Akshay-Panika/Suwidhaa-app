@@ -12,11 +12,12 @@ import '../model/tiffin_model.dart';
 class TiffinViewScreen extends StatefulWidget {
   final int tiffinId;
   final int collegeId;
+  final String distance;
 
   const TiffinViewScreen({
     super.key,
     required this.tiffinId,
-    required this.collegeId,
+    required this.collegeId, required this.distance,
   });
 
   @override
@@ -426,6 +427,20 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                               ],
                             ),
                           ],
+                        ),
+                        Card(
+                          elevation: 0,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0,vertical: 2),
+                            child: Text(
+                              widget.distance,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
                         ),
 
                         // Near college

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/widget/contact_helper.dart';
+import '../../attendance/widget/teacher_attendance_card.dart';
 import '../../auth/controller/school_auth_controller.dart';
 import '../../student/widget/student_attendance_card.dart';
 import '../controller/teacher_controller.dart';
@@ -38,7 +39,7 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
                 Expanded(
                   child: _buildTeacherCard(teacherController),
                 ),
-                const StudentAttendanceCard(),
+                const TeacherAttendanceCard(),
                 Expanded(
                   flex: 2,
                   child: _buildSchoolFeatures(context, teacherController, authController),

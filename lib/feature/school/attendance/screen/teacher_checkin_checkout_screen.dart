@@ -1,6 +1,12 @@
+// lib/feature/school/attendance/screen/teacher_checkin_checkout_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
+
+import '../../profile/controller/teacher_controller.dart';
+import '../controller/teacher_checkin_checkout_controller.dart';
 
 class TeacherCheckinCheckoutScreen extends StatefulWidget {
   const TeacherCheckinCheckoutScreen({super.key});
@@ -15,18 +21,33 @@ class _TeacherCheckinCheckoutScreenState
   late Timer _timer;
   DateTime _now = DateTime.now();
 
-  DateTime? _checkInTime;
-  DateTime? _checkOutTime;
-
-  static const String _teacherName = 'Mrs. Priya Sharma';
-  static const String _teacherId = 'TCH-2045';
+  final TeacherController teacherController = Get.find<TeacherController>();
+  final TeacherCheckInOutController checkInOutController =
+  Get.find<TeacherCheckInOutController>();
 
   @override
   void initState() {
     super.initState();
+
+    // Clock tick
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
+
+    // ✅ Fetch today's attendance once teacher id is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadToday();
+    });
+
+    // Re-fetch when teacher data becomes available
+    ever(teacherController.teacherData, (_) => _loadToday());
+  }
+
+  void _loadToday() {
+    final teacherId = teacherController.teacherIdCard;
+    if (teacherId.isNotEmpty) {
+      checkInOutController.fetchToday(teacherId: teacherId);
+    }
   }
 
   @override
@@ -60,32 +81,60 @@ class _TeacherCheckinCheckoutScreenState
     return '$h:$m $ampm';
   }
 
-  void _handleCheckIn() {
-    setState(() => _checkInTime = DateTime.now());
-    FlutterToast.success("Checked in successfully");
+  // ---------- API Calls ----------
+
+  Future<void> _handleCheckIn() async {
+    final teacherId = teacherController.teacherIdCard;
+    if (teacherId.isEmpty) {
+      FlutterToast.error("Teacher ID not found");
+      return;
+    }
+
+    final ok = await checkInOutController.checkIn(teacherId: teacherId);
+    if (ok) {
+      FlutterToast.success("Checked in successfully");
+    } else {
+      FlutterToast.error(
+        checkInOutController.errorMessage.value.isNotEmpty
+            ? checkInOutController.errorMessage.value
+            : "Check-in failed",
+      );
+    }
   }
 
-  void _handleCheckOut() {
-    setState(() => _checkOutTime = DateTime.now());
-    FlutterToast.success("Checked out successfully");
+  Future<void> _handleCheckOut() async {
+    final teacherId = teacherController.teacherIdCard;
+    if (teacherId.isEmpty) {
+      FlutterToast.error("Teacher ID not found");
+      return;
+    }
+
+    final ok = await checkInOutController.checkOut(teacherId: teacherId);
+    if (ok) {
+      FlutterToast.success("Checked out successfully");
+    } else {
+      FlutterToast.error(
+        checkInOutController.errorMessage.value.isNotEmpty
+            ? checkInOutController.errorMessage.value
+            : "Check-out failed",
+      );
+    }
   }
 
   // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
-    final canCheckIn = _checkInTime == null;
-    final canCheckOut = _checkInTime != null && _checkOutTime == null;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(onPressed: () {
-          
-        }, icon: Icon(Icons.arrow_back_ios)),
+        leading: IconButton(
+          onPressed: () => Get.back(),
+          icon: const Icon(Icons.arrow_back_ios),
+        ),
         title: const Text(
           'Self Attendance',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -96,46 +145,130 @@ class _TeacherCheckinCheckoutScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Teacher info
-            Row(
-              children: [
-                 CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFFE3F2FD),
-                  child: Icon(Icons.image, color: Colors.white, size: 30),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _teacherId,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    Text(
-                      _teacherName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
+            // ✅ Teacher info
+            Obx(() {
+              if (teacherController.isLoading.value) {
+                return const SizedBox(
+                  height: 80,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
 
-                    Text(
-                      "Class 11th",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600
+              if (teacherController.hasData) {
+                final teacher = teacherController.teacherData.value!;
+                return Row(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.blue.shade200,
+                          width: 2,
+                        ),
+                        image: teacher.teacherProfile != null &&
+                            teacher.teacherProfile!.isNotEmpty
+                            ? DecorationImage(
+                          image: NetworkImage(teacher.teacherProfile!),
+                          fit: BoxFit.cover,
+                        )
+                            : null,
+                      ),
+                      child: teacher.teacherProfile == null ||
+                          teacher.teacherProfile!.isEmpty
+                          ? CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.blue.shade100,
+                        child: Text(
+                          teacherController.fullName.isNotEmpty
+                              ? teacherController.fullName[0]
+                              .toUpperCase()
+                              : 'T',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            teacherController.teacherIdCard.isNotEmpty
+                                ? teacherController.teacherIdCard
+                                : "--",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          Text(
+                            teacherController.fullName.isNotEmpty
+                                ? teacherController.fullName
+                                : "Teacher Name",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            teacherController.qualification.isNotEmpty
+                                ? teacherController.qualification
+                                : "Teacher",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-              ],
-            ),
+                );
+              }
+
+              // Fallback
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: const Color(0xFFE3F2FD),
+                    child: Icon(Icons.person,
+                        color: Colors.blue.shade300, size: 30),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "--",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      Text(
+                        "Teacher Name",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
 
             const SizedBox(height: 20),
 
@@ -170,72 +303,106 @@ class _TeacherCheckinCheckoutScreenState
 
             const SizedBox(height: 20),
 
-            // Check-in / Check-out times
-            Row(
-              children: [
-                Expanded(
-                  child: _timeBox(
-                    label: 'Check-in',
-                    time: _checkInTime == null
-                        ? '--:--'
-                        : _formatClock(_checkInTime!),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _timeBox(
-                    label: 'Check-out',
-                    time: _checkOutTime == null
-                        ? '--:--'
-                        : _formatClock(_checkOutTime!),
-                  ),
-                ),
-              ],
-            ),
+            // ✅ Check-in / Check-out times (from API)
+            Obx(() {
+              final data = checkInOutController.todayData.value;
 
-            Expanded(child: const SizedBox(height: 24)),
-
-            // Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: canCheckIn ? _handleCheckIn : null,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Check In'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    disabledForegroundColor: Colors.grey.shade600,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              return Row(
+                children: [
+                  Expanded(
+                    child: _timeBox(
+                      label: 'Check-in',
+                      time: data?.checkInTime ?? '--:--',
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: canCheckOut ? _handleCheckOut : null,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Check Out'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    disabledForegroundColor: Colors.grey.shade600,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _timeBox(
+                      label: 'Check-out',
+                      time: data?.checkOutTime ?? '--:--',
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
-            SizedBox(height: 30)
+                ],
+              );
+            }),
+
+            const Expanded(child: SizedBox(height: 24)),
+
+            // ✅ Buttons (loading-aware + state-aware)
+            Obx(() {
+              final isCheckingIn = checkInOutController.isCheckingIn.value;
+              final isCheckingOut = checkInOutController.isCheckingOut.value;
+              final hasIn = checkInOutController.hasCheckedIn;
+              final hasOut = checkInOutController.hasCheckedOut;
+
+              // Check-in disabled if already checked-in OR loading
+              final canCheckIn = !hasIn && !isCheckingIn && !isCheckingOut;
+
+              // Check-out disabled if not checked-in OR already checked-out OR loading
+              final canCheckOut =
+                  hasIn && !hasOut && !isCheckingIn && !isCheckingOut;
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: canCheckIn ? _handleCheckIn : null,
+                      icon: isCheckingIn
+                          ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Icon(Icons.login),
+                      label: Text(isCheckingIn ? 'Checking in...' : 'Check In'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade600,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: canCheckOut ? _handleCheckOut : null,
+                      icon: isCheckingOut
+                          ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Icon(Icons.logout),
+                      label:
+                      Text(isCheckingOut ? 'Checking out...' : 'Check Out'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade600,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+
+            const SizedBox(height: 30),
           ],
         ),
       ),

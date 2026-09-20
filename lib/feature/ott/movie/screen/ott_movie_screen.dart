@@ -112,8 +112,10 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.movie, color: Colors.grey, size: 60),
+            const SizedBox(height: 100),
+            Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
             const SizedBox(height: 12),
+
             Text(
               'No ${_categories[_selectedCategory]['label']} available',
               style: const TextStyle(color: Colors.grey, fontSize: 16),

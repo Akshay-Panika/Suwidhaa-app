@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:untitled/feature/college/screen/room_view_screen.dart';
 import 'package:untitled/feature/college/screen/tiffin_view_screen.dart';
+import 'dart:math' as math;
 import '../../../core/utils/app_color.dart';
 import '../../../core/widget/contact_helper.dart';
 import '../../auth/controller/auth_controller.dart';
@@ -57,7 +58,62 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
 
   final List<String> _tiffinTypes = ['All', 'Veg', 'Non-Veg', 'Both'];
 
-  // ==================== FILTERS ====================
+  // ==================== DISTANCE CALCULATION ====================
+
+  /// Calculate distance between two coordinates in kilometers using Haversine formula
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Earth's radius in kilometers
+
+    double dLat = _toRadians(lat2 - lat1);
+    double dLon = _toRadians(lon2 - lon1);
+
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  double _toRadians(double degree) {
+    return degree * math.pi / 180;
+  }
+
+  /// Format distance for display
+  String _formatDistance(double distanceInKm) {
+    if (distanceInKm < 1) {
+      return '${(distanceInKm * 1000).toStringAsFixed(0)} m';
+    } else if (distanceInKm < 10) {
+      return '${distanceInKm.toStringAsFixed(1)} km';
+    } else {
+      return '${distanceInKm.toStringAsFixed(0)} km';
+    }
+  }
+
+  /// Calculate and format distance from college to a location
+  String _getDistanceFromCollege(dynamic lat, dynamic lon) {
+    if (_college == null || _college!.latitude == null || _college!.longitude == null || lat == null || lon == null) {
+      return '';
+    }
+
+    final collegeLat = double.tryParse(_college!.latitude.toString());
+    final collegeLon = double.tryParse(_college!.longitude.toString());
+    final destLat = double.tryParse(lat.toString());
+    final destLon = double.tryParse(lon.toString());
+
+    if (collegeLat == null || collegeLon == null || destLat == null || destLon == null) {
+      return '';
+    }
+
+    final distance = _calculateDistance(collegeLat, collegeLon, destLat, destLon,);
+
+    return _formatDistance(distance);
+  }
+
 
   List<Room> get _filteredRooms {
     if (_selectedRoomType == 'All') {
@@ -93,9 +149,6 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
   @override
   void initState() {
     super.initState();
-
-    // ❌ Ye line hatao:
-    // _roomController.fetchRoomsByCollege(widget.collegeName);
 
     _tiffinController.fetchTiffinsByCollege(widget.collegeName,);
 
@@ -879,6 +932,12 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
         ? room.roomImages.first.url
         : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&h=300&fit=crop';
 
+    // ✅ Distance calculation from college to room
+    final String distanceText = _getDistanceFromCollege(
+      room.latitude,
+      room.longitude,
+    );
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -887,6 +946,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
             builder: (context) => RoomViewScreen(
               roomId: room.id,
               collegeId: int.tryParse(widget.collegeId) ?? 0,
+              distance: distanceText,
             ),
           ),
         );
@@ -953,6 +1013,39 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                       ),
                     ),
                   ),
+                  // ✅ Distance badge on image (bottom-left)
+                  if (distanceText.isNotEmpty)
+                    Positioned(
+                      bottom: 4,
+                      left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.near_me_rounded,
+                              size: 10,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              distanceText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1090,6 +1183,12 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
         ? tiffin.firstImageUrl
         : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
 
+    // ✅ Distance calculation from college to tiffin
+    final String distanceText = _getDistanceFromCollege(
+      tiffin.latitude,
+      tiffin.longitude,
+    );
+
     return Card(
       color: Colors.white,
       elevation: 0.3,
@@ -1101,6 +1200,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
               builder: (context) => TiffinViewScreen(
                 tiffinId: tiffin.id,
                 collegeId: int.tryParse(widget.collegeId) ?? 0,
+                distance: distanceText,
               ),
             ),
           );
@@ -1185,6 +1285,39 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                         ),
                       ),
                     ),
+                    // ✅ Distance badge on image (bottom-left)
+                    if (distanceText.isNotEmpty)
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.near_me_rounded,
+                                size: 10,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                distanceText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

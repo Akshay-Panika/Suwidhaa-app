@@ -7,6 +7,7 @@ import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../controller/ott_controller.dart';
+import '../widget/suggestion_contant_card.dart';
 
 class PlayMovieScreen extends StatefulWidget {
   final int contentId;
@@ -409,6 +410,26 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                           content.releaseDate!.isNotEmpty)
                         _detailRow('Release Date', content.releaseDate!),
                       _detailRow('Rating', content.rating),
+
+                      /// Gridview show kro
+                      const SizedBox(height: 12),
+                      Row(
+                        spacing: 10,
+                        children: [
+                          Container(color: Colors.red, height: 14, width: 3),
+                          const Text(
+                            'Next Suggestion',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SuggestionContentCard(contentType: widget.contentType, ),
+                      SizedBox(height: 100,)
                     ],
                   ),
                 ),

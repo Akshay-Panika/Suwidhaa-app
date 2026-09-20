@@ -10,13 +10,14 @@ import '../model/college_booking_model.dart';
 import '../model/room_model.dart';
 
 class RoomViewScreen extends StatefulWidget {
-  final int roomId;        // ✅ Sirf room ID
-  final int collegeId;     // ✅ College ID
+  final int roomId;
+  final int collegeId;
+  final String distance;
 
   const RoomViewScreen({
     super.key,
     required this.roomId,
-    required this.collegeId,
+    required this.collegeId, required this.distance,
   });
 
   @override
@@ -588,6 +589,20 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black87,
+                                    ),
+                                  ),
+                                  Card(
+                                    elevation: 0,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0,vertical: 2),
+                                      child: Text(
+                                        widget.distance,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 4),

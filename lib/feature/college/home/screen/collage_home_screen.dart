@@ -818,34 +818,19 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            college.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                          Expanded(
                             child: Text(
-                              college.category ?? 'General',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.primary,
+                              college.name,
+                              style: const TextStyle(
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
+                                color: Colors.black87,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -896,22 +881,22 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                                 ),
                               ],
                             ),
-                          ],
+                          ],//
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: AppColors.primary.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              'View Now',
+                            child: Text(
+                              college.category ?? 'General',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

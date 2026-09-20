@@ -43,7 +43,8 @@ class OttController extends GetxController {
       );
       selectedContent.value = content;
     } catch (e) {
-      FlutterToast.error('Failed to load details');
+      print("Failed to load details");
+      // FlutterToast.error('Failed to load details');
     } finally {
       isDetailLoading.value = false;
     }
