@@ -2,23 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../controller/ott_content_controller.dart';
-import '../screen/play_dashboard_screen.dart';
+import '../../home/screen/play_dashboard_screen.dart';
 
-class SuggestionContentCard extends StatefulWidget {
-  final String contentType;
+class MyWatchlistContentCard extends StatelessWidget {
 
-  const SuggestionContentCard({
+  MyWatchlistContentCard({
     super.key,
-    required this.contentType,
   });
 
-  @override
-  State<SuggestionContentCard> createState() => _SuggestionContentCardState();
-}
-
-class _SuggestionContentCardState extends State<SuggestionContentCard> {
   final OttContentController controller = Get.find<OttContentController>();
 
   @override
@@ -34,10 +26,8 @@ class _SuggestionContentCardState extends State<SuggestionContentCard> {
         );
       }
 
-      // ── Filter: same contentType only ──
-      final suggestions = controller.contents
-          .where((c) => c.contentType == widget.contentType)
-          .toList();
+      // ── All contents without any contentType filter ──
+      final suggestions = controller.contents;
 
       // ── Empty ──
       if (suggestions.isEmpty) {
@@ -57,13 +47,13 @@ class _SuggestionContentCardState extends State<SuggestionContentCard> {
         ),
         itemCount: suggestions.length,
         itemBuilder: (context, index) {
-          return _buildMovieCard(suggestions[index]);
+          return _buildMovieCard(context, suggestions[index]);
         },
       );
     });
   }
 
-  Widget _buildMovieCard(dynamic content) {
+  Widget _buildMovieCard(BuildContext context, dynamic content) {
     return InkWell(
       onTap: () {
         Navigator.push(

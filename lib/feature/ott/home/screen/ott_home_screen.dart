@@ -128,67 +128,85 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
       final recommendedContents =
       filteredContents.where((c) => c.isRecommended).toList();
 
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-
-            // Banner
-            const MovieBanner(),
-            const SizedBox(height: 16),
-
-            // Categories
-            _buildCategories(),
-            const SizedBox(height: 24),
-
-            // Trending Now
-            if(controller.contents.isNotEmpty)
-            _buildSectionHeader(
-              'Trending Now',
-              'View All',
-              categoryType: selectedType,
-              filterType: 'trending',
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: 16,),),
+          SliverToBoxAdapter(child: MovieBanner(),),
+          SliverToBoxAdapter(child: SizedBox(height: 16,),),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverCategoryDelegate(
+              child: _buildCategories(),
             ),
-            const SizedBox(height: 12),
-            if(controller.contents.isNotEmpty)
-            _buildTrendingSlider(trendingContents),
-            const SizedBox(height: 24),
+          ),
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
 
-            // Recommended Shows
-            if(controller.contents.isNotEmpty)
-            _buildSectionHeader(
-              'Recommended Shows',
-              'View All',
-              categoryType: selectedType,
-              filterType: 'recommended',
+                // Trending Now
+                if(controller.contents.isNotEmpty)
+                  _buildSectionHeader(
+                    'Trending Now',
+                    'View All',
+                    categoryType: selectedType,
+                    filterType: 'trending',
+                  ),
+                const SizedBox(height: 12),
+                if(controller.contents.isNotEmpty)
+                  _buildTrendingSlider(trendingContents),
+                const SizedBox(height: 24),
+
+                if(controller.contents.isNotEmpty)
+                  _buildSectionHeader(
+                    'Most Watching Trending',
+                    'View All',
+                    categoryType: selectedType,
+                    filterType: 'recommended',
+                  ),
+                const SizedBox(height: 12),
+                if(controller.contents.isNotEmpty)
+                  _buildMostWatchingGrid(recommendedContents),
+                const SizedBox(height: 24),
+                // Recommended Shows
+                if(controller.contents.isNotEmpty)
+                  _buildSectionHeader(
+                    'Recommended Shows',
+                    'View All',
+                    categoryType: selectedType,
+                    filterType: 'recommended',
+                  ),
+                const SizedBox(height: 12),
+                if(controller.contents.isNotEmpty)
+                  _buildRecommendedGrid(recommendedContents),
+                const SizedBox(height: 20),
+                if(controller.contents.isEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 150),
+                        Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
+                        const SizedBox(height: 12),
+                        Text("No OTT",style: TextStyle(fontSize: 16,color: Colors.grey,fontWeight: FontWeight.w600),)
+                      ],
+                    ),
+                  )
+              ],
             ),
-            const SizedBox(height: 12),
-            if(controller.contents.isNotEmpty)
-            _buildRecommendedGrid(recommendedContents),
-            const SizedBox(height: 20),
-            if(controller.contents.isEmpty)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 150),
-                  Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
-                  const SizedBox(height: 12),
-                  Text("No OTT",style: TextStyle(fontSize: 16,color: Colors.grey,fontWeight: FontWeight.w600),)
-                ],
-              ),
-            )
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
 
   Widget _buildCategories() {
-    return SizedBox(
+    return Container(
       height: 40,
+      color: Colors.black,
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -371,6 +389,52 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     );
   }
 
+  Widget _buildMostWatchingGrid(List<dynamic> recommendedContents) {
+    if (recommendedContents.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            'No recommended content',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 240,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: GridView.builder(
+        scrollDirection: Axis.horizontal,
+        // shrinkWrap: true,
+        // physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.6,
+        ),
+        itemCount: recommendedContents.length,
+        itemBuilder: (context, index) {
+          final content = recommendedContents[index];
+          return _buildMovieCard(
+            contentId: content.id,
+            title: content.title,
+            categoryId: content.categoryId,
+            contentType: content.contentType,
+            rating: content.rating,
+            imageUrl: content.thumbnailVertical,
+            width: double.infinity,
+            imageHeight: 160,
+            isGrid: true,
+          );
+        },
+      ),
+    );
+  }
+
+
   Widget _buildMovieCard({
     required String title,
     required int contentId,
@@ -426,5 +490,31 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
         ],
       ),
     );
+  }
+}
+
+class _SliverCategoryDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _SliverCategoryDelegate({required this.child});
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox(
+      height: maxExtent,
+      child: child,
+    );
+  }
+
+  @override
+  double get maxExtent => 50.0; // categories height + padding handle karne ke liye
+
+  @override
+  double get minExtent => 50.0;
+
+  @override
+  bool shouldRebuild(covariant _SliverCategoryDelegate oldDelegate) {
+    return oldDelegate.child != child;
   }
 }
