@@ -179,7 +179,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
       return Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          backgroundColor: CollegeColors.primary,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -202,7 +202,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
       return Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          backgroundColor: CollegeColors.primary,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -227,7 +227,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
               ElevatedButton(
                 onPressed: _fetchTiffin,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: CollegeColors.primary,
                 ),
                 child: const Text('Retry'),
               ),
@@ -241,7 +241,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: CollegeColors.primary,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -326,7 +326,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                               horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
                             color: _getTiffinTypeColor(_tiffin!),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -357,7 +357,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                                 : _tiffin!.isBooking
                                 ? Colors.red
                                 : Colors.green,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -388,7 +388,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
+                      BorderRadius.vertical(top: Radius.circular(10)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,7 +414,7 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: CollegeColors.primary,
                                   ),
                                 ),
                                 Text(
@@ -450,14 +450,14 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                           Row(
                             children: [
                               const Icon(Icons.school_rounded,
-                                  size: 14, color: AppColors.primary),
+                                  size: 14, color: CollegeColors.primary),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   "Near: ${_tiffin!.nearCollege}",
                                   style: const TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.primary,
+                                    color: CollegeColors.primary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -484,12 +484,12 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               children: [
                                 const Icon(Icons.phone_rounded,
-                                    color: AppColors.primary, size: 20),
+                                    color: CollegeColors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
@@ -505,12 +505,12 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                                     ContactHelper.call(_tiffin!.contactNumber!);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: CollegeColors.secondary,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   child: const Text(
@@ -531,12 +531,12 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade700,
+                                    backgroundColor: CollegeColors.secondary,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   child: const Text(
@@ -604,9 +604,9 @@ class _TiffinViewScreenState extends State<TiffinViewScreen> {
                       backgroundColor:
                       (_tiffin!.booking || _tiffin!.isBooking || _isBooking)
                           ? Colors.grey
-                          : AppColors.primary,
+                          : CollegeColors.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       elevation: 2,
                     ),

@@ -44,3 +44,13 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 }
+
+class CollegeColors {
+  static const Color primary = Color(0xFF715DE9);        // Purple
+  static const Color primaryLight = Color(0xFFEDE9FE);   // Purple light bg
+  static const Color secondary = Color(0xFFFF7C9E);      // Pink
+  static const Color secondaryLight = Color(0xFFFFE4EC); // Pink light bg
+  static const Color textSecondary = Color(0xFF8E8E93);
+  static const Color background = Color(0xFFF7F7FA);
+  static const Color border = Color(0xFFE5E5EA);
+}

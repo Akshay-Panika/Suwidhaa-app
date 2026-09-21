@@ -239,7 +239,7 @@ class _AddRoomTiffinCenterScreenState
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: AppColors.primary,
+        backgroundColor: CollegeColors.primary,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -476,12 +476,12 @@ class _AddRoomTiffinCenterScreenState
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: Row(
             children: [
-              Icon(Icons.school_rounded, color: AppColors.primary),
+              Icon(Icons.school_rounded, color: CollegeColors.primary),
               const SizedBox(width: 12),
               const SizedBox(
                 width: 18,
@@ -501,12 +501,12 @@ class _AddRoomTiffinCenterScreenState
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: Row(
             children: [
-              Icon(Icons.school_rounded, color: AppColors.primary),
+              Icon(Icons.school_rounded, color: CollegeColors.primary),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
@@ -530,7 +530,7 @@ class _AddRoomTiffinCenterScreenState
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -548,21 +548,21 @@ class _AddRoomTiffinCenterScreenState
           hint: const Text('Select nearby college'),
           decoration: InputDecoration(
             labelText: 'Near College',
-            prefixIcon: Icon(Icons.school_rounded, color: AppColors.primary),
+            prefixIcon: Icon(Icons.school_rounded, color: CollegeColors.primary),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: CollegeColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.red),
             ),
             contentPadding:
@@ -597,7 +597,7 @@ class _AddRoomTiffinCenterScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
@@ -605,7 +605,7 @@ class _AddRoomTiffinCenterScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.cleaning_services, color: AppColors.primary),
+              Icon(Icons.cleaning_services, color: CollegeColors.primary),
               const SizedBox(width: 8),
               const Text(
                 'Amenities',
@@ -667,7 +667,7 @@ class _AddRoomTiffinCenterScreenState
               controller.text = value == true ? 'true' : 'false';
             });
           },
-          activeColor: AppColors.primary,
+          activeColor: CollegeColors.primary,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         Icon(icon, size: 16, color: Colors.grey.shade600),
@@ -902,7 +902,7 @@ class _AddRoomTiffinCenterScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
@@ -910,7 +910,7 @@ class _AddRoomTiffinCenterScreenState
         children: [
           Row(
             children: [
-              Icon(Icons.image, color: AppColors.primary),
+              Icon(Icons.image, color: CollegeColors.primary),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -974,7 +974,7 @@ class _AddRoomTiffinCenterScreenState
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Icon(Icons.image, color: AppColors.primary),
+                    Icon(Icons.image, color: CollegeColors.primary),
                     const SizedBox(width: 8),
                     Text(
                       "New $label",
@@ -1047,8 +1047,8 @@ class _AddRoomTiffinCenterScreenState
               label:
               Text(totalImages > 0 ? 'Add More Images' : 'Upload Images'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: BorderSide(color: AppColors.primary),
+                foregroundColor: CollegeColors.primary,
+                side: BorderSide(color: CollegeColors.primary),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -1096,10 +1096,10 @@ class _AddRoomTiffinCenterScreenState
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: CollegeColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
+          child: Icon(icon, color: CollegeColors.primary, size: 24),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1139,7 +1139,7 @@ class _AddRoomTiffinCenterScreenState
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1157,21 +1157,21 @@ class _AddRoomTiffinCenterScreenState
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: Icon(icon, color: AppColors.primary),
+          prefixIcon: Icon(icon, color: CollegeColors.primary),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: CollegeColors.primary, width: 2),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Colors.red),
           ),
           contentPadding:
@@ -1194,7 +1194,7 @@ class _AddRoomTiffinCenterScreenState
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -1209,21 +1209,21 @@ class _AddRoomTiffinCenterScreenState
         hint: Text(hint),
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.primary),
+          prefixIcon: Icon(icon, color: CollegeColors.primary),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: CollegeColors.primary, width: 2),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Colors.red),
           ),
           contentPadding:
@@ -1245,7 +1245,7 @@ class _AddRoomTiffinCenterScreenState
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
@@ -1253,7 +1253,7 @@ class _AddRoomTiffinCenterScreenState
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.primary, size: 22),
+              Icon(icon, color: CollegeColors.primary, size: 22),
               const SizedBox(width: 12),
               Text(
                 title,
@@ -1265,7 +1265,7 @@ class _AddRoomTiffinCenterScreenState
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeColor: CollegeColors.primary,
           ),
         ],
       ),
@@ -1282,9 +1282,9 @@ class _AddRoomTiffinCenterScreenState
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: CollegeColors.primary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           elevation: 2,
         ),

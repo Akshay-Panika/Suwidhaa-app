@@ -206,7 +206,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
       return Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          backgroundColor: CollegeColors.primary,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -229,7 +229,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
       return Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          backgroundColor: CollegeColors.primary,
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -254,7 +254,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
               ElevatedButton(
                 onPressed: _fetchRoom,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: CollegeColors.primary,
                 ),
                 child: const Text('Retry'),
               ),
@@ -268,7 +268,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: CollegeColors.primary,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -407,7 +407,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                               horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             "${_selectedImageIndex + 1}/${_galleryImages.length}",
@@ -432,7 +432,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 : _room!.isBooking
                                 ? Colors.red
                                 : Colors.green,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -462,8 +462,8 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(20),
+                            color: CollegeColors.primary,
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -533,9 +533,9 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: _selectedImageIndex == index
-                                      ? AppColors.primary
+                                      ? CollegeColors.primary
                                       : Colors.transparent,
-                                  width: 3,
+                                  width: 1.8,
                                 ),
                               ),
                               child: ClipRRect(
@@ -571,7 +571,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
+                      BorderRadius.vertical(top: Radius.circular(10)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,14 +631,14 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                       children: [
                                         const Icon(Icons.school_rounded,
                                             size: 12,
-                                            color: AppColors.primary),
+                                            color: CollegeColors.primary),
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
                                             "Near: ${_room!.nearCollege}",
                                             style: const TextStyle(
                                               fontSize: 12,
-                                              color: AppColors.primary,
+                                              color: CollegeColors.primary,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -656,7 +656,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: CollegeColors.primary,
                                   ),
                                 ),
                                 Text(
@@ -705,12 +705,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               children: [
                                 const Icon(Icons.phone_rounded,
-                                    color: AppColors.primary, size: 20),
+                                    color: CollegeColors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
@@ -726,12 +726,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                     ContactHelper.call(_room!.contactNumber!);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: CollegeColors.secondary,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   child: const Text(
@@ -752,12 +752,12 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade700,
+                                    backgroundColor: CollegeColors.secondary,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     minimumSize: const Size(0, 0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   child: const Text(
@@ -824,7 +824,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                       backgroundColor:
                       (_room!.booking || _room!.isBooking || _isBooking)
                           ? Colors.grey
-                          : AppColors.primary,
+                          : CollegeColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -973,7 +973,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
         return AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
           title: const Text(
             "Confirm Booking",
@@ -998,7 +998,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   children: [
@@ -1017,7 +1017,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: CollegeColors.primary,
                           ),
                         ),
                       ],
@@ -1058,7 +1058,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: CollegeColors.primary,
                           ),
                         ),
                       ],
@@ -1082,7 +1082,7 @@ class _RoomViewScreenState extends State<RoomViewScreen> {
                 _bookRoomWithCollege();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: CollegeColors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

@@ -45,9 +45,9 @@ class CollegeAccountScreen extends StatelessWidget {
                 children: [
                   Obx(
                         () => TabBar(
-                      labelColor: AppColors.primary,
+                      labelColor: CollegeColors.primary,
                       unselectedLabelColor: Colors.grey,
-                      indicatorColor: AppColors.primary,
+                      indicatorColor: CollegeColors.primary,
                       labelStyle: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),
                       tabs: [
                         Tab(
@@ -84,7 +84,7 @@ class CollegeAccountScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: CollegeColors.primary,
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(24),
         ),
@@ -100,7 +100,7 @@ class CollegeAccountScreen extends StatelessWidget {
                 child: Icon(
                   Icons.person,
                   size: 40,
-                  color: AppColors.primary,
+                  color: CollegeColors.primary,
                 ),
               ),
               Container(
@@ -112,7 +112,7 @@ class CollegeAccountScreen extends StatelessWidget {
                 child: const Icon(
                   Icons.camera_alt,
                   size: 16,
-                  color: AppColors.primary,
+                  color: CollegeColors.primary,
                 ),
               ),
             ],
@@ -190,7 +190,7 @@ class CollegeAccountScreen extends StatelessWidget {
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       elevation: 0,
       child: Padding(
@@ -205,7 +205,7 @@ class CollegeAccountScreen extends StatelessWidget {
                   width: 65,
                   height: 65,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: CollegeColors.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -216,14 +216,14 @@ class CollegeAccountScreen extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) {
                       return const Icon(
                         Icons.meeting_room,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                         size: 30,
                       );
                     },
                   )
                       : const Icon(
                     Icons.meeting_room,
-                    color: AppColors.primary,
+                    color: CollegeColors.primary,
                     size: 30,
                   ),
                 ),
@@ -248,7 +248,7 @@ class CollegeAccountScreen extends StatelessWidget {
                         room.roomTypeDisplay,
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.primary,
+                          color: CollegeColors.primary,
                           fontWeight: FontWeight.w500
                         ),
                       ),
@@ -284,7 +284,7 @@ class CollegeAccountScreen extends StatelessWidget {
                     color: room.isBooking
                         ? Colors.red.withOpacity(0.1)
                         : Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     room.availabilityStatus,
@@ -306,7 +306,7 @@ class CollegeAccountScreen extends StatelessWidget {
                       room.formattedPrice,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                         fontSize: 15,
                       ),
                     ),
@@ -366,7 +366,7 @@ class CollegeAccountScreen extends StatelessWidget {
                   },
                   icon: const Icon(
                     Icons.edit_outlined,
-                    color: AppColors.primary,
+                    color: CollegeColors.primary,
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,
@@ -430,7 +430,7 @@ class CollegeAccountScreen extends StatelessWidget {
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       elevation: 0,
       child: Padding(
@@ -445,7 +445,7 @@ class CollegeAccountScreen extends StatelessWidget {
                   width: 65,
                   height: 65,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: CollegeColors.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -456,14 +456,14 @@ class CollegeAccountScreen extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
                         tiffin.typeIcon,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                         size: 30,
                       );
                     },
                   )
                       : Icon(
                     tiffin.typeIcon,
-                    color: AppColors.primary,
+                    color: CollegeColors.primary,
                     size: 30,
                   ),
                 ),
@@ -491,14 +491,14 @@ class CollegeAccountScreen extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: CollegeColors.secondary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           tiffin.typeDisplay,
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.primary,
+                            color: CollegeColors.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -537,7 +537,7 @@ class CollegeAccountScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: tiffin.availabilityColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     tiffin.availabilityStatus,
@@ -561,7 +561,7 @@ class CollegeAccountScreen extends StatelessWidget {
                       tiffin.formattedPrice,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                         fontSize: 15,
                       ),
                     ),
@@ -641,7 +641,7 @@ class CollegeAccountScreen extends StatelessWidget {
                       },
                       icon: const Icon(
                         Icons.edit_outlined,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                         size: 20,
                       ),
                       padding: EdgeInsets.zero,
@@ -695,7 +695,7 @@ class CollegeAccountScreen extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           title: Row(
             children: [

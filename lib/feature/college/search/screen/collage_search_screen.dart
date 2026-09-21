@@ -65,18 +65,19 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: CollegeColors.primary,
         elevation: 0,
         title: Container(
           height: 48,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: CollegeColors.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: CollegeColors.primary.withOpacity(0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -88,11 +89,11 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             autofocus: true,
             decoration: InputDecoration(
               hintText: 'Search colleges...',
-              hintStyle: TextStyle(color: AppColors.textSecondary),
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+              hintStyle: const TextStyle(color: CollegeColors.textSecondary),
+              prefixIcon: const Icon(Icons.search_rounded, color: CollegeColors.textSecondary),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.clear_rounded, color: AppColors.textSecondary),
+                icon: const Icon(Icons.clear_rounded, color: CollegeColors.textSecondary),
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
@@ -113,7 +114,7 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          icon:  Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -129,7 +130,7 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
               child: const Text(
                 'Cancel',
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: CollegeColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -144,13 +145,13 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(CollegeColors.primary),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Loading colleges...',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: CollegeColors.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -165,26 +166,41 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 60,
-                  color: Colors.grey.shade400,
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: CollegeColors.secondaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 44,
+                    color: CollegeColors.secondary,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _controller.errorMessage.value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    _controller.errorMessage.value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: CollegeColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => _controller.fetchColleges(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: CollegeColors.primary,
                     foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Text('Retry'),
                 ),
@@ -215,35 +231,42 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 70,
-              color: Colors.grey.shade400,
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: const BoxDecoration(
+                color: CollegeColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search_off_rounded,
+                size: 46,
+                color: CollegeColors.primary.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'No colleges found',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Try adjusting your search',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                color: CollegeColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '"$_searchQuery"',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: CollegeColors.primary,
               ),
             ),
           ],
@@ -258,13 +281,13 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
         children: [
           // Result count
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Text(
               '${results.length} result${results.length > 1 ? 's' : ''} found',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
+                color: CollegeColors.textSecondary,
               ),
             ),
           ),
@@ -273,8 +296,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
                 childAspectRatio: 0.85,
               ),
               itemCount: results.length,
@@ -299,13 +322,13 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
           if (_recommendedColleges.isNotEmpty) ...[
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.star_rounded,
                   color: Colors.amber,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
+                const Text(
                   'Recommended Colleges',
                   style: TextStyle(
                     fontSize: 16,
@@ -327,14 +350,14 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
 
           // All Colleges
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'All Colleges',
                 style: TextStyle(
                   fontSize: 16,
@@ -344,9 +367,9 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
               ),
               Text(
                 '${_controller.colleges.length}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade500,
+                  color: CollegeColors.textSecondary,
                 ),
               ),
             ],
@@ -357,8 +380,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
               childAspectRatio: 1,
             ),
             itemCount: _controller.colleges.length > 6 ? 6 : _controller.colleges.length,
@@ -369,18 +392,18 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
           ),
           if (_controller.colleges.length > 6)
             Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(top: 10),
               child: Center(
                 child: Text(
                   'Scroll to see all colleges',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: CollegeColors.textSecondary.withOpacity(0.8),
                   ),
                 ),
               ),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -393,19 +416,21 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
 
     return Container(
       width: 140,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: CollegeColors.border, width: 0.6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: CollegeColors.primary.withOpacity(0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () {
           Navigator.push(
             context,
@@ -423,8 +448,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             // College Image
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(10),
+                topRight: Radius.circular(10),
               ),
               child: Image.network(
                 imageUrl,
@@ -435,20 +460,23 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                   if (loadingProgress == null) return child;
                   return Container(
                     height: 80,
-                    color: Colors.grey.shade200,
+                    color: CollegeColors.primaryLight,
                     child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: CollegeColors.primary,
+                      ),
                     ),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 80,
-                    color: Colors.grey.shade200,
+                    color: CollegeColors.primaryLight,
                     child: Icon(
                       Icons.school_rounded,
                       size: 30,
-                      color: Colors.grey.shade400,
+                      color: CollegeColors.primary.withOpacity(0.5),
                     ),
                   );
                 },
@@ -476,9 +504,9 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                       Expanded(
                         child: Text(
                           college.category ?? 'General',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
-                            color: Colors.grey.shade600,
+                            color: CollegeColors.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -515,16 +543,18 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: CollegeColors.border, width: 0.6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: CollegeColors.primary.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () {
           Navigator.push(
             context,
@@ -543,8 +573,8 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
                 ),
                 child: Stack(
                   children: [
@@ -555,7 +585,7 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Container(
-                          color: Colors.grey.shade200,
+                          color: CollegeColors.primaryLight,
                           child: Center(
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
@@ -563,17 +593,18 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                                   loadingProgress.expectedTotalBytes!
                                   : null,
                               strokeWidth: 2,
+                              color: CollegeColors.primary,
                             ),
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Colors.grey.shade200,
+                          color: CollegeColors.primaryLight,
                           child: Icon(
                             Icons.school_rounded,
                             size: 35,
-                            color: Colors.grey.shade400,
+                            color: CollegeColors.primary.withOpacity(0.5),
                           ),
                         );
                       },
@@ -586,7 +617,7 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.amber,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -631,15 +662,15 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                     highlightStyle: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: CollegeColors.primary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     college.address,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: CollegeColors.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -651,22 +682,22 @@ class _CollageSearchScreenState extends State<CollageSearchScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: CollegeColors.secondaryLight,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           college.category ?? 'General',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 8,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                            color: CollegeColors.secondary,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: CollegeColors.primary,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Text(

@@ -52,7 +52,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: CollegeColors.background,
       body: Obx(() {
         // Show shimmer while loading
         if (_controller.isLoading.value && _controller.colleges.isEmpty) {
@@ -66,23 +66,44 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 60,
-                  color: Colors.grey.shade400,
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: CollegeColors.secondaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 44,
+                    color: CollegeColors.secondary,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  _controller.errorMessage.value,
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                  textAlign: TextAlign.center,
+                const SizedBox(height: 18),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    _controller.errorMessage.value,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: CollegeColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 ElevatedButton(
                   onPressed: () => _controller.fetchColleges(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: CollegeColors.primary,
                     foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Retry'),
                 ),
@@ -97,6 +118,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
             SliverAppBar(
               floating: true,
               expandedHeight: 200,
+              backgroundColor: CollegeColors.background,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: const CollageBannerCard(),
@@ -114,45 +136,36 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                   );
                 },
                 child: Container(
-                  margin: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: CollegeColors.border,width: 0.6),
                   ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search_rounded,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Search colleges by name...',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        color: CollegeColors.textSecondary,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Search colleges by name...',
+                          style: TextStyle(
+                            color: CollegeColors.textSecondary,
+                            fontSize: 14,
                           ),
                         ),
-                        Icon(Icons.tune_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: AppColors.textSecondary,
-                          size: 14,
-                        ),
-                      ],
-                    ),
+                      ),
+
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: CollegeColors.textSecondary,
+                        size: 14,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -165,16 +178,23 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 8,
+                    vertical: 4,
                   ),
                   child: Row(
                     spacing: 10,
                     children: [
-                      Container(height: 18, width: 5, color: AppColors.primary),
-                      Text(
+                      Container(
+                        height: 18,
+                        width: 5,
+                        decoration: BoxDecoration(
+                          color: CollegeColors.primary,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const Text(
                         "Recommended Colleges",
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
                         ),
@@ -187,7 +207,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               /// Recommended Colleges Horizontal List
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 160,
+                  height: 155,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -200,7 +220,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 ),
               ),
 
-              SliverToBoxAdapter(child: SizedBox(height: 16)),
+              SliverToBoxAdapter(child: SizedBox(height: 8)),
             ],
 
             /// Sticky Search box with Filter Chips
@@ -208,7 +228,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               pinned: true,
               delegate: _StickySearchDelegate(
                 child: Container(
-                  color: AppColors.white,
+                  color: CollegeColors.background,
                   child: Column(
                     children: [
                       Padding(
@@ -270,16 +290,23 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 8,
+                  vertical: 4,
                 ),
                 child: Row(
                   spacing: 10,
                   children: [
-                    Container(height: 18, width: 5, color: AppColors.primary),
+                    Container(
+                      height: 18,
+                      width: 5,
+                      decoration: BoxDecoration(
+                        color: CollegeColors.primary,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                     Text(
                       "Colleges (${_filteredColleges.length})",
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Colors.black87,
                       ),
@@ -301,14 +328,14 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                     Icon(
                       Icons.search_off_rounded,
                       size: 50,
-                      color: Colors.grey.shade400,
+                      color: CollegeColors.textSecondary.withOpacity(0.6),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'No colleges found for "$_selectedFilter"',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        color: Colors.grey.shade600,
+                        color: CollegeColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -322,9 +349,9 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 1,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.9,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1.8,
                 ),
                 itemCount: _filteredColleges.length,
                 itemBuilder: (context, index) {
@@ -334,7 +361,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
           ],
         );
       }),
@@ -349,11 +376,12 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
         SliverAppBar(
           floating: true,
           expandedHeight: 200,
+          backgroundColor: CollegeColors.background,
           automaticallyImplyLeading: false,
           flexibleSpace: FlexibleSpaceBar(
             background: Shimmer.fromColors(
-              baseColor: Colors.grey.shade300,
-              highlightColor: Colors.grey.shade100,
+              baseColor: CollegeColors.primaryLight,
+              highlightColor: Colors.white,
               child: Container(
                 color: Colors.white,
                 child: const Center(
@@ -366,8 +394,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
 
         SliverToBoxAdapter(
           child: Shimmer.fromColors(
-            baseColor: Colors.grey.shade300,
-            highlightColor: Colors.grey.shade100,
+            baseColor: CollegeColors.primaryLight,
+            highlightColor: Colors.white,
             child: Container(
               margin: const EdgeInsets.all(12),
               height: 50,
@@ -383,7 +411,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
           pinned: true,
           delegate: _StickySearchDelegate(
             child: Container(
-              color: AppColors.background,
+              color: CollegeColors.background,
               child: Column(
                 children: [
                   Padding(
@@ -397,8 +425,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                         children: List.generate(
                           7,
                               (index) => Shimmer.fromColors(
-                            baseColor: Colors.grey.shade300,
-                            highlightColor: Colors.grey.shade100,
+                            baseColor: CollegeColors.primaryLight,
+                            highlightColor: Colors.white,
                             child: Container(
                               margin: const EdgeInsets.only(right: 8),
                               padding: const EdgeInsets.symmetric(
@@ -447,13 +475,13 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300,
-                  highlightColor: Colors.grey.shade100,
+                  baseColor: CollegeColors.primaryLight,
+                  highlightColor: Colors.white,
                   child: Container(width: 180, height: 24, color: Colors.white),
                 ),
                 Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300,
-                  highlightColor: Colors.grey.shade100,
+                  baseColor: CollegeColors.primaryLight,
+                  highlightColor: Colors.white,
                   child: Container(width: 60, height: 20, color: Colors.white),
                 ),
               ],
@@ -470,9 +498,9 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 1,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.9,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 2.3,
               ),
               itemCount: 3,
               itemBuilder: (context, index) {
@@ -505,8 +533,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Shimmer.fromColors(
-            baseColor: Colors.grey.shade300,
-            highlightColor: Colors.grey.shade100,
+            baseColor: CollegeColors.primaryLight,
+            highlightColor: Colors.white,
             child: Container(
               width: 100,
               height: 100,
@@ -526,14 +554,14 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
+                    baseColor: CollegeColors.primaryLight,
+                    highlightColor: Colors.white,
                     child: Container(height: 14, width: 120, color: Colors.white),
                   ),
                   const SizedBox(height: 6),
                   Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
+                    baseColor: CollegeColors.primaryLight,
+                    highlightColor: Colors.white,
                     child: Container(height: 12, width: 80, color: Colors.white),
                   ),
                   const SizedBox(height: 6),
@@ -541,8 +569,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Shimmer.fromColors(
-                        baseColor: Colors.grey.shade300,
-                        highlightColor: Colors.grey.shade100,
+                        baseColor: CollegeColors.primaryLight,
+                        highlightColor: Colors.white,
                         child: Container(
                           height: 16,
                           width: 60,
@@ -550,8 +578,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                         ),
                       ),
                       Shimmer.fromColors(
-                        baseColor: Colors.grey.shade300,
-                        highlightColor: Colors.grey.shade100,
+                        baseColor: CollegeColors.primaryLight,
+                        highlightColor: Colors.white,
                         child: Container(
                           height: 16,
                           width: 40,
@@ -578,14 +606,24 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
       },
       child: Padding(
         padding: const EdgeInsets.only(right: 8),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade300,
-              width: 1.5,
+              color: isSelected ? CollegeColors.primary : CollegeColors.border,
+              width: 0.9,
             ),
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: isSelected ? CollegeColors.primary : Colors.white,
+            boxShadow: isSelected
+                ? [
+              BoxShadow(
+                color: CollegeColors.primary.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ]
+                : null,
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -595,13 +633,13 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected ? Colors.white : CollegeColors.textSecondary,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? Colors.white : CollegeColors.textSecondary,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 13,
                   ),
@@ -620,21 +658,22 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
         : 'https://via.placeholder.com/400x300?text=No+Image';
 
     return Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 12),
+      width: 250,
+      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: CollegeColors.border, width: 0.6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: CollegeColors.primary.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -651,8 +690,8 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
                 ),
                 child: Image.network(
                   imageUrl,
@@ -663,20 +702,23 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                     if (loadingProgress == null) return child;
                     return Container(
                       height: 100,
-                      color: Colors.grey.shade200,
+                      color: CollegeColors.primaryLight,
                       child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: CollegeColors.primary,
+                        ),
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       height: 100,
-                      color: Colors.grey.shade200,
+                      color: CollegeColors.primaryLight,
                       child: Icon(
                         Icons.school_rounded,
                         size: 40,
-                        color: Colors.grey.shade400,
+                        color: CollegeColors.primary.withOpacity(0.5),
                       ),
                     );
                   },
@@ -720,9 +762,9 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                   const SizedBox(height: 2),
                   Text(
                     college.category ?? 'General',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: CollegeColors.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -749,9 +791,17 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 0.3),
+            border: Border.all(color: CollegeColors.border, width: 0.6),
+            boxShadow: [
+              BoxShadow(
+                color: CollegeColors.primary.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: InkWell(
+            borderRadius: BorderRadius.circular(16),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -780,7 +830,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                         return Container(
                           height: 90,
                           width: double.infinity,
-                          color: Colors.grey.shade200,
+                          color: CollegeColors.primaryLight,
                           child: Center(
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
@@ -788,6 +838,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                                   loadingProgress.expectedTotalBytes!
                                   : null,
                               strokeWidth: 2,
+                              color: CollegeColors.primary,
                             ),
                           ),
                         );
@@ -796,12 +847,12 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                         return Container(
                           height: 90,
                           width: double.infinity,
-                          color: Colors.grey.shade200,
+                          color: CollegeColors.primaryLight,
                           child: Center(
                             child: Icon(
                               Icons.school_rounded,
                               size: 35,
-                              color: Colors.grey.shade400,
+                              color: CollegeColors.primary.withOpacity(0.5),
                             ),
                           ),
                         );
@@ -830,7 +881,6 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -841,62 +891,72 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                           FaIcon(
                             FontAwesomeIcons.school,
                             size: 12,
-                            color: Colors.grey.shade600,
+                            color: CollegeColors.textSecondary,
                           ),
-                          Text(
-                            college.address,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
+                          Expanded(
+                            child: Text(
+                              college.address,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: CollegeColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           if (college.website.isNotEmpty) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.language_rounded,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                InkWell(
-                                  onTap: () => ContactHelper.openWebsite(
-                                    college.website,
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.language_rounded,
+                                    size: 16,
+                                    color: CollegeColors.textSecondary,
                                   ),
-                                  child: Text(
-                                    college.website,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.primary,
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => ContactHelper.openWebsite(
+                                        college.website,
+                                      ),
+                                      child: Text(
+                                        college.website,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: CollegeColors.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ],//
+                          ],
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 8,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: CollegeColors.secondaryLight,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               college.category ?? 'General',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
+                                color: CollegeColors.secondary,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -914,11 +974,18 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
           child: Container(
             height: 50,
             width: 50,
-            margin: EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: CollegeColors.border, width: 0.6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
               image: DecorationImage(
                 image: NetworkImage(college.logoUrl.toString()),
                 fit: BoxFit.fill,

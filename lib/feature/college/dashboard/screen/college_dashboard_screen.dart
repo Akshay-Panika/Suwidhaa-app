@@ -8,6 +8,7 @@ import '../../booking/screen/college_booking_screen.dart';
 import '../../home/screen/collage_home_screen.dart';
 import '../../screen/add_room_tiffin_senter_screen.dart';
 
+
 class CollegeDashboardScreen extends StatefulWidget {
   const CollegeDashboardScreen({super.key});
 
@@ -32,7 +33,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
       "icon": Icons.book_rounded,
     },
     {
-      "screen":  CollegeAccountScreen(),
+      "screen": CollegeAccountScreen(),
       "title": 'Account',
       "icon": Icons.person_rounded,
     },
@@ -55,13 +56,13 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
           (context) => Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.all(10),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-         borderRadius: BorderRadius.all(Radius.circular(15)),
-         border: Border.symmetric(
-             horizontal: BorderSide(color: Colors.green),
-             vertical: BorderSide(color: Colors.green)
-         )
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
+          border: Border.symmetric(
+            horizontal: BorderSide(color: CollegeColors.primary),
+            vertical: BorderSide(color: CollegeColors.primary),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -88,20 +89,26 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child:  Text('Cancel',style: TextStyle(color: AppColors.error),),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: CollegeColors.primary,
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
                       Get.offAllNamed(AppRoutes.dashboard);
                     },
-                    child:  Text('Exit', style: TextStyle(color: AppColors.white),),
+                    child: Text(
+                      'Exit',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ],
@@ -128,7 +135,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
           title: Row(
             spacing: 12,
             children: [
-              Icon(Icons.school, color: Colors.white,size: 30,),
+              Icon(Icons.school, color: Colors.white, size: 30),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -142,27 +149,28 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  if(_selectedIndex==0)
-                  Text("Best College Probile By Suwidhaa",style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),)
+                  if (_selectedIndex == 0)
+                    Text(
+                      "Best College Profile By Suwidhaa",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                 ],
               ),
             ],
           ),
-          backgroundColor: AppColors.primary,
-          // leading: IconButton(
-          //   onPressed: () => null,
-          //   // onPressed: _handleBack, // ✅ use unified back handler
-          //   icon: const Icon(Icons.school, color: Colors.white),
-          // ),
+          backgroundColor: CollegeColors.primary,
           automaticallyImplyLeading: false,
           actions: [
             IconButton(
               onPressed: () {},
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+              ),
             ),
           ],
         ),
@@ -203,7 +211,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                               Icon(
                                 screen['icon'],
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? CollegeColors.primary
                                     : Colors.grey.shade400,
                                 size: 26,
                               ),
@@ -216,7 +224,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                                       ? FontWeight.w600
                                       : FontWeight.w400,
                                   color: isSelected
-                                      ? AppColors.primary
+                                      ? CollegeColors.primary
                                       : Colors.grey.shade400,
                                 ),
                               ),
@@ -245,18 +253,11 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: CollegeColors.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.4),
+                              color: CollegeColors.primary.withOpacity(0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),

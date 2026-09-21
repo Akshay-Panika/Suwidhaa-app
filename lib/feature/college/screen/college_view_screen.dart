@@ -241,7 +241,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        backgroundColor: AppColors.primary,
+        backgroundColor: CollegeColors.primary,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -277,7 +277,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
             ElevatedButton(
               onPressed: _retryFetchCollege,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: CollegeColors.primary,
                 foregroundColor: Colors.white,
               ),
               child: const Text('Retry'),
@@ -354,8 +354,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                         decoration: BoxDecoration(
                           color: _college!.booking
                               ? Colors.grey
-                              : AppColors.primary,
-                          borderRadius: BorderRadius.circular(12),
+                              : CollegeColors.primary,
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
                           child: _isBooking
@@ -386,8 +386,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                   const SizedBox(width: 16),
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -546,7 +546,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   "${_selectedImageIndex + 1}/${_collegeImages.isNotEmpty ? _collegeImages.length : 1}",
@@ -590,7 +590,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border, width: 0.3),
+                  border: Border.all(color: CollegeColors.border, width: 0.3),
                   image: DecorationImage(
                     image: NetworkImage(
                       _collegeLogoUrl != null && _collegeLogoUrl!.isNotEmpty
@@ -626,9 +626,9 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _selectedImageIndex == index
-                            ? AppColors.primary
+                            ? CollegeColors.primary
                             : Colors.transparent,
-                        width: 3,
+                        width: 2,
                       ),
                     ),
                     child: ClipRRect(
@@ -690,7 +690,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
               _buildInfoChip(
                 Icons.category_rounded,
                 _collegeCategory,
-                Colors.blue,
+                CollegeColors.secondary,
               ),
             ],
           ),
@@ -709,7 +709,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                       _collegeWebsite,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.primary,
+                        color: CollegeColors.primary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -780,10 +780,10 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: isSelected ? AppColors.primary : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+            color: isSelected ? CollegeColors.primary : Colors.grey.shade100,
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
+              color: isSelected ? CollegeColors.primary : CollegeColors.border,
               width: 0.3,
             ),
           ),
@@ -807,7 +807,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -841,7 +841,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isSelected ? AppColors.primary : Colors.transparent,
+                color: isSelected ? CollegeColors.primary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -854,7 +854,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 fontWeight:
                 isSelected ? FontWeight.w700 : FontWeight.w500,
                 color:
-                isSelected ? AppColors.primary : Colors.grey.shade600,
+                isSelected ? CollegeColors.primary : Colors.grey.shade600,
               ),
             ),
           ),
@@ -962,8 +962,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
                     ),
                     child: Image.network(
                       imageUrl,
@@ -1083,7 +1083,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.9),
+                            color: CollegeColors.primary.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -1100,7 +1100,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: CollegeColors.primary,
                         ),
                       ),
                     ],
@@ -1211,8 +1211,8 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
                 ),
                 child: Stack(
                   children: [
@@ -1355,7 +1355,7 @@ class _CollegeViewScreenState extends State<CollegeViewScreen> {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: CollegeColors.primary,
                     ),
                   ),
                 ],

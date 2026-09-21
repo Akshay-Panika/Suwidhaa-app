@@ -136,12 +136,12 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primary
+                        ? CollegeColors.primary
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
-                          ? AppColors.primary
+                          ? CollegeColors.primary
                           : Colors.grey.shade300,
                       width: 1,
                     ),
@@ -282,7 +282,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
           ElevatedButton(
             onPressed: () => controller.fetchBookings(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: CollegeColors.primary,
               foregroundColor: Colors.white,
             ),
             child: const Text('Retry'),
@@ -299,7 +299,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
     final bool isRoomBooking = booking.room != null;
     final bool isTiffinBooking = booking.tiffin != null;
 
-    Color typeColor = AppColors.primary;
+    Color typeColor = CollegeColors.secondary;
     IconData typeIcon = Icons.school_rounded;
     String typeLabel = 'College Enquiry';
 
@@ -321,8 +321,8 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: CollegeColors.border, width: 0.4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +333,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
             decoration: BoxDecoration(
               color: typeColor.withOpacity(0.08),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+                top: Radius.circular(10),
               ),
             ),
             child: Row(
@@ -375,9 +375,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: booking.booking
-                        ? Colors.green.withOpacity(0.15)
-                        : Colors.red.withOpacity(0.15),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -536,7 +534,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
           _buildInfoRow(
             'Amount',
             '₹${room.roomAmount}',
-            valueColor: AppColors.primary,
+            valueColor: CollegeColors.primary,
             valueBold: true,
           ),
         ],
@@ -564,7 +562,7 @@ class _CollegeBookingScreenState extends State<CollegeBookingScreen> {
           _buildInfoRow(
             'Amount',
             '₹${tiffin.tiffinAmount}',
-            valueColor: AppColors.primary,
+            valueColor: CollegeColors.primary,
             valueBold: true,
           ),
         ],
