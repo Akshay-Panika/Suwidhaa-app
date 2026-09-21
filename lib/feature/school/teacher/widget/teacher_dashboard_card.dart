@@ -54,9 +54,7 @@ class TeacherDashboardCard extends StatelessWidget {
                       Expanded(
                         child: TeacherAttendanceDashboardCard(),
                       ),
-
-                      // Students Count
-                      ClassAttendanceCard(),
+                      SubjectAttendanceCard(),
                     ],
                   ),
                 ),
@@ -67,8 +65,7 @@ class TeacherDashboardCard extends StatelessWidget {
                     spacing: 10,
                     children: [
 
-                      // Classes Today
-                      SubjectAttendanceCard(),
+                      ClassAttendanceCard(),
 
                       // Events Carousel
                       Expanded(

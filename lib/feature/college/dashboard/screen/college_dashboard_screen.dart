@@ -125,21 +125,40 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
       child: Scaffold(
         key: _scaffoldKey,
         appBar: AppBar(
-          title: Text(
-            _screens[_selectedIndex]['title'] == 'Home'
-                ? 'Colleges'
-                : _screens[_selectedIndex]['title'],
-          ),
-          titleTextStyle: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+          title: Row(
+            spacing: 12,
+            children: [
+              Icon(Icons.school, color: Colors.white,size: 30,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _screens[_selectedIndex]['title'] == 'Home'
+                        ? 'Colleges'
+                        : _screens[_selectedIndex]['title'],
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if(_selectedIndex==0)
+                  Text("Best College Probile By Suwidhaa",style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),)
+                ],
+              ),
+            ],
           ),
           backgroundColor: AppColors.primary,
-          leading: IconButton(
-            onPressed: _handleBack, // ✅ use unified back handler
-            icon: const Icon(Icons.dashboard, color: Colors.white),
-          ),
+          // leading: IconButton(
+          //   onPressed: () => null,
+          //   // onPressed: _handleBack, // ✅ use unified back handler
+          //   icon: const Icon(Icons.school, color: Colors.white),
+          // ),
+          automaticallyImplyLeading: false,
           actions: [
             IconButton(
               onPressed: () {},

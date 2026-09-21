@@ -87,6 +87,16 @@ class SchoolFacilitiesCard extends StatelessWidget {
                 "Canteen",
               ),
             ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildFacilityItem(
+                () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CanteenScreen(),));
+                },
+                Icons.currency_rupee,
+                "Payments",
+              ),
+            ),
           ],
         ),
       ],

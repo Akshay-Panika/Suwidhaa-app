@@ -20,38 +20,38 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Obx(() {
-          // Show shimmer loading
-          if (teacherController.isLoading.value) {
-            return _buildShimmerLoading();
-          }
+      body: Obx(() {
+        // Show shimmer loading
+        if (teacherController.isLoading.value) {
+          return _buildShimmerLoading();
+        }
 
-          // Show error message
-          if (teacherController.errorMessage.value.isNotEmpty) {
-            return _buildErrorState(teacherController);
-          }
+        // Show error message
+        if (teacherController.errorMessage.value.isNotEmpty) {
+          return _buildErrorState(teacherController);
+        }
 
-          // Show teacher data
-          if (teacherController.hasData) {
-            return Column(
-              children: [
-                Expanded(
-                  child: _buildTeacherCard(teacherController),
+        // Show teacher data
+        if (teacherController.hasData) {
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                toolbarHeight: 200,
+                automaticallyImplyLeading: false,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: _buildTeacherCard(teacherController)
                 ),
-                const TeacherAttendanceCard(),
-                Expanded(
-                  flex: 2,
-                  child: _buildSchoolFeatures(context, teacherController, authController),
-                ),
-              ],
-            );
-          }
+              ),
+              SliverToBoxAdapter(child: TeacherAttendanceCard()),
+              SliverToBoxAdapter(child: _buildSchoolFeatures(context, teacherController, authController),),
+              SliverToBoxAdapter(child: SizedBox(height: 100,),)
+            ],
+          );
+        }
 
-          // No data available
-          return _buildEmptyState();
-        }),
-      ),
+        // No data available
+        return _buildEmptyState();
+      }),
     );
   }
 
@@ -442,7 +442,7 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: Colors.blue,
+                color: Colors.indigo,
               ),
             ),
             Expanded(
@@ -549,8 +549,8 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SchoolFacilitiesCard(),
-            const SizedBox(height: 16),
+            // SchoolFacilitiesCard(),
+            // const SizedBox(height: 16),
             // Personal Information Card
             _buildPersonalInfoCard(teacher),
             const SizedBox(height: 12),
@@ -568,40 +568,6 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFacilityItem(IconData icon, String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 14,
-        horizontal: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: Colors.blue,
-            size: 26,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildPersonalInfoCard(TeacherData? teacher) {
     if (teacher == null) return const SizedBox.shrink();

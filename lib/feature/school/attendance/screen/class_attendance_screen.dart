@@ -234,7 +234,6 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
 
     return Column(
       children: [
-        _buildHeaderCard(),
         _buildStatsRow(),
         _buildSearchAndBulk(),
         Expanded(
@@ -249,70 +248,6 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
         _buildBottomSubmitBar(),
       ],
     );
-  }
-
-  // ==================== HEADER CARD ====================
-  Widget _buildHeaderCard() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: Colors.blue.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.school_rounded, color: Colors.white70, size: 16),
-                    const SizedBox(width: 6),
-                    Text('$className • Sec $section',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _formatDate(selectedDate),
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          Material(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: _pickDate,
-              child: const Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(Icons.calendar_month_rounded, color: Colors.white, size: 22),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime d) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    final today = DateTime.now();
-    final isToday = d.day == today.day && d.month == today.month && d.year == today.year;
-    final prefix = isToday ? 'Today • ' : '';
-    return '$prefix${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]} ${d.year}';
   }
 
   // ==================== STATS ====================
@@ -555,22 +490,18 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     return Column(
       children: [
         _buildMonthSelector(),
-        _buildLegend(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWeekLabels(),
-                const SizedBox(height: 4),
-                _buildCalendarGrid(daysInMonth, firstWeekday),
-                const SizedBox(height: 16),
-                _buildRecentHistoryList(),
-              ],
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWeekLabels(),
+              const SizedBox(height: 4),
+              _buildCalendarGrid(daysInMonth, firstWeekday),
+            ],
           ),
         ),
+        _buildLegend(),
       ],
     );
   }
@@ -632,12 +563,12 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
 
   Widget _legendDot(Color color, String label) {
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 16),
       child: Row(
         children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         ],
       ),
     );
@@ -726,171 +657,148 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
   bool _isSameDay(DateTime a, DateTime b) =>
       a.day == b.day && a.month == b.month && a.year == b.year;
 
+  // ==================== HISTORY DIALOG WITH FILTER ====================
   void _showHistoryDialog(String dateKey, List<StudentAttendance> records) {
+    const filterList = ["All", "Present", "Absent", "Leave"];
+    String selectedFilter = "All";
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(16),
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4)),
-              ),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final filteredRecords = selectedFilter == "All"
+              ? records
+              : records.where((r) => r.status == selectedFilter).toList();
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            const SizedBox(height: 12),
-            Text('Attendance • $dateKey',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: records.length,
-                itemBuilder: (_, i) {
-                  final s = records[i];
-                  final c = _getStatusColor(s.status);
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: c.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: c.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Colors.blue.shade50,
-                          child: Text(s.name[0],
-                              style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                              Text('Roll: ${s.rollNumber}',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Attendance • $dateKey',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 40,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filterList.length,
+                    itemBuilder: (_, index) {
+                      final filter = filterList[index];
+                      final isSelected = selectedFilter == filter;
+                      final color = filter == "All"
+                          ? Colors.blue
+                          : _getStatusColor(filter);
+                      return GestureDetector(
+                        onTap: () => setModalState(() => selectedFilter = filter),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: c.withOpacity(0.15),
+                            color: isSelected ? color : color.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? color : color.withOpacity(0.25),
+                            ),
                           ),
-                          child: Text(s.status,
-                              style: TextStyle(color: c, fontSize: 11, fontWeight: FontWeight.w600)),
+                          alignment: Alignment.center,
+                          child: Text(
+                            filter,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : color,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== RECENT HISTORY LIST ====================
-  Widget _buildRecentHistoryList() {
-    final keys = attendanceHistory.keys.toList().reversed.take(10).toList();
-    if (keys.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('No previous records',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('Recent Records',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        ),
-        ...keys.map((k) {
-          final records = attendanceHistory[k]!;
-          final p = records.where((r) => r.status == 'Present').length;
-          final a = records.where((r) => r.status == 'Absent').length;
-          final l = records.where((r) => r.status == 'Leave').length;
-          return GestureDetector(
-            onTap: () => _showHistoryDialog(k, records),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.event_note_rounded, color: Colors.blue, size: 20),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: filteredRecords.isEmpty
+                      ? Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(k, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                        const SizedBox(height: 2),
-                        Text('${records.length} students marked',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        Icon(Icons.filter_alt_off, size: 48, color: Colors.grey[300]),
+                        const SizedBox(height: 8),
+                        Text('No records found',
+                            style: TextStyle(color: Colors.grey[500], fontSize: 14)),
                       ],
                     ),
+                  )
+                      : ListView.builder(
+                    itemCount: filteredRecords.length,
+                    itemBuilder: (_, i) {
+                      final s = filteredRecords[i];
+                      final c = _getStatusColor(s.status);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: c.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: c.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.blue.shade50,
+                              child: Text(s.name[0],
+                                  style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Roll: ${s.rollNumber}',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: c.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(s.status,
+                                  style: TextStyle(color: c, fontSize: 11, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  _miniPill('$p P', Colors.green),
-                  const SizedBox(width: 4),
-                  _miniPill('$a A', Colors.red),
-                  const SizedBox(width: 4),
-                  _miniPill('$l L', Colors.orange),
-                ],
-              ),
+                ),
+              ],
             ),
           );
-        }),
-      ],
-    );
-  }
-
-  Widget _miniPill(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
+        },
       ),
-      child: Text(text,
-          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
     );
   }
 
-  // ==================== SKELETON ====================
   Widget _buildSkeleton() {
     return ListView(
       padding: const EdgeInsets.all(12),

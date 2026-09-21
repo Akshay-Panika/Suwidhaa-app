@@ -44,25 +44,32 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
     return AppBar(
       backgroundColor: Colors.black,
       elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.dashboard, color: Colors.white),
-      ),
+      // leading: IconButton(
+      //   onPressed: () => Navigator.pop(context),
+      //   icon: const Icon(Icons.dashboard, color: Colors.white),
+      // ),
+      automaticallyImplyLeading: false,
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding:  EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.red,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'OTT',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+            child:  Row(
+              spacing: 10,
+              children: [
+                Icon(Icons.live_tv, color: Colors.white,),
+                Text(
+                  'OTT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 20),

@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/attendance/screen/leave_form_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/teacher_leave_form_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/teacher_leave_list_screen.dart';
 
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_attendance_controller.dart';
 import '../model/teacher_attendance_model.dart';
 import '../widget/teacher_attendance_shimmer.dart';
+import '../widget/teacher_current_leave_request_card.dart';
 
 class TeacherAttendanceScreen extends StatefulWidget {
   const TeacherAttendanceScreen({super.key});
@@ -49,45 +51,43 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Obx(() {
-          // Loading
-          if (attendanceController.isLoading.value ||
-              teacherController.isLoading.value) {
-            return const TeacherAttendanceShimmer();
-          }
+      body: Obx(() {
+        // Loading
+        if (attendanceController.isLoading.value ||
+            teacherController.isLoading.value) {
+          return const TeacherAttendanceShimmer();
+        }
 
-          // Error
-          if (attendanceController.errorMessage.value.isNotEmpty) {
-            return _buildErrorState();
-          }
+        // Error
+        if (attendanceController.errorMessage.value.isNotEmpty) {
+          return _buildErrorState();
+        }
 
-          // No data
-          if (!attendanceController.hasData) {
-            return _buildEmptyState();
-          }
+        // No data
+        if (!attendanceController.hasData) {
+          return _buildEmptyState();
+        }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildMonthHeader(),
-                  const SizedBox(height: 8),
-                  _buildCalendar(),
-                  const SizedBox(height: 24),
-                  _buildLegend(),
-                  const SizedBox(height: 28),
-                  _buildLeaveSection(),
-                  const SizedBox(height: 30),
-                ],
-              ),
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _buildMonthHeader(),
+                const SizedBox(height: 8),
+                _buildCalendar(),
+                const SizedBox(height: 24),
+                _buildLegend(),
+                const SizedBox(height: 28),
+                TeacherCurrentLeaveRequestCard(),
+                const SizedBox(height: 150),
+              ],
             ),
-          );
-        }),
-      ),
+          ),
+        );
+      }),
     );
   }
 
@@ -393,60 +393,4 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     );
   }
 
-  Widget _buildLeaveSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Apply For Leave",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          height: 90,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "No leave requests this month.",
-                style: TextStyle(fontSize: 15, color: Colors.grey),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LeaveFormScreen(),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                child: const Text(
-                  "Apply",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }

@@ -14,9 +14,9 @@ class SubjectAttendanceCard extends StatelessWidget {
         // Get.toNamed(AppRoutes.studentList);
       },
       child:    _dashboardBox(
-        icon: Icons.class_,
-        title: "Classes Today",
-        value: "4 Classes",
+        icon: Icons.school,
+        title: "Current Class",
+        value: "Class: 4",
         subtitle: "8:00 AM - 2:00 PM",
         iconColor: Colors.orange,
       ),
@@ -53,7 +53,7 @@ class SubjectAttendanceCard extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  size: 20,
+                  size: 16,
                   color: iconColor,
                 ),
               ),
@@ -64,7 +64,7 @@ class SubjectAttendanceCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
@@ -78,7 +78,7 @@ class SubjectAttendanceCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: iconColor,
             ),

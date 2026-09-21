@@ -12,7 +12,13 @@ class ApiUrls {
   // Teacher endpoints
   static const String teacherList = 'v1/school/teacher/list/';
   static const String teacherCreate = 'v1/school/teacher/create/';
-  static const String teacherDetail = 'v1/school/teacher/';  // + id
+  static const String teacherDetail = 'v1/school/teacher/';
+
+  // Teacher Leave endpoints
+  static const String teacherLeaveCreate = 'v1/school/teacher-leave/create/';
+  static const String teacherLeaveList   = 'v1/school/teacher-leave/list/';
+  static const String teacherLeaveDetail = 'v1/school/teacher-leave/'; // + id
+  static const String teacherLeaveByIdCard = 'v1/school/teacher-leave/list/'; // + teacher_id_card
 
   // In your ApiUrls class, add:
   static const String teacherAttendanceHistory = 'v1/school/teacher-attendance/history/';

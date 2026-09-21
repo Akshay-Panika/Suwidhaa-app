@@ -16,6 +16,7 @@ import '../feature/ott/controller/ott_reel_controller.dart';
 import '../feature/ott/controller/webseries_controller.dart';
 import '../feature/school/attendance/controller/teacher_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_checkin_checkout_controller.dart';
+import '../feature/school/attendance/controller/teacher_leave_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
 import '../feature/school/homework/controller/homework_controller.dart';
@@ -35,6 +36,7 @@ class AppBindings implements Bindings {
     Get.lazyPut<TeacherController>(() => TeacherController(), fenix: true);
     Get.lazyPut<TeacherAttendanceController>(() => TeacherAttendanceController(), fenix: true);
     Get.lazyPut<TeacherCheckInOutController>(() => TeacherCheckInOutController(), fenix: true);
+    Get.lazyPut<TeacherLeaveController>(() => TeacherLeaveController(), fenix: true);
     Get.lazyPut<StudentListController>(() => StudentListController(), fenix: true);
     Get.lazyPut<HomeworkController>(() => HomeworkController(), fenix: true);
     Get.lazyPut<SchoolEventController>(() => SchoolEventController(), fenix: true);

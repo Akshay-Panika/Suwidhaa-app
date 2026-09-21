@@ -5,6 +5,7 @@ import 'dart:io';
 
 import '../../../../core/utils/app_color.dart';
 import '../../../../core/widget/flutter_toast.dart';
+import '../../profile/controller/teacher_controller.dart';
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
 
@@ -14,6 +15,8 @@ class TeacherHomeworkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeworkController());
+    final teacherController = Get.find<TeacherController>();
+
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -687,7 +690,6 @@ class TeacherHomeworkScreen extends StatelessWidget {
       ),
     );
   }
-
   void _showHomeworkDialog(
       BuildContext context,
       HomeworkController controller,
@@ -696,27 +698,46 @@ class TeacherHomeworkScreen extends StatelessWidget {
     final isEdit = existingHomework != null;
     final formKey = GlobalKey<FormState>();
 
+    // Get TeacherController for read-only teacher data
+    final teacherController = Get.find<TeacherController>();
+
+    // Teacher data (read-only) - priority: teacherController > existingHomework
+    final String teacherName = teacherController.fullName.isNotEmpty
+        ? teacherController.fullName
+        : (existingHomework?.teacherName ?? '');
+    final String teacherIdCard = teacherController.teacherIdCard.isNotEmpty
+        ? teacherController.teacherIdCard
+        : (existingHomework?.teacherId ?? '');
+    final String teacherSchoolType = teacherController.schoolType.isNotEmpty
+        ? teacherController.schoolType
+        : (existingHomework?.schoolType ?? '');
+
     final subjectNameController = TextEditingController(text: existingHomework?.subjectName ?? '');
     final subjectTopicController = TextEditingController(text: existingHomework?.subjectTopic ?? '');
     final issueDateController = TextEditingController(
       text: existingHomework?.issueDate ?? DateTime.now().toString().split(' ')[0],
     );
     final endDateController = TextEditingController(text: existingHomework?.endDate ?? '');
-    final teacherNameController = TextEditingController(text: existingHomework?.teacherName ?? '');
-    final teacherIdController = TextEditingController(text: existingHomework?.teacherId ?? '');
+
+    // Teacher fields (read-only, auto-filled)
+    final teacherNameController = TextEditingController(text: teacherName);
+    final teacherIdController = TextEditingController(text: teacherIdCard);
 
     Rx<File?> selectedImage = Rx<File?>(null);
     RxBool isImageSelected = false.obs;
     RxBool keepExistingImage = true.obs;
 
-    // Set initial values for dropdowns
-    if (isEdit) {
-      controller.selectedClass.value = existingHomework.className ?? '';
-      controller.selectedSchoolType.value = existingHomework.schoolType ?? '';
+    if (isEdit && existingHomework.className != null) {
+      // Only set if it exists in options (avoid crash)
+      if (controller.classOptions.contains(existingHomework.className)) {
+        controller.selectedClass.value = existingHomework.className!;
+      } else {
+        controller.selectedClass.value = '';
+      }
     } else {
       controller.selectedClass.value = '';
-      controller.selectedSchoolType.value = '';
     }
+    controller.selectedSchoolType.value = teacherSchoolType;
 
     showModalBottomSheet(
       context: context,
@@ -847,86 +868,112 @@ class TeacherHomeworkScreen extends StatelessWidget {
                         const SizedBox(height: 16),
 
                         // Class Dropdown
-                        Obx(() => DropdownButtonFormField<String>(
-                          value: controller.selectedClass.value.isNotEmpty
-                              ? controller.selectedClass.value
-                              : null,
-                          decoration: InputDecoration(
-                            labelText: 'Class *',
-                            prefixIcon: Icon(Icons.class_rounded, color: AppColors.primary),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                        // Class Dropdown (SAFE - handles missing/duplicate values)
+                        Obx(() {
+                          final classOptions = controller.classOptions;
+                          final selectedClass = controller.selectedClass.value;
+
+                          // Check if selectedClass exists in options
+                          final hasValidValue = selectedClass.isNotEmpty &&
+                              classOptions.where((e) => e == selectedClass).length == 1;
+
+                          return DropdownButtonFormField<String>(
+                            value: hasValidValue ? selectedClass : null,
+                            decoration: InputDecoration(
+                              labelText: 'Class *',
+                              prefixIcon: Icon(Icons.class_rounded, color: AppColors.primary),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primary, width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          items: controller.classOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) => controller.setSelectedClass(value ?? ''),
-                          validator: (value) => value == null || value.isEmpty ? 'Please select a class' : null,
-                        )),
+                            items: classOptions.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (value) => controller.setSelectedClass(value ?? ''),
+                            validator: (value) => value == null || value.isEmpty ? 'Please select a class' : null,
+                          );
+                        }),
+
                         const SizedBox(height: 16),
 
-                        // School Type Dropdown
-                        Obx(() => DropdownButtonFormField<String>(
-                          value: controller.selectedSchoolType.value.isNotEmpty
-                              ? controller.selectedSchoolType.value
-                              : null,
-                          decoration: InputDecoration(
-                            labelText: 'School Type *',
-                            prefixIcon: Icon(Icons.school_rounded, color: AppColors.primary),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                        // School Type Dropdown (READ-ONLY - disabled, SAFE)
+                        Obx(() {
+                          final selectedSchoolType = controller.selectedSchoolType.value;
+                          final baseOptions = List<String>.from(controller.schoolTypeOptions);
+
+                          // Force add if missing
+                          if (selectedSchoolType.isNotEmpty && !baseOptions.contains(selectedSchoolType)) {
+                            baseOptions.insert(0, selectedSchoolType);
+                          }
+
+                          return DropdownButtonFormField<String>(
+                            value: selectedSchoolType.isNotEmpty ? selectedSchoolType : null,
+                            decoration: InputDecoration(
+                              labelText: 'School Type *',
+                              prefixIcon: Icon(Icons.school_rounded, color: AppColors.primary),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primary, width: 2),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          items: controller.schoolTypeOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (value) => controller.setSelectedSchoolType(value ?? ''),
-                          validator: (value) => value == null || value.isEmpty ? 'Please select school type' : null,
-                        )),
+                            items: baseOptions.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: null, // READ-ONLY
+                            validator: (value) => value == null || value.isEmpty ? 'Please select school type' : null,
+                          );
+                        }),
+
                         const SizedBox(height: 16),
 
-                        // Teacher Name
+                        // Teacher Name (READ-ONLY)
                         _buildFormField(
                           controller: teacherNameController,
                           label: 'Teacher Name',
                           icon: Icons.person_rounded,
                           hint: 'e.g., Mr. John Doe',
+                          readOnly: true, // 👈 READ-ONLY
                         ),
                         const SizedBox(height: 16),
 
-                        // Teacher ID
+                        // Teacher ID (READ-ONLY)
                         _buildFormField(
                           controller: teacherIdController,
                           label: 'Teacher ID',
                           icon: Icons.badge_rounded,
                           hint: 'e.g., TCH001',
+                          readOnly: true, // 👈 READ-ONLY
                         ),
                         const SizedBox(height: 24),
 
@@ -966,9 +1013,10 @@ class TeacherHomeworkScreen extends StatelessWidget {
                                       'issue_date': issueDateController.text,
                                       'end_date': endDateController.text,
                                       'class_name': controller.selectedClass.value,
-                                      'teacher_name': teacherNameController.text,
-                                      'teacher_id': teacherIdController.text,
-                                      'school_type': controller.selectedSchoolType.value,
+                                      // Use teacherController data (read-only)
+                                      'teacher_name': teacherController.fullName,
+                                      'teacher_id': teacherController.teacherIdCard,
+                                      'school_type': teacherController.schoolType,
                                     };
 
                                     // Handle image
@@ -1285,13 +1333,17 @@ class TeacherHomeworkScreen extends StatelessWidget {
     required IconData icon,
     String? hint,
     String? Function(String?)? validator,
+    bool readOnly = false, // 👈 NEW
   }) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly, // 👈 NEW
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.primary),
+        filled: readOnly, // 👈 grey bg if readOnly
+        fillColor: readOnly ? Colors.grey[100] : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[300]!),

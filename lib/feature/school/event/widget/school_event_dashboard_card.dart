@@ -13,7 +13,6 @@ class SchoolEventDashboardCard extends StatefulWidget {
 
 class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
   final SchoolEventController _controller = Get.put(SchoolEventController());
-
   @override
   void initState() {
     super.initState();
@@ -139,6 +138,7 @@ class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
   // ==================== EMPTY STATE ====================
   Widget _buildEmptyState() {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.blue.shade50,
@@ -169,7 +169,6 @@ class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
               'No Events Available',
               style: TextStyle(
                 color: Colors.blue.shade700,
-                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -178,7 +177,7 @@ class _SchoolEventDashboardCardState extends State<SchoolEventDashboardCard> {
               'Check back later for updates',
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 13,
+                fontSize: 12,
               ),
             ),
           ],

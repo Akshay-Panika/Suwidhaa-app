@@ -28,6 +28,25 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
     SchoolTeacherProfileScreen(),
   ];
 
+  final  _bottomNav = [
+    {
+      "Icon":Icons.home,
+      "label":"Home"
+    },
+    {
+      "Icon":Icons.calendar_month,
+      "label":"Attendance"
+    },
+    {
+      "Icon":Icons.directions_bus,
+      "label":"Transport"
+    },
+    {
+      "Icon":Icons.person,
+      "label":"Account"
+    },
+  ];
+
   /// Handle back navigation logic
   Future<void> _handleBack() async {
     if (_currentIndex != 0) {
@@ -119,12 +138,13 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
         await _handleBack();
       },
       child: Scaffold(
+        extendBody: true,
         key: _scaffoldKey,
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Colors.white,
 
-        appBar: AppBar(
+        appBar: _currentIndex ==0?null: AppBar(
           elevation: 0,
-          backgroundColor: Colors.blue,
+          backgroundColor: Colors.indigo,
           automaticallyImplyLeading: false,
 
           titleSpacing: 16,
@@ -222,102 +242,168 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
           index: _currentIndex,
           children: _screens,
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: BottomNavigationBar(
-              currentIndex: _currentIndex,
 
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
 
-              backgroundColor: Colors.white,
+        bottomNavigationBar: SizedBox(
+          height: 110,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / _bottomNav.length;
+              final targetCenter = (itemWidth * _currentIndex) + itemWidth / 2;
 
-              elevation: 0,
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: targetCenter, end: targetCenter),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                builder: (context, centerX, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // ---- Bar with animated notch shape ----
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _NotchedBarPainter(
+                            centerX: centerX,
+                            barTop: 32,
+                            notchRadius: 30,
+                          ),
+                        ),
+                      ),
 
-              type: BottomNavigationBarType.fixed,
+                      // ---- Labels (default state) ----
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 10,
+                        bottom: 0,
+                        child: Row(
+                          children: List.generate(_bottomNav.length, (index) {
+                            final isSelected = _currentIndex == index;
+                            return Expanded(
+                              child: InkWell(
+                                onTap: () => setState(() => _currentIndex = index),
+                                child: Center(
+                                  child: AnimatedOpacity(
+                                    duration: const Duration(milliseconds: 250),
+                                    opacity: isSelected ? 0 : 1,
+                                    child: Text(
+                                      _bottomNav[index]['label'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.indigo,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
 
-              selectedItemColor: Colors.blue,
-
-              unselectedItemColor: Colors.grey.shade500,
-
-              selectedFontSize: 11,
-
-              unselectedFontSize: 11,
-
-              selectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w400,
-              ),
-
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.home_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.home_rounded,
-                    size: 23,
-                  ),
-                  label: 'Home',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.fact_check_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.fact_check_rounded,
-                    size: 23,
-                  ),
-                  label: 'Attendance',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.directions_bus_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.directions_bus_rounded,
-                    size: 23,
-                  ),
-                  label: 'Transport',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.person_outline_rounded,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.person_rounded,
-                    size: 23,
-                  ),
-                  label: 'Profile',
-                ),
-              ],
-            ),
+                      // ---- Floating circle with icon (selected state) ----
+                      Positioned(
+                        left: centerX - 26,
+                        top: 4,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(_currentIndex),
+                          tween: Tween(begin: 0.6, end: 1),
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutBack,
+                          builder: (context, scale, _) => Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.indigo,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.indigo.withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _bottomNav[_currentIndex]['Icon'] as IconData,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ),
       ),
     );
   }
+}
+class _NotchedBarPainter extends CustomPainter {
+  final double centerX;
+  final double barTop;
+  final double notchRadius;
+
+  _NotchedBarPainter({
+    required this.centerX,
+    required this.barTop,
+    required this.notchRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final r = notchRadius;
+    final depth = r * 0.95;
+
+    path.moveTo(0, barTop);
+    path.lineTo(centerX - r - 22, barTop);
+
+    // left shoulder -> notch bottom
+    path.cubicTo(
+      centerX - r - 2, barTop,
+      centerX - r + 4, barTop + depth,
+      centerX, barTop + depth,
+    );
+
+    // notch bottom -> right shoulder
+    path.cubicTo(
+      centerX + r - 4, barTop + depth,
+      centerX + r + 2, barTop,
+      centerX + r + 22, barTop,
+    );
+
+    path.lineTo(size.width, barTop);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    // shadow
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.35), 6, false);
+
+    canvas.drawPath(path, Paint()..color = Colors.white);
+
+    // top border line (aapke original design jaisa)
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.indigo.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_NotchedBarPainter old) =>
+      old.centerX != centerX ||
+          old.barTop != barTop ||
+          old.notchRadius != notchRadius;
 }

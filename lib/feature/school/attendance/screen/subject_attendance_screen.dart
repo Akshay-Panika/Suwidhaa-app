@@ -808,22 +808,19 @@ class _SubjectAttendanceScreenState extends State<SubjectAttendanceScreen>
     return Column(
       children: [
         _buildMonthSelector(),
-        _buildLegend(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildWeekLabels(),
-                const SizedBox(height: 4),
-                _buildCalendarGrid(daysInMonth, firstWeekday),
-                const SizedBox(height: 16),
-                _buildSubjectWiseHistory(),
-              ],
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWeekLabels(),
+              const SizedBox(height: 4),
+              _buildCalendarGrid(daysInMonth, firstWeekday),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
+        _buildLegend(),
       ],
     );
   }
@@ -894,18 +891,12 @@ class _SubjectAttendanceScreenState extends State<SubjectAttendanceScreen>
 
   Widget _legendDot(Color color, String label) {
     return Padding(
-      padding: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.only(right: 16),
       child: Row(
         children: [
-          Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                  color: color, shape: BoxShape.circle)),
+          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 4),
-          Text(label,
-              style:
-              TextStyle(fontSize: 10, color: Colors.grey[600])),
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         ],
       ),
     );
@@ -938,15 +929,18 @@ class _SubjectAttendanceScreenState extends State<SubjectAttendanceScreen>
       final isFuture = date.isAfter(DateTime.now());
       final isToday = _isSameDay(date, DateTime.now());
 
-      int p = 0, a = 0, l = 0;
+      // Collect all records for this date
       final dateK = _dateKey(date);
+      final dayRecords = <StudentAttendance>[];
       attendanceHistory.forEach((key, records) {
         if (key.endsWith(dateK)) {
-          p += records.where((r) => r.status == 'Present').length;
-          a += records.where((r) => r.status == 'Absent').length;
-          l += records.where((r) => r.status == 'Leave').length;
+          dayRecords.addAll(records);
         }
       });
+
+      int p = dayRecords.where((r) => r.status == 'Present').length;
+      int a = dayRecords.where((r) => r.status == 'Absent').length;
+      int l = dayRecords.where((r) => r.status == 'Leave').length;
 
       Color? dotColor;
       if (p + a + l > 0) {
@@ -956,9 +950,9 @@ class _SubjectAttendanceScreenState extends State<SubjectAttendanceScreen>
       }
 
       cells.add(GestureDetector(
-        onTap: isFuture || dotColor == null
+        onTap: isFuture || dayRecords.isEmpty
             ? null
-            : () => _showDateDetails(date),
+            : () => _showHistoryDialog(dateK, dayRecords),
         child: Container(
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
@@ -1010,227 +1004,145 @@ class _SubjectAttendanceScreenState extends State<SubjectAttendanceScreen>
   bool _isSameDay(DateTime a, DateTime b) =>
       a.day == b.day && a.month == b.month && a.year == b.year;
 
-  void _showDateDetails(DateTime date) {
-    final dateK = _dateKey(date);
-    final entries = attendanceHistory.entries
-        .where((e) => e.key.endsWith(dateK))
-        .toList();
+  // ==================== HISTORY DIALOG WITH FILTER ====================
+  void _showHistoryDialog(String dateKey, List<StudentAttendance> records) {
+    const filterList = ["All", "Present", "Absent", "Leave"];
+    String selectedFilter = "All";
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(16),
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius:
-          BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Attendance • $dateK',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Expanded(
-              child: entries.isEmpty
-                  ? Center(
-                child: Text('No records',
-                    style:
-                    TextStyle(color: Colors.grey[500])),
-              )
-                  : ListView.builder(
-                itemCount: entries.length,
-                itemBuilder: (_, i) {
-                  final entry = entries[i];
-                  final parts = entry.key.split('|');
-                  final cls = parts[0];
-                  final sec = parts[1];
-                  final sub = parts[2];
-                  final records = entry.value;
-                  final p = records
-                      .where((r) => r.status == 'Present')
-                      .length;
-                  final a = records
-                      .where((r) => r.status == 'Absent')
-                      .length;
-                  final l = records
-                      .where((r) => r.status == 'Leave')
-                      .length;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.indigo.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color:
-                          Colors.indigo.withOpacity(0.15)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                                Icons.menu_book_rounded,
-                                size: 16,
-                                color: Colors.indigo),
-                            const SizedBox(width: 6),
-                            Text(sub,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
-                            const Spacer(),
-                            Text('$cls-$sec',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600])),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _miniPill('$p P', Colors.green),
-                            const SizedBox(width: 4),
-                            _miniPill('$a A', Colors.red),
-                            const SizedBox(width: 4),
-                            _miniPill('$l L', Colors.orange),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== SUBJECT-WISE HISTORY ====================
-  Widget _buildSubjectWiseHistory() {
-    final relevant = attendanceHistory.entries.where((e) {
-      final parts = e.key.split('|');
-      return parts[0] == selectedClass &&
-          parts[1] == selectedSection &&
-          parts[2] == selectedSubject;
-    }).toList();
-
-    if (relevant.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('No previous records for $selectedSubject',
-              style:
-              TextStyle(color: Colors.grey[500], fontSize: 13)),
-        ),
-      );
-    }
-
-    relevant.sort((a, b) => b.key.compareTo(a.key));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text('Recent • $selectedSubject',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 14)),
-        ),
-        ...relevant.take(10).map((e) {
-          final parts = e.key.split('|');
-          final dk = parts[3];
-          final records = e.value;
-          final p =
-              records.where((r) => r.status == 'Present').length;
-          final a =
-              records.where((r) => r.status == 'Absent').length;
-          final l =
-              records.where((r) => r.status == 'Leave').length;
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final filteredRecords = selectedFilter == "All"
+              ? records
+              : records.where((r) => r.status == selectedFilter).toList();
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(16),
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Attendance • $dateKey',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                SizedBox(
                   height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.event_note_rounded,
-                      color: Colors.indigo, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(dk,
-                          style: const TextStyle(
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: filterList.length,
+                    itemBuilder: (_, index) {
+                      final filter = filterList[index];
+                      final isSelected = selectedFilter == filter;
+                      final color = filter == "All"
+                          ? Colors.indigo
+                          : _getStatusColor(filter);
+                      return GestureDetector(
+                        onTap: () => setModalState(() => selectedFilter = filter),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color : color.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? color : color.withOpacity(0.25),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            filter,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : color,
                               fontWeight: FontWeight.w600,
-                              fontSize: 13)),
-                      const SizedBox(height: 2),
-                      Text('${records.length} students',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[600])),
-                    ],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                _miniPill('$p P', Colors.green),
-                const SizedBox(width: 4),
-                _miniPill('$a A', Colors.red),
-                const SizedBox(width: 4),
-                _miniPill('$l L', Colors.orange),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: filteredRecords.isEmpty
+                      ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.filter_alt_off, size: 48, color: Colors.grey[300]),
+                        const SizedBox(height: 8),
+                        Text('No records found',
+                            style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                      ],
+                    ),
+                  )
+                      : ListView.builder(
+                    itemCount: filteredRecords.length,
+                    itemBuilder: (_, i) {
+                      final s = filteredRecords[i];
+                      final c = _getStatusColor(s.status);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: c.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: c.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Colors.indigo.shade50,
+                              child: Text(s.name[0],
+                                  style: TextStyle(color: Colors.indigo.shade700, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Roll: ${s.rollNumber}',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: c.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(s.status,
+                                  style: TextStyle(color: c, fontSize: 11, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           );
-        }),
-      ],
-    );
-  }
-
-  Widget _miniPill(String text, Color color) {
-    return Container(
-      padding:
-      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
+        },
       ),
-      child: Text(text,
-          style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w700)),
     );
   }
 

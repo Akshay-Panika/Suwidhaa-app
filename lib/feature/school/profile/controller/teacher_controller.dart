@@ -56,6 +56,7 @@ class TeacherController extends GetxController {
   }
 
   // Get full name
+  int get id => teacherData.value?.id ?? 0;
   String get fullName => teacherData.value?.fullName ?? '';
 
   // Get profile image URL
@@ -63,6 +64,9 @@ class TeacherController extends GetxController {
 
   // Get teacher ID card
   String get teacherIdCard => teacherData.value?.teacherIdCard ?? '';
+
+  String get schoolType => teacherData.value?.schoolType ?? '';
+
 
   // Get qualification
   String get qualification => teacherData.value?.qualification ?? '';

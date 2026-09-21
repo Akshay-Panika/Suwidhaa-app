@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/attendance/screen/leave_form_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/teacher_leave_form_screen.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
   const StudentAttendanceScreen({super.key});
@@ -336,7 +336,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>  LeaveFormScreen(),
+                      builder: (context) =>  TeacherLeaveFormScreen(),
                     ),
                   );
                 },
