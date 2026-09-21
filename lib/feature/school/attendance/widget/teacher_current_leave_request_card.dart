@@ -21,6 +21,11 @@ class _TeacherCurrentLeaveRequestCardState
   final teacherController = Get.find<TeacherController>();
   final teacherLeaveController = Get.find<TeacherLeaveController>();
 
+  // ================= PRIMARY COLOR =================
+  static const Color _primary = Colors.indigo;
+  static const Color _primaryDark = Color(0xFF283593);
+  static const Color _primaryLight = Color(0xFFE8EAF6);
+
   @override
   void initState() {
     super.initState();
@@ -68,19 +73,33 @@ class _TeacherCurrentLeaveRequestCardState
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              "My Leave",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: _primaryLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.event_note_rounded,
+                      size: 15, color: _primary),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  "My Leave",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
             ElevatedButton.icon(
               onPressed: _openNewRequest,
               icon: const Icon(Icons.add, size: 16, color: Colors.white),
               label: const Text(
-                "New Request",
+                "New",
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
@@ -88,9 +107,9 @@ class _TeacherCurrentLeaveRequestCardState
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: _primary,
                 padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -99,7 +118,7 @@ class _TeacherCurrentLeaveRequestCardState
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
         // Body
         Obx(() {
@@ -125,7 +144,7 @@ class _TeacherCurrentLeaveRequestCardState
       width: double.infinity,
       height: 110,
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -133,7 +152,8 @@ class _TeacherCurrentLeaveRequestCardState
         child: SizedBox(
           height: 22,
           width: 22,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: _primary),
         ),
       ),
     );
@@ -143,7 +163,7 @@ class _TeacherCurrentLeaveRequestCardState
   Widget _buildEmptyCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -158,21 +178,28 @@ class _TeacherCurrentLeaveRequestCardState
       ),
       child: Column(
         children: [
-          Icon(Icons.event_available_outlined,
-              size: 40, color: Colors.grey.shade400),
-          const SizedBox(height: 8),
-          Text(
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _primaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.event_available_outlined,
+                size: 32, color: _primary),
+          ),
+          const SizedBox(height: 12),
+          const Text(
             "No leave requests yet",
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            "Tap 'New Request' to apply for leave",
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            "Tap 'New' to apply for leave",
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -182,10 +209,8 @@ class _TeacherCurrentLeaveRequestCardState
   // ────────────────────────────  SINGLE LEAVE CARD
   Widget _buildSingleLeaveCard(TeacherLeaveModel leave) {
     final isFullDay = leave.applyStatus;
-    final accent =
-    isFullDay ? const Color(0xFF2563EB) : const Color(0xFFEA580C);
-    final accentBg =
-    isFullDay ? const Color(0xFFDBEAFE) : const Color(0xFFFFEDD5);
+    final accent = isFullDay ? _primary : const Color(0xFFEA580C);
+    final accentBg = isFullDay ? _primaryLight : const Color(0xFFFFEDD5);
     final typeText = isFullDay ? "Full Day" : "Half Day";
     final typeIcon = isFullDay ? Icons.wb_sunny : Icons.brightness_2;
     final hasImage = leave.image != null && leave.image!.isNotEmpty;
@@ -262,21 +287,36 @@ class _TeacherCurrentLeaveRequestCardState
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios,
-                          size: 14, color: Colors.grey.shade400),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primaryLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.arrow_forward_ios,
+                            size: 12, color: _primary),
+                      ),
                     ],
                   ),
 
                   const SizedBox(height: 12),
-                  Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
+                  Divider(
+                      height: 1, thickness: 1, color: Colors.grey.shade100),
                   const SizedBox(height: 12),
 
                   // Dates
                   Row(
                     children: [
-                      Icon(Icons.calendar_today,
-                          size: 13, color: Colors.blue.shade700),
-                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primaryLight,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.calendar_today,
+                            size: 12, color: _primary),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _formatDateRange(leave.startDate, leave.endDate),
@@ -294,21 +334,29 @@ class _TeacherCurrentLeaveRequestCardState
                   // Reason
                   if (leave.reasonMsg != null &&
                       leave.reasonMsg!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.notes,
-                            size: 13, color: Colors.grey.shade600),
-                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(Icons.notes,
+                              size: 12, color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             leave.reasonMsg!,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12.5,
                               color: Colors.grey.shade700,
+                              height: 1.35,
                             ),
                           ),
                         ),
@@ -316,7 +364,7 @@ class _TeacherCurrentLeaveRequestCardState
                     ),
                   ],
 
-                  // 👇 IMAGE (new)
+                  // IMAGE
                   if (hasImage) ...[
                     const SizedBox(height: 10),
                     ClipRRect(
@@ -346,13 +394,12 @@ class _TeacherCurrentLeaveRequestCardState
                                     height: 22,
                                     width: 22,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                        strokeWidth: 2, color: _primary),
                                   ),
                                 ),
                               );
                             },
                           ),
-                          // Attachment badge
                           Positioned(
                             top: 8,
                             right: 8,

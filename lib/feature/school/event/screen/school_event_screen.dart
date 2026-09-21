@@ -14,7 +14,7 @@ class SchoolEventScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.indigo,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -244,13 +244,13 @@ class SchoolEventScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.shade50,
-            Colors.blue.shade50.withOpacity(0.5),
+            Colors.indigo.shade50,
+            Colors.indigo.shade50.withOpacity(0.5),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.shade100.withOpacity(0.3),
+          color: Colors.indigo.shade100.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -259,7 +259,7 @@ class SchoolEventScreen extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.blue.shade700],
+                colors: [Colors.indigo.shade400, Colors.indigo.shade700],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -306,13 +306,13 @@ class SchoolEventScreen extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.15),
+                        color: Colors.indigo.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '${counts['Upcoming'] ?? 0} upcoming',
                         style: TextStyle(
-                          color: Colors.blue.shade700,
+                          color: Colors.indigo.shade700,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -326,13 +326,13 @@ class SchoolEventScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.indigo.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               counts['Upcoming']?.toString() ?? '0',
               style: const TextStyle(
-                color: Colors.blue,
+                color: Colors.indigo,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -364,14 +364,14 @@ class SchoolEventScreen extends StatelessWidget {
                 ),
               ),
               backgroundColor: Colors.grey[100],
-              selectedColor: Colors.blue,
+              selectedColor: Colors.indigo,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
               elevation: isSelected ? 2 : 0,
               onSelected: (selected) => controller.setFilter(filter),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? Colors.blue : Colors.transparent,
+                  color: isSelected ? Colors.indigo : Colors.transparent,
                   width: 1,
                 ),
               ),
@@ -397,7 +397,7 @@ class SchoolEventScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: Colors.blue.shade100,
+          color: Colors.indigo.shade100,
         ),
       ),
       child: InkWell(
@@ -634,7 +634,7 @@ class SchoolEventScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.blue.shade400, Colors.blue.shade600],
+                            colors: [Colors.indigo.shade400, Colors.indigo.shade600],
                           ),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -694,7 +694,7 @@ class SchoolEventScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.05),
+              color: Colors.indigo.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -768,7 +768,7 @@ class SchoolEventScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Get.find<SchoolEventController>().refreshEvents(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -1032,10 +1032,10 @@ class SchoolEventScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.05),
+                            color: Colors.indigo.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.blue.withOpacity(0.1),
+                              color: Colors.indigo.withOpacity(0.1),
                             ),
                           ),
                           child: Column(
@@ -1118,12 +1118,12 @@ class SchoolEventScreen extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
+                                    color: Colors.indigo.withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
                                     Icons.open_in_new_rounded,
-                                    color: Colors.blue,
+                                    color: Colors.indigo,
                                     size: 18,
                                   ),
                                 ),
@@ -1141,7 +1141,7 @@ class SchoolEventScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Colors.indigo,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(

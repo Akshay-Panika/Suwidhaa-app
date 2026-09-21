@@ -40,7 +40,6 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
 
     _animationController.forward();
 
-    // Fetch attendance once teacher id is available
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttendance());
     ever(teacherController.teacherData, (_) => _loadAttendance());
   }
@@ -86,7 +85,8 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
               child: SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.indigo), // ← indigo
               ),
             ),
           ),
@@ -98,7 +98,6 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
           attendanceController.attendanceData.value?.allRecords ??
               <AttendanceRecord>[];
 
-      // Exclude week-off & running
       final attendableRecords = records.where((r) {
         return r.statusType != AttendanceStatusType.weekOff &&
             r.statusType != AttendanceStatusType.running;
@@ -122,8 +121,6 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
       );
 
       final totalAttendable = presentDays + absentDays + halfDays + leaveDays;
-
-      // Half-day = 0.5 weight
       final attended = presentDays + (halfDays * 0.5);
 
       final double ratio = totalAttendable > 0
@@ -164,13 +161,11 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                             color: Colors.green,
                           ),
                         ),
-
                         Container(
                           height: 38,
                           width: 1,
                           color: Colors.grey.shade200,
                         ),
-
                         Expanded(
                           child: _buildAttendanceItem(
                             icon: Icons.cancel_outlined,
@@ -189,9 +184,10 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: Colors.indigo.shade50, // ← blue → indigo
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.blue.shade100),
+                      border: Border.all(
+                          color: Colors.indigo.shade100), // ← blue → indigo
                     ),
                     child: Row(
                       children: [
@@ -204,10 +200,11 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                               CircularProgressIndicator(
                                 value: animatedValue,
                                 strokeWidth: 4,
-                                backgroundColor: Colors.blue.shade100,
+                                backgroundColor:
+                                Colors.indigo.shade100, // ← blue → indigo
                                 valueColor:
                                 const AlwaysStoppedAnimation<Color>(
-                                  Colors.blue,
+                                  Colors.indigo, // ← blue → indigo
                                 ),
                               ),
                               FittedBox(
@@ -217,16 +214,14 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                                    color: Colors.indigo, // ← blue → indigo
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-
                         const SizedBox(width: 7),
-
                         Expanded(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -241,9 +236,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-
                               const SizedBox(height: 3),
-
                               Text(
                                 "${percent.toStringAsFixed(1)}%",
                                 maxLines: 1,
@@ -251,7 +244,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                                  color: Colors.indigo, // ← blue → indigo
                                 ),
                               ),
                             ],

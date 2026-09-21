@@ -1,51 +1,25 @@
-// import 'package:flutter/material.dart';
-//
-// import '../../homework/widget/teacher_home_work.dart';
-// import '../../student/widget/school_home_ads_card.dart';
-// import '../widget/teacher_checkin_checkout_button.dart';
-// import '../widget/teacher_dashboard_card.dart';
-// import '../widget/teacher_profile_card.dart';
-//
-//
-// class SchoolTeacherHomeScreen extends StatelessWidget {
-//   const SchoolTeacherHomeScreen({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       body: Column(
-//         children: [
-//           TeacherProfileCard(),
-//           SchoolHomeAdsCard(),
-//           Expanded(
-//             flex: 3,
-//             child: TeacherDashboardCard(),
-//           ),
-//           Padding(
-//             padding: const EdgeInsets.all(12),
-//             child: Row(
-//               spacing: 10,
-//               crossAxisAlignment: CrossAxisAlignment.end,
-//               children: const [
-//                 Expanded(
-//                   child: TeacherHomeWork(),
-//                 ),
-//                 TeacherCheckinCheckoutButton(),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:untitled/core/utils/app_color.dart';
+import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/class_attendance_screen.dart';
+import 'package:untitled/feature/school/attendance/screen/subject_attendance_screen.dart';
+import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
+import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
+import 'package:untitled/feature/school/settings/screen/school_setting_future_manage_screen.dart';
+import '../../attendance/screen/teacher_leave_list_screen.dart';
+import '../../documets/screen/school_documents_screen.dart';
+import '../../exams/screen/exams_schedule_screen.dart';
+import '../../meeting/screen/school_meeting_screen.dart';
+import '../../messages/screen/student_contact_screen.dart';
+import '../../notice/screen/teacher_assign_notice_screen.dart';
+import '../../payment/screen/teacher_salary_screen.dart';
+import '../../report/screen/teacher_assign_report_screen.dart';
+import '../../sports/screen/annual_sports_meet_screen.dart';
+import '../../springfield/screen/springfield_high_school_screen.dart';
 
 class SchoolTeacherHomeScreen extends StatefulWidget {
-  const SchoolTeacherHomeScreen({super.key});
+  final Function(int index)? onNavigate;
+  const SchoolTeacherHomeScreen({super.key, this.onNavigate});
 
   @override
   State<SchoolTeacherHomeScreen> createState() => _SchoolTeacherHomeScreenState();
@@ -53,16 +27,15 @@ class SchoolTeacherHomeScreen extends StatefulWidget {
 
 class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
   // ==================== DATA ====================
-  // Self management (teacher's own things)
   final List<AcademicItem> _selfManagement = [
     AcademicItem(
-      label: "My Attendance",
-      icon: Icons.fingerprint_rounded,
+      label: "Profile",
+      icon: Icons.person,
       color: Colors.indigo,
     ),
     AcademicItem(
-      label: "My Timetable",
-      icon: Icons.schedule_rounded,
+      label: "My Attendance",
+      icon: Icons.calendar_month,
       color: Colors.indigo,
     ),
     AcademicItem(
@@ -77,7 +50,6 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
     ),
   ];
 
-  // Student management
   final List<AcademicItem> _studentManagement = [
     AcademicItem(
       label: "Attendance",
@@ -85,13 +57,13 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
       color: Colors.teal,
     ),
     AcademicItem(
-      label: "Homework",
-      icon: Icons.assignment_rounded,
+      label: "Class",
+      icon: Icons.grading_rounded,
       color: Colors.teal,
     ),
     AcademicItem(
-      label: "Marks",
-      icon: Icons.grading_rounded,
+      label: "Homework",
+      icon: Icons.assignment_rounded,
       color: Colors.teal,
     ),
     AcademicItem(
@@ -101,7 +73,6 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
     ),
   ];
 
-  // School features
   final List<AcademicItem> _schoolFeatures = [
     AcademicItem(
       label: "Notice",
@@ -157,6 +128,23 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
     ),
   ];
 
+  // ==================== HELPER ====================
+  void _snack(String msg, {Color? color}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: color ?? Colors.indigo,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  void _push(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,7 +192,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                                 ),
                                 SizedBox(height: 2),
                                 Text(
-                                  "Mr. Ahmed Khan",
+                                  "Mr. Akshay Panika",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -222,13 +210,38 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                               ],
                             ),
                           ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.notifications_none_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  // Notification screen
+                                },
+                                icon: const Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
+                              ),
+
+                              Positioned(
+                                right: 7,
+                                top: 7,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.blue,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -338,7 +351,8 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () =>
+                          _push(const SpringfieldHighSchoolScreen()),
                       child: const Text(
                         "View",
                         style: TextStyle(
@@ -420,7 +434,8 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () =>
+                          _push(const AnnualSportsMeetScreen()),
                       child: const Text(
                         "More",
                         style: TextStyle(
@@ -500,8 +515,8 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
               final item = items[index];
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(
-                      right: index == items.length - 1 ? 0 : 8),
+                  padding:
+                  EdgeInsets.only(right: index == items.length - 1 ? 0 : 8),
                   child: builder(item),
                 ),
               );
@@ -522,13 +537,22 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${item.label} tapped'),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              switch (item.label) {
+                case "My Attendance":
+                  widget.onNavigate?.call(1);
+                  break;
+                case "Profile":
+                  widget.onNavigate?.call(3);
+                  break;
+                case "Leave":
+                  _push(const TeacherLeaveListScreen());
+                  break;
+                case "Salary":
+                  _push(const TeacherSalaryScreen());
+                  break;
+                default:
+                  _snack('${item.label} tapped');
+              }
             },
             child: SizedBox(
               height: 70,
@@ -559,13 +583,22 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${item.label} tapped'),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              switch (item.label) {
+                case "Attendance":
+                  _push(const ClassAttendanceScreen());
+                  break;
+                case "Class":
+                  _push(const SubjectAttendanceScreen());
+                  break;
+                case "Homework":
+                  _push(const TeacherHomeworkScreen());
+                  break;
+                case "Report Card":
+                  _push(const TeacherAssignReportScreen());
+                  break;
+                default:
+                  _snack('${item.label} tapped');
+              }
             },
             child: SizedBox(
               height: 70,
@@ -596,13 +629,25 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${item.label} tapped'),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              switch (item.label) {
+                case "Notice":
+                  _push(const TeacherAssignNoticeScreen());
+                  break;
+                case "Events":
+                  _push(const SchoolEventScreen());
+                  break;
+                case "Library":
+                  _push(const SchoolLibraryScreen());
+                  break;
+                case "Transport":
+                  widget.onNavigate?.call(2);
+                  break;
+                case "Meetings":
+                  _push(const SchoolMeetingScreen());
+                  break;
+                default:
+                  _snack('${item.label} tapped');
+              }
             },
             child: SizedBox(
               height: 70,
@@ -631,18 +676,27 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${item.label} tapped'),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 1),
-            ),
-          );
+          switch (item.label) {
+            case "Exams":
+              _push(const ExamsScheduleScreen());
+              break;
+            case "Messages":
+              _push(const StudentContactScreen());
+              break;
+            case "Documents":
+              _push(const SchoolDocumentsScreen());
+              break;
+            case "Settings":
+              _push(const SchoolSettingFeatureManageScreen());
+              break;
+            default:
+              _snack('${item.label} tapped');
+          }
         },
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: Colors.indigo,width: 0.3),
           ),
           padding: const EdgeInsets.all(12),
           child: Row(

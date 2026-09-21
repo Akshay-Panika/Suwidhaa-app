@@ -130,7 +130,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: Colors.blue),
+          colorScheme: const ColorScheme.light(primary: Colors.indigo),
         ),
         child: child!,
       ),
@@ -194,7 +194,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.blue,
+      backgroundColor: Colors.indigo,
       elevation: 0,
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
@@ -259,7 +259,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
           _statChip('Present', presentCount, Colors.green, Icons.check_circle_rounded),
           _statChip('Absent', absentCount, Colors.red, Icons.cancel_rounded),
           _statChip('Leave', leaveCount, Colors.orange, Icons.beach_access_rounded),
-          _statChip('Total', totalStudents, Colors.blue, Icons.people_rounded),
+          _statChip('Total', totalStudents, Colors.indigo, Icons.people_rounded),
         ],
       ),
     );
@@ -367,14 +367,14 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.indigo.shade50,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
                 student.name[0].toUpperCase(),
                 style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
               ),
             ),
             const SizedBox(width: 10),
@@ -470,7 +470,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
                   : const Icon(Icons.save_rounded, size: 18),
               label: Text(isSubmitting ? 'Saving...' : 'Submit'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Colors.indigo,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -618,10 +618,10 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
         child: Container(
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: isToday ? Colors.blue.withOpacity(0.1) : Colors.white,
+            color: isToday ? Colors.indigo.withOpacity(0.1) : Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isToday ? Colors.blue : Colors.grey.shade200,
+              color: isToday ? Colors.indigo : Colors.grey.shade200,
               width: isToday ? 1.5 : 1,
             ),
           ),
@@ -701,7 +701,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
                       final filter = filterList[index];
                       final isSelected = selectedFilter == filter;
                       final color = filter == "All"
-                          ? Colors.blue
+                          ? Colors.indigo
                           : _getStatusColor(filter);
                       return GestureDetector(
                         onTap: () => setModalState(() => selectedFilter = filter),
@@ -761,9 +761,9 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundColor: Colors.blue.shade50,
+                              backgroundColor: Colors.indigo.shade50,
                               child: Text(s.name[0],
-                                  style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                                  style: TextStyle(color: Colors.indigo.shade700, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 10),
                             Expanded(

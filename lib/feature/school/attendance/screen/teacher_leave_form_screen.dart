@@ -29,12 +29,8 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
   bool isHalfDay = false;
   File? _pickedImage;
 
-  final List<Color> leaveColors = [
-    Colors.green,
-    Colors.orange,
-    Colors.blue,
-    Colors.purple,
-  ];
+  // ================= PRIMARY COLOR =================
+  static const Color _primary = Colors.indigo;
 
   @override
   Widget build(BuildContext context) {
@@ -45,17 +41,23 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.indigo),
         ),
         title: const Text(
           "Apply for Leave",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.indigo,
+          ),
         ),
         centerTitle: true,
       ),
       body: Obx(() {
         if (teacherController.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: _primary),
+          );
         }
 
         if (teacherController.errorMessage.value.isNotEmpty) {
@@ -132,6 +134,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
@@ -154,10 +157,10 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.calendar_today,
                   size: 18,
-                  color: Colors.grey.shade600,
+                  color: _primary, // ← indigo
                 ),
               ],
             ),
@@ -180,7 +183,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.blue,
+          activeColor: _primary, // ← indigo
         ),
       ],
     );
@@ -212,7 +215,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             ),
             focusedBorder: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
-              borderSide: BorderSide(color: Colors.blue),
+              borderSide: BorderSide(color: _primary), // ← indigo
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -225,6 +228,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     );
   }
 
+  // ────────────────────────────────  UPLOAD TILE
   Widget _buildUploadTile() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,14 +329,14 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: Colors.indigo.shade50, // ← indigo
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     _pickedImage == null
                         ? Icons.upload_file
                         : Icons.refresh,
-                    color: Colors.blue.shade700,
+                    color: Colors.indigo.shade700, // ← indigo
                     size: 24,
                   ),
                 ),
@@ -352,7 +356,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
           child: OutlinedButton(
             onPressed: _resetForm,
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.blue.shade300),
+              side: BorderSide(color: Colors.indigo.shade300), // ← indigo
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -360,7 +364,11 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             ),
             child: const Text(
               "Reset",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: _primary, // ← indigo
+              ),
             ),
           ),
         ),
@@ -371,7 +379,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             return ElevatedButton(
               onPressed: loading ? null : _submitLeave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: _primary, // ← indigo
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -410,7 +418,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
       lastDate: DateTime(2030),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: Colors.blue),
+          colorScheme: const ColorScheme.light(primary: _primary), // ← indigo
         ),
         child: child!,
       ),
@@ -442,7 +450,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     _showSnack('Form has been reset', Colors.grey);
   }
 
-  // ────────────────────────────────  SUBMIT (API CALL)
+  // ────────────────────────────────  SUBMIT (API CALL) — UNCHANGED
   Future<void> _submitLeave() async {
     if (!_formKey.currentState!.validate()) return;
     if (fromDate == null) {
@@ -482,6 +490,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
         content: const Column(
           mainAxisSize: MainAxisSize.min,
@@ -505,7 +514,10 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             },
             child: const Text(
               'Done',
-              style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: _primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

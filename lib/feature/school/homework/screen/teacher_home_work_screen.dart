@@ -21,7 +21,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.indigo,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -211,6 +211,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
                   color: isSelected ? Colors.white : Colors.grey[700],
                 ),
               ),
+              iconTheme: IconThemeData(color: Colors.white),
               backgroundColor: Colors.grey[100],
               selectedColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 8),

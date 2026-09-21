@@ -21,11 +21,17 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
 
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    SchoolTeacherHomeScreen(),
-    TeacherAttendanceScreen(),
-    SchoolStudentTransportScreen(),
-    SchoolTeacherProfileScreen(),
+  late final List<Widget> _screens = [
+    SchoolTeacherHomeScreen(
+      onNavigate: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+    ),
+    const TeacherAttendanceScreen(),
+    const SchoolStudentTransportScreen(),
+    const SchoolTeacherProfileScreen(),
   ];
 
   final  _bottomNav = [
