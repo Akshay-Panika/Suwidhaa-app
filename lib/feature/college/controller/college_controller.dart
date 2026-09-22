@@ -7,11 +7,17 @@ import '../repository/college_repository.dart';
 class CollegeController extends GetxController {
   final CollegeRepository _repository = CollegeRepository();
 
-  // Observable variables
+  // ==================== ALL COLLEGES ====================
   final RxList<College> colleges = <College>[].obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
   final Rx<College?> selectedCollege = Rx<College?>(null);
+
+  // ==================== CATEGORY-WISE ====================
+  final RxList<College> categoryColleges = <College>[].obs;
+  final RxBool isCategoryLoading = false.obs;
+  final RxString categoryErrorMessage = ''.obs;
+  String _lastCategory = '';
 
   @override
   void onInit() {
@@ -57,6 +63,44 @@ class CollegeController extends GetxController {
     }
   }
 
+  /// Fetch colleges by category
+  ///
+  /// Tries to call the repository's category endpoint first. If the repository
+  /// does not yet support category filtering, falls back to filtering the
+  /// already-loaded [colleges] list.
+  Future<void> fetchCollegesByCategory(String category) async {
+    try {
+      isCategoryLoading.value = true;
+      categoryErrorMessage.value = '';
+      _lastCategory = category;
+
+      // 1) Try repository method if it exists
+      // final response = await _repository.getCollegesByCategory(category);
+      // if (response.success) {
+      //   categoryColleges.value = response.data;
+      //   return;
+      // }
+
+      // 2) Fallback: if all colleges aren't loaded yet, load them first
+      if (colleges.isEmpty) {
+        await fetchColleges();
+      }
+
+      // 3) Filter locally by category (case-insensitive)
+      final filtered = colleges
+          .where((c) =>
+      (c.category ?? '').toLowerCase() == category.toLowerCase())
+          .toList();
+
+      categoryColleges.value = filtered;
+    } catch (e) {
+      categoryErrorMessage.value = e.toString();
+      FlutterToast.error('Error: ${e.toString()}');
+    } finally {
+      isCategoryLoading.value = false;
+    }
+  }
+
   /// Refresh colleges
   Future<void> refreshColleges() async {
     await fetchColleges();
@@ -65,6 +109,13 @@ class CollegeController extends GetxController {
   /// Clear selected college
   void clearSelectedCollege() {
     selectedCollege.value = null;
+  }
+
+  /// Clear category results (call on screen dispose if you want)
+  void clearCategory() {
+    categoryColleges.clear();
+    categoryErrorMessage.value = '';
+    _lastCategory = '';
   }
 
   // Get recommended colleges

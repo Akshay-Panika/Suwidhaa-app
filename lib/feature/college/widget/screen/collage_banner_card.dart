@@ -20,27 +20,7 @@ class CollageBannerCard extends StatelessWidget {
         return Obx(() {
           // Loading State
           if (controller.isLoading.value && controller.banners.isEmpty) {
-            return SizedBox(
-              height: bannerHeight,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(
-                      color: CollegeColors.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading banners...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: CollegeColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return SizedBox.shrink();
           }
 
           // Error State
@@ -104,8 +84,9 @@ class CollageBannerCard extends StatelessWidget {
           }
 
           // Banners Carousel
-          return SizedBox(
+          return Container(
             height: bannerHeight + 16,
+            margin: EdgeInsets.only(top: 40,right: 20,left: 20),
             child: Stack(
               children: [
                 CarouselSlider(
@@ -113,50 +94,53 @@ class CollageBannerCard extends StatelessWidget {
                     return Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          banner.bannerImage,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: double.infinity,
-                              color: CollegeColors.primaryLight,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: CollegeColors.primary,
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                      : null,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            banner.bannerImage,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                width: double.infinity,
+                                color: CollegeColors.primaryLight,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: CollegeColors.primary,
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: double.infinity,
-                              color: CollegeColors.primaryLight,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.broken_image,
-                                    size: 40,
-                                    color: CollegeColors.primary.withOpacity(0.5),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Failed to load image',
-                                    style: TextStyle(
-                                      color: CollegeColors.textSecondary,
-                                      fontSize: 12,
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                color: CollegeColors.primaryLight,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                      color: CollegeColors.primary.withOpacity(0.5),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Failed to load image',
+                                      style: TextStyle(
+                                        color: CollegeColors.textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
                         // Subtle bottom gradient so dot indicators / future
                         // captions stay readable over bright images.

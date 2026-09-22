@@ -169,13 +169,18 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Colors.white,
-                              size: 28,
+                          InkWell(
+                            onTap: () {
+                              widget.onNavigate?.call(3);
+                            },
+                            child: CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              child: const Icon(
+                                Icons.person_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),

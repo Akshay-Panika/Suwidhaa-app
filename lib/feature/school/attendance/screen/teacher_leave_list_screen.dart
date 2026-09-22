@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:untitled/core/utils/app_color.dart';
 
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_leave_controller.dart';
@@ -37,20 +38,20 @@ class _TeacherLeaveListScreenState extends State<TeacherLeaveListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: CollegeColors.primary,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
         title: const Text(
           "My Leaves",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
@@ -67,12 +68,12 @@ class _TeacherLeaveListScreenState extends State<TeacherLeaveListScreen> {
               }
             },
             icon: const Icon(Icons.add_circle_outline,
-                color: Colors.blue, size: 26),
+                color: Colors.white, size: 26),
           ),
           IconButton(
             tooltip: "Refresh",
             onPressed: () => _loadLeaves(force: true),
-            icon: const Icon(Icons.refresh, color: Colors.black87),
+            icon: const Icon(Icons.refresh, color: Colors.white),
           ),
         ],
       ),

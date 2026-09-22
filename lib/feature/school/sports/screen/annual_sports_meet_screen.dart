@@ -130,12 +130,6 @@ class _AnnualSportsMeetScreenState extends State<AnnualSportsMeetScreen> {
         ),
         title: const Text("Sports Meet 2025",
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-        actions: [
-          IconButton(
-            onPressed: () => _snack("Reminder set!", color: Colors.green),
-            icon: const Icon(Icons.notifications_active_rounded),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(14),

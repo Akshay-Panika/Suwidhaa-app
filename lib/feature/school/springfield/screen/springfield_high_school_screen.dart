@@ -187,7 +187,7 @@ class _SpringfieldHighSchoolScreenState
   // ============================================================
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 170,
+      expandedHeight: 150,
       pinned: true,
       elevation: 0,
       backgroundColor: Colors.indigo,
@@ -196,18 +196,6 @@ class _SpringfieldHighSchoolScreenState
         onPressed: () => Navigator.pop(context),
         icon: const Icon(Icons.arrow_back_ios),
       ),
-      actions: [
-        IconButton(
-          tooltip: "Share",
-          onPressed: () => _snack("Sharing school profile..."),
-          icon: const Icon(Icons.share_rounded),
-        ),
-        IconButton(
-          tooltip: "Bookmark",
-          onPressed: () => _snack("Added to favorites", color: Colors.green),
-          icon: const Icon(Icons.bookmark_border_rounded),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/utils/app_color.dart';
 import '../../../../core/widget/contact_helper.dart';
+import '../../category/screen/college_category_list_screen.dart';
 import '../../controller/college_controller.dart';
 import '../../model/college_model.dart';
 import '../../screen/college_view_screen.dart';
@@ -12,7 +13,8 @@ import '../../search/screen/collage_search_screen.dart';
 import '../../widget/screen/collage_banner_card.dart';
 
 class CollageHomeScreen extends StatefulWidget {
-  const CollageHomeScreen({super.key});
+  final Function(int index)? onNavigate;
+  const CollageHomeScreen({super.key, this.onNavigate});
 
   @override
   State<CollageHomeScreen> createState() => _CollageHomeScreenState();
@@ -44,6 +46,81 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
     }
   }
 
+  final List<Map<String, dynamic>> _collegeCategory = [
+    {
+      'name': 'Engineering',
+      'icon': Icons.engineering,
+    },
+    {
+      'name': 'Medical',
+      'icon': Icons.local_hospital,
+    },
+    {
+      'name': 'Arts',
+      'icon': Icons.palette,
+    },
+    {
+      'name': 'Commerce',
+      'icon': Icons.account_balance,
+    },
+    {
+      'name': 'Agriculture',
+      'icon': Icons.agriculture,
+    },
+    {
+      'name': 'Science',
+      'icon': Icons.science,
+    },
+    {
+      'name': 'Law',
+      'icon': Icons.gavel,
+    },
+    {
+      'name': 'Management',
+      'icon': Icons.business_center,
+    },
+    {
+      'name': 'Computer Science',
+      'icon': Icons.computer,
+    },
+    {
+      'name': 'Pharmacy',
+      'icon': Icons.medication,
+    },
+    {
+      'name': 'Nursing',
+      'icon': Icons.health_and_safety,
+    },
+    {
+      'name': 'Education',
+      'icon': Icons.school,
+    },
+    {
+      'name': 'Architecture',
+      'icon': Icons.architecture,
+    },
+    {
+      'name': 'Hotel Management',
+      'icon': Icons.hotel,
+    },
+    {
+      'name': 'Design',
+      'icon': Icons.design_services,
+    },
+    {
+      'name': 'Veterinary',
+      'icon': Icons.pets,
+    },
+    {
+      'name': 'Paramedical',
+      'icon': Icons.medical_services,
+    },
+    {
+      'name': 'Dental',
+      'icon': Icons.health_and_safety,
+    },
+  ];
+
   @override
   void dispose() {
     super.dispose();
@@ -52,7 +129,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CollegeColors.background,
+      backgroundColor: Colors.white,
       body: Obx(() {
         // Show shimmer while loading
         if (_controller.isLoading.value && _controller.colleges.isEmpty) {
@@ -118,13 +195,44 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
             SliverAppBar(
               floating: true,
               expandedHeight: 200,
-              backgroundColor: CollegeColors.background,
+              backgroundColor: CollegeColors.primary,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
-                background: const CollageBannerCard(),
+                background: Container(
+                  color: Colors.white,
+                  child: Stack(
+                    children: [
+                      Column(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  color: CollegeColors.primary,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(30),
+                                  bottomRight: Radius.circular(30),
+                                )
+                              ),
+                            ),
+
+                          ),
+                          Expanded(
+                            child: Container(
+                              color: Colors.white,
+                            ),
+
+                          ),
+                        ],
+                      ),
+                      CollageBannerCard()
+                    ],
+                  ),
+                ),
               ),
             ),
 
+            SliverToBoxAdapter(child: SizedBox(height: 10,),),
             SliverToBoxAdapter(
               child: GestureDetector(
                 onTap: () {
@@ -171,6 +279,105 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               ),
             ),
 
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      spacing: 10,
+                      children: [
+                        Container(
+                          height: 18,
+                          width: 5,
+                          decoration: BoxDecoration(
+                            color: CollegeColors.primary,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        const Text(
+                          "Category",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    InkWell(onTap: () {
+                      widget.onNavigate?.call(1);
+                    }, child: Text("View All", style: TextStyle(color: CollegeColors.secondary),))
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 10,),),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 270,
+                child: GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: _collegeCategory.length,
+                  itemBuilder: (context, index) {
+                    final category = _collegeCategory[index];
+
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => CollegeCategoryListScreen(
+                          collegeCategory: category['name'] ,
+                        ),));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(
+                            color: CollegeColors.primary,
+                            width: 0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              category['icon'],
+                              size: 30,
+                              color: CollegeColors.primary,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              category['name'],
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 10,),),
+
             /// Recommended Colleges Section (only if recommended colleges exist)
             if (_controller.recommendedColleges.isNotEmpty) ...[
               /// Recommended Colleges Section Header
@@ -203,6 +410,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                   ),
                 ),
               ),
+              SliverToBoxAdapter(child: SizedBox(height: 10,),),
 
               /// Recommended Colleges Horizontal List
               SliverToBoxAdapter(
@@ -228,7 +436,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
               pinned: true,
               delegate: _StickySearchDelegate(
                 child: Container(
-                  color: CollegeColors.background,
+                  color: Colors.white,
                   child: Column(
                     children: [
                       Padding(
@@ -315,6 +523,7 @@ class _CollageHomeScreenState extends State<CollageHomeScreen> {
                 ),
               ),
             ),
+            SliverToBoxAdapter(child: SizedBox(height: 10,),),
 
             /// Colleges Grid
             SliverToBoxAdapter(

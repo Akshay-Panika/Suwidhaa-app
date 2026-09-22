@@ -5,6 +5,7 @@ import '../../../../core/utils/app_color.dart';
 import '../../../../router/app_routes.dart';
 import '../../account/screen/college_account_screen.dart';
 import '../../booking/screen/college_booking_screen.dart';
+import '../../category/screen/college_category_screen.dart';
 import '../../home/screen/collage_home_screen.dart';
 import '../../screen/add_room_tiffin_senter_screen.dart';
 
@@ -21,11 +22,22 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
 
   int _selectedIndex = 0;
 
-  final List<Map<String, dynamic>> _screens = [
+  late final List<Map<String, dynamic>> _screens = [
     {
-      "screen": const CollageHomeScreen(),
+      "screen": CollageHomeScreen(
+        onNavigate: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       "title": 'Home',
       "icon": Icons.home_rounded,
+    },
+    {
+      "screen": const CollegeCategoryScreen(),
+      "title": 'College',
+      "icon": Icons.school,
     },
     {
       "screen": const CollegeBookingScreen(),
