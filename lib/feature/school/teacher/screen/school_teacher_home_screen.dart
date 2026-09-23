@@ -56,11 +56,11 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
       icon: Icons.fact_check_rounded,
       color: Colors.teal,
     ),
-    AcademicItem(
-      label: "Class",
-      icon: Icons.grading_rounded,
-      color: Colors.teal,
-    ),
+    // AcademicItem(
+    //   label: "Class",
+    //   icon: Icons.grading_rounded,
+    //   color: Colors.teal,
+    // ),
     AcademicItem(
       label: "Homework",
       icon: Icons.assignment_rounded,
