@@ -13,6 +13,7 @@ class ApiUrls {
   static const String teacherList = 'v1/school/teacher/list/';
   static const String teacherCreate = 'v1/school/teacher/create/';
   static const String teacherDetail = 'v1/school/teacher/';
+  static const String teacherSalarySummary = 'v1/school/teacher/salary/summary/';
 
   // Teacher Leave endpoints
   static const String teacherLeaveCreate = 'v1/school/teacher-leave/create/';

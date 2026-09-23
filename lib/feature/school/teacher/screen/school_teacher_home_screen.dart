@@ -15,7 +15,7 @@ import '../../notice/screen/teacher_assign_notice_screen.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/teacher_assign_report_screen.dart';
 import '../../sports/screen/annual_sports_meet_screen.dart';
-import '../../springfield/screen/springfield_high_school_screen.dart';
+import '../widget/teacher_checkin_checkout_button.dart';
 
 class SchoolTeacherHomeScreen extends StatefulWidget {
   final Function(int index)? onNavigate;
@@ -307,72 +307,10 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             ),
           ),
 
-          // ==================== SCHOOL INFO ====================
           SliverToBoxAdapter(
-            child: Card(
-              elevation: 0,
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              color: Colors.grey.shade50,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.circle,
-                              color: Colors.indigo, size: 14),
-                        ),
-                        const SizedBox(width: 10),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Springfield High School",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              "Session 2025-2026 • 1,240 students",
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          _push(const SpringfieldHighSchoolScreen()),
-                      child: const Text(
-                        "View",
-                        style: TextStyle(
-                          color: Colors.indigo,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: TeacherCheckinCheckoutButton(),
           ),
 
-          // ==================== STUDENT MANAGEMENT ====================
           SliverToBoxAdapter(
             child: _buildSection(
               title: "Student Management",
@@ -553,7 +491,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                   _push(const TeacherLeaveListScreen());
                   break;
                 case "Salary":
-                  _push(const TeacherSalaryScreen());
+                  _push( TeacherSalaryScreen());
                   break;
                 default:
                   _snack('${item.label} tapped');

@@ -295,7 +295,7 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
                                     child: Text(
                                       _bottomNav[index]['label'] as String,
                                       style: const TextStyle(
-                                        color: Colors.indigo,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13,
                                       ),
@@ -395,7 +395,7 @@ class _NotchedBarPainter extends CustomPainter {
     // shadow
     canvas.drawShadow(path, Colors.black.withValues(alpha: 0.35), 6, false);
 
-    canvas.drawPath(path, Paint()..color = Colors.white);
+    canvas.drawPath(path, Paint()..color = Colors.indigo);
 
     // top border line (aapke original design jaisa)
     canvas.drawPath(

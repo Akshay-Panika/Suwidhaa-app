@@ -20,6 +20,7 @@ import '../feature/school/attendance/controller/teacher_leave_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
 import '../feature/school/homework/controller/homework_controller.dart';
+import '../feature/school/payment/controller/teacher_salary_controller.dart';
 import '../feature/school/profile/controller/student_controller.dart';
 import '../feature/school/profile/controller/teacher_controller.dart';
 import '../feature/school/student/controller/student_list_controller.dart';
@@ -37,6 +38,7 @@ class AppBindings implements Bindings {
     Get.lazyPut<TeacherAttendanceController>(() => TeacherAttendanceController(), fenix: true);
     Get.lazyPut<TeacherCheckInOutController>(() => TeacherCheckInOutController(), fenix: true);
     Get.lazyPut<TeacherLeaveController>(() => TeacherLeaveController(), fenix: true);
+    Get.lazyPut<TeacherSalaryController>(() => TeacherSalaryController(), fenix: true);
     Get.lazyPut<StudentListController>(() => StudentListController(), fenix: true);
     Get.lazyPut<HomeworkController>(() => HomeworkController(), fenix: true);
     Get.lazyPut<SchoolEventController>(() => SchoolEventController(), fenix: true);

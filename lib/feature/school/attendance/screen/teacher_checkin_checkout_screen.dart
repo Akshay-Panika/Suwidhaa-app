@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 
 import '../../profile/controller/teacher_controller.dart';
+import '../controller/teacher_attendance_controller.dart';
 import '../controller/teacher_checkin_checkout_controller.dart';
 
-class TeacherCheckinCheckoutScreen extends StatefulWidget {
-  const TeacherCheckinCheckoutScreen({super.key});
+class TeacherCheckinCheckoutScreen extends StatefulWidget {const TeacherCheckinCheckoutScreen({super.key});
 
   @override
   State<TeacherCheckinCheckoutScreen> createState() =>
@@ -22,8 +22,8 @@ class _TeacherCheckinCheckoutScreenState
   DateTime _now = DateTime.now();
 
   final TeacherController teacherController = Get.find<TeacherController>();
-  final TeacherCheckInOutController checkInOutController =
-  Get.find<TeacherCheckInOutController>();
+  final TeacherCheckInOutController checkInOutController = Get.find<TeacherCheckInOutController>();
+  final TeacherAttendanceController attendanceController = Get.find<TeacherAttendanceController>();
 
   @override
   void initState() {
@@ -93,6 +93,9 @@ class _TeacherCheckinCheckoutScreenState
     final ok = await checkInOutController.checkIn(teacherId: teacherId);
     if (ok) {
       FlutterToast.success("Checked in successfully");
+      await attendanceController.fetchAttendance(
+        teacherId: teacherId,
+      );
     } else {
       FlutterToast.error(
         checkInOutController.errorMessage.value.isNotEmpty
@@ -112,6 +115,9 @@ class _TeacherCheckinCheckoutScreenState
     final ok = await checkInOutController.checkOut(teacherId: teacherId);
     if (ok) {
       FlutterToast.success("Checked out successfully");
+      await attendanceController.fetchAttendance(
+        teacherId: teacherId,
+      );
     } else {
       FlutterToast.error(
         checkInOutController.errorMessage.value.isNotEmpty
@@ -128,7 +134,7 @@ class _TeacherCheckinCheckoutScreenState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -164,7 +170,7 @@ class _TeacherCheckinCheckoutScreenState
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.blue.shade200,
+                          color: Colors.indigo.shade200,
                           width: 2,
                         ),
                         image: teacher.teacherProfile != null &&
@@ -179,7 +185,7 @@ class _TeacherCheckinCheckoutScreenState
                           teacher.teacherProfile!.isEmpty
                           ? CircleAvatar(
                         radius: 40,
-                        backgroundColor: Colors.blue.shade100,
+                        backgroundColor: Colors.indigo.shade100,
                         child: Text(
                           teacherController.fullName.isNotEmpty
                               ? teacherController.fullName[0]
@@ -188,7 +194,7 @@ class _TeacherCheckinCheckoutScreenState
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
+                            color: Colors.indigo.shade700,
                           ),
                         ),
                       )
@@ -244,7 +250,7 @@ class _TeacherCheckinCheckoutScreenState
                     radius: 40,
                     backgroundColor: const Color(0xFFE3F2FD),
                     child: Icon(Icons.person,
-                        color: Colors.blue.shade300, size: 30),
+                        color: Colors.indigo.shade300, size: 30),
                   ),
                   const SizedBox(width: 12),
                   const Column(
@@ -359,7 +365,7 @@ class _TeacherCheckinCheckoutScreenState
                           : const Icon(Icons.login),
                       label: Text(isCheckingIn ? 'Checking in...' : 'Check In'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.indigo,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         disabledForegroundColor: Colors.grey.shade600,
@@ -387,7 +393,7 @@ class _TeacherCheckinCheckoutScreenState
                       label:
                       Text(isCheckingOut ? 'Checking out...' : 'Check Out'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
+                        backgroundColor: Colors.indigo.shade700,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         disabledForegroundColor: Colors.grey.shade600,

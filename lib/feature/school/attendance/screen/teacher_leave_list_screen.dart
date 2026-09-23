@@ -40,7 +40,7 @@ class _TeacherLeaveListScreenState extends State<TeacherLeaveListScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: CollegeColors.primary,
+        backgroundColor: Colors.indigo,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
@@ -130,7 +130,7 @@ class _TeacherLeaveListScreenState extends State<TeacherLeaveListScreen> {
             icon: const Icon(Icons.add, size: 18),
             label: const Text("Apply Leave"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
               padding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
