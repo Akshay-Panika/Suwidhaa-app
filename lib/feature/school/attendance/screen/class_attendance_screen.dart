@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import '../../profile/controller/teacher_controller.dart';
+import '../../student/controller/student_list_controller.dart';
 
 class ClassAttendanceScreen extends StatefulWidget {
   const ClassAttendanceScreen({super.key});
@@ -8,14 +14,14 @@ class ClassAttendanceScreen extends StatefulWidget {
   State<ClassAttendanceScreen> createState() => _ClassAttendanceScreenState();
 }
 
-class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
-    with SingleTickerProviderStateMixin {
+class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
   // ==================== STATE ====================
-  late TabController _tabController;
+  final teacherController = Get.find<TeacherController>();
 
-  DateTime selectedDate = DateTime.now();
-  String className = '10th Grade';
   String section = 'A';
+
+  // 🔹 Class filter state
+  String selectedClass = 'All';
 
   bool isLoading = true;
   bool isSubmitting = false;
@@ -23,77 +29,67 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
   String searchQuery = '';
 
   List<StudentAttendance> students = [];
-  Map<String, List<StudentAttendance>> attendanceHistory = {};
 
   int presentCount = 0;
   int absentCount = 0;
   int leaveCount = 0;
   int totalStudents = 0;
 
-  DateTime currentMonth = DateTime.now();
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadMockHistory();
-    _fetchStudents();
+    _fetchStudents(); // ✅ API call only
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  String _dateKey(DateTime d) => '${d.day}-${d.month}-${d.year}';
-
-  // ==================== MOCK HISTORY ====================
-  void _loadMockHistory() {
-    final now = DateTime.now();
-    for (int i = 0; i < 20; i++) {
-      final date = now.subtract(Duration(days: i));
-      final key = _dateKey(date);
-      attendanceHistory[key] = [
-        StudentAttendance(id: '1', name: 'Ahmed Khan', rollNumber: '01', className: '10th A', status: i % 3 == 0 ? 'Present' : (i % 3 == 1 ? 'Absent' : 'Leave')),
-        StudentAttendance(id: '2', name: 'Sara Ahmed', rollNumber: '02', className: '10th A', status: i % 2 == 0 ? 'Present' : 'Absent'),
-        StudentAttendance(id: '3', name: 'Muhammad Ali', rollNumber: '03', className: '10th A', status: 'Leave'),
-        StudentAttendance(id: '4', name: 'Fatima Noor', rollNumber: '04', className: '10th A', status: 'Present'),
-        StudentAttendance(id: '5', name: 'Usman Malik', rollNumber: '05', className: '10th A', status: i % 2 == 0 ? 'Absent' : 'Present'),
-        StudentAttendance(id: '6', name: 'Ayesha Bibi', rollNumber: '06', className: '10th A', status: 'Present'),
-        StudentAttendance(id: '7', name: 'Hassan Raza', rollNumber: '07', className: '10th A', status: 'Absent'),
-      ];
-    }
-  }
-
-  // ==================== FETCH ====================
+  // ==================== FETCH FROM API ====================
   Future<void> _fetchStudents() async {
     setState(() {
       isLoading = true;
       errorMessage = '';
     });
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final studentListController = Get.isRegistered<StudentListController>()
+          ? Get.find<StudentListController>()
+          : Get.put(StudentListController());
 
-    final mock = [
-      StudentAttendance(id: '1', name: 'Ahmed Khan', rollNumber: '01', className: '10th A', status: 'Present'),
-      StudentAttendance(id: '2', name: 'Sara Ahmed', rollNumber: '02', className: '10th A', status: 'Absent'),
-      StudentAttendance(id: '3', name: 'Muhammad Ali', rollNumber: '03', className: '10th A', status: 'Leave'),
-      StudentAttendance(id: '4', name: 'Fatima Noor', rollNumber: '04', className: '10th A', status: 'Present'),
-      StudentAttendance(id: '5', name: 'Usman Malik', rollNumber: '05', className: '10th A', status: 'Present'),
-      StudentAttendance(id: '6', name: 'Ayesha Bibi', rollNumber: '06', className: '10th A', status: 'Absent'),
-      StudentAttendance(id: '7', name: 'Hassan Raza', rollNumber: '07', className: '10th A', status: 'Present'),
-      StudentAttendance(id: '8', name: 'Zainab Ali', rollNumber: '08', className: '10th A', status: 'Leave'),
-      StudentAttendance(id: '9', name: 'Bilal Ahmed', rollNumber: '09', className: '10th A', status: 'Present'),
-      StudentAttendance(id: '10', name: 'Hira Noor', rollNumber: '10', className: '10th A', status: 'Absent'),
-    ];
+      if (studentListController.studentList.isEmpty) {
+        await studentListController.loadStudentList();
+      }
 
-    if (!mounted) return;
-    setState(() {
-      students = mock;
-      _updateCounts();
-      isLoading = false;
-    });
+      if (studentListController.errorMessage.value.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          isLoading = false;
+          errorMessage = studentListController.errorMessage.value;
+        });
+        return;
+      }
+
+      final fetchedStudents = studentListController.studentList
+          .map((s) => StudentAttendance(
+        id: s.id.toString(),
+        name: s.fullName,
+        rollNumber: s.studentIdCard,
+        className: '${s.studentClass} $section',
+        status: 'Present',
+        sClass: s.studentClass
+      ))
+          .toList();
+
+      if (!mounted) return;
+      setState(() {
+        students = fetchedStudents;
+        _updateCounts();
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Failed to load students: $e';
+      });
+    }
   }
 
   void _updateCounts() {
@@ -114,45 +110,9 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     });
   }
 
-  void _markAll(String status) {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      students = students.map((s) => s.copyWith(status: status)).toList();
-      _updateCounts();
-    });
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2023),
-      lastDate: DateTime.now(),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: Colors.indigo),
-        ),
-        child: child!,
-      ),
-    );
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-        final key = _dateKey(picked);
-        if (attendanceHistory.containsKey(key)) {
-          students = attendanceHistory[key]!.map((s) => s.copyWith()).toList();
-        }
-        _updateCounts();
-      });
-    }
-  }
-
   Future<void> _submitAttendance() async {
     setState(() => isSubmitting = true);
     await Future.delayed(const Duration(seconds: 2));
-
-    final key = _dateKey(selectedDate);
-    attendanceHistory[key] = students.map((s) => s.copyWith()).toList();
 
     if (!mounted) return;
     HapticFeedback.heavyImpact();
@@ -178,17 +138,25 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: _buildAppBar(),
-      body: isLoading
-          ? _buildSkeleton()
-          : errorMessage.isNotEmpty
-          ? _buildErrorState()
-          : TabBarView(
-        controller: _tabController,
-        children: [
-          _buildMarkAttendanceTab(),
-          _buildHistoryTab(),
-        ],
-      ),
+      body: Obx(() {
+        if (teacherController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (teacherController.errorMessage.value.isNotEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        if (teacherController.hasData) {
+          return isLoading
+              ? _buildSkeleton()
+              : errorMessage.isNotEmpty
+              ? _buildErrorState()
+              : _buildMarkAttendanceTab();
+        }
+
+        return const SizedBox.shrink();
+      }),
     );
   }
 
@@ -209,32 +177,25 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
           icon: const Icon(Icons.refresh, color: Colors.white),
         ),
       ],
-      bottom: TabBar(
-        controller: _tabController,
-        indicatorColor: Colors.white,
-        indicatorWeight: 3,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.white70,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        tabs: const [
-          Tab(text: 'Mark Attendance'),
-          Tab(text: 'History'),
-        ],
-      ),
     );
   }
 
-  // ==================== TAB 1 ====================
+  // ==================== MAIN TAB ====================
   Widget _buildMarkAttendanceTab() {
     final filtered = students.where((s) {
-      if (searchQuery.isEmpty) return true;
-      return s.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+      final studentClass = s.className.split(' ').first;
+      final classMatch = selectedClass == 'All' || studentClass == selectedClass;
+
+      final searchMatch = searchQuery.isEmpty ||
+          s.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
           s.rollNumber.contains(searchQuery);
+
+      return classMatch && searchMatch;
     }).toList();
 
     return Column(
       children: [
-        _buildStatsRow(),
+        _buildStatsRow(filtered),
         _buildSearchAndBulk(),
         Expanded(
           child: filtered.isEmpty
@@ -245,21 +206,27 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
             itemBuilder: (_, i) => _buildStudentCard(filtered[i]),
           ),
         ),
-        _buildBottomSubmitBar(),
+        _buildBottomSubmitBar(filtered),
       ],
     );
   }
 
   // ==================== STATS ====================
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow([List<StudentAttendance>? data]) {
+    final list = data ?? students;
+    final present = list.where((s) => s.status == 'Present').length;
+    final absent = list.where((s) => s.status == 'Absent').length;
+    final leave = list.where((s) => s.status == 'Leave').length;
+    final total = list.length;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 0),
       child: Row(
         children: [
-          _statChip('Present', presentCount, Colors.green, Icons.check_circle_rounded),
-          _statChip('Absent', absentCount, Colors.red, Icons.cancel_rounded),
-          _statChip('Leave', leaveCount, Colors.orange, Icons.beach_access_rounded),
-          _statChip('Total', totalStudents, Colors.indigo, Icons.people_rounded),
+          _statChip('Present', present, Colors.green, Icons.check_circle_rounded),
+          _statChip('Absent', absent, Colors.red, Icons.cancel_rounded),
+          _statChip('Leave', leave, Colors.orange, Icons.beach_access_rounded),
+          _statChip('Total', total, Colors.indigo, Icons.people_rounded),
         ],
       ),
     );
@@ -268,30 +235,29 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
   Widget _statChip(String label, int count, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.15)),
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2)),
           ],
         ),
-        child: Column(
+        child: Row(
+          spacing: 4,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
             Text('$count',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+            Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
           ],
         ),
       ),
     );
   }
 
-  // ==================== SEARCH + BULK ====================
+  // ==================== SEARCH + CLASS FILTER ====================
   Widget _buildSearchAndBulk() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
@@ -299,6 +265,45 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
         children: [
           Row(
             children: [
+              /// Class selector (tappable)
+              GestureDetector(
+                onTap: _showClassFilterSheet,
+                child: Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: selectedClass == 'All'
+                        ? Colors.white
+                        : Colors.indigo.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selectedClass == 'All'
+                          ? Colors.grey.withOpacity(0.3)
+                          : Colors.indigo.withOpacity(0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        selectedClass == 'All' ? "All Class" : "Class ${selectedClass}",
+                        style: TextStyle(
+                          color: selectedClass == 'All' ? Colors.black : Colors.indigo,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        size: 18,
+                        color: selectedClass == 'All' ? Colors.black54 : Colors.indigo,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Container(
                   height: 42,
@@ -320,10 +325,6 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              _bulkBtn('All P', Colors.green, () => _markAll('Present')),
-              const SizedBox(width: 6),
-              _bulkBtn('All A', Colors.red, () => _markAll('Absent')),
             ],
           ),
         ],
@@ -331,20 +332,100 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     );
   }
 
-  Widget _bulkBtn(String label, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.3)),
+  // ==================== CLASS FILTER HELPERS ====================
+  List<String> _getUniqueClasses() {
+    final set = <String>{};
+    for (final s in students) {
+      final cls = s.className.split(' ').first;
+      if (cls.isNotEmpty) set.add(cls);
+    }
+    final list = set.toList();
+    list.sort();
+    return ['All', ...list];
+  }
+
+  void _showClassFilterSheet() {
+    final classes = _getUniqueClasses();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Select Class',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: classes.map((cls) {
+                  final isSelected = selectedClass == cls;
+                  return ChoiceChip(
+                    label: Text(cls),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      setModalState(() => selectedClass = cls);
+                      setState(() {});
+                      Get.back();
+                    },
+                    selectedColor: Colors.indigo,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: Colors.grey.shade100,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              if (selectedClass != 'All')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() => selectedClass = 'All');
+                      Get.back();
+                    },
+                    icon: const Icon(Icons.clear, size: 18),
+                    label: const Text('Clear Class Filter'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
-        alignment: Alignment.center,
-        child: Text(label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
       ),
     );
   }
@@ -361,42 +442,52 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.indigo.shade50,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                student.name[0].toUpperCase(),
-                style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(student.name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('Roll: ${student.rollNumber}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                ],
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(student.name,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Text('Class: ${student.sClass}th',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[900])),
+                    ],
+                  ),
+                ),
+                Text('ID: ${student.rollNumber}',
+          style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+
+              ],
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _statusBtn(student, 'Present', Icons.check_rounded, Colors.green),
-                _statusBtn(student, 'Absent', Icons.close_rounded, Colors.red),
-                _statusBtn(student, 'Leave', Icons.beach_access_rounded, Colors.orange),
+                _statusBtn(student, 'Present', Colors.green),
+                _statusBtn(student, 'Absent', Colors.red),
+                _statusBtn(student, 'Leave', Colors.orange),
               ],
             ),
           ],
@@ -405,24 +496,30 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     );
   }
 
-  Widget _statusBtn(StudentAttendance s, String status, IconData icon, Color color) {
+  Widget _statusBtn(StudentAttendance s, String status, Color color) {
     final isSelected = s.status == status;
     return GestureDetector(
       onTap: () => _updateStudentStatus(s.id, status),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         margin: const EdgeInsets.only(left: 5),
-        padding: const EdgeInsets.all(7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? color : color.withOpacity(0.08),
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : color.withOpacity(0.25),
             width: 1.4,
           ),
         ),
-        child: Icon(icon,
-            size: 16, color: isSelected ? Colors.white : color.withOpacity(0.7)),
+        child: Text(
+          status,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : color,
+          ),
+        ),
       ),
     );
   }
@@ -442,7 +539,11 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
   }
 
   // ==================== BOTTOM SUBMIT ====================
-  Widget _buildBottomSubmitBar() {
+  Widget _buildBottomSubmitBar([List<StudentAttendance>? data]) {
+    final list = data ?? students;
+    final present = list.where((s) => s.status == 'Present').length;
+    final total = list.length;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
@@ -457,7 +558,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
           children: [
             Expanded(
               child: Text(
-                '$presentCount/$totalStudents marked',
+                '$present/$total marked',
                 style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.w600),
               ),
             ),
@@ -482,323 +583,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen>
     );
   }
 
-  // ==================== TAB 2 : HISTORY ====================
-  Widget _buildHistoryTab() {
-    final daysInMonth = DateTime(currentMonth.year, currentMonth.month + 1, 0).day;
-    final firstWeekday = DateTime(currentMonth.year, currentMonth.month, 1).weekday;
-
-    return Column(
-      children: [
-        _buildMonthSelector(),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWeekLabels(),
-              const SizedBox(height: 4),
-              _buildCalendarGrid(daysInMonth, firstWeekday),
-            ],
-          ),
-        ),
-        _buildLegend(),
-      ],
-    );
-  }
-
-  Widget _buildMonthSelector() {
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 12, 12, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => setState(() =>
-            currentMonth = DateTime(currentMonth.year, currentMonth.month - 1)),
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                '${months[currentMonth.month - 1]} ${currentMonth.year}',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              final next = DateTime(currentMonth.year, currentMonth.month + 1);
-              if (next.isBefore(DateTime.now().add(const Duration(days: 1)))) {
-                setState(() => currentMonth = next);
-              }
-            },
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegend() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          _legendDot(Colors.green, 'Present'),
-          _legendDot(Colors.red, 'Absent'),
-          _legendDot(Colors.orange, 'Leave'),
-          _legendDot(Colors.grey.shade300, 'No data'),
-        ],
-      ),
-    );
-  }
-
-  Widget _legendDot(Color color, String label) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: Row(
-        children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekLabels() {
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return Row(
-      children: labels
-          .map((l) => Expanded(
-        child: Center(
-          child: Text(l,
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey[600])),
-        ),
-      ))
-          .toList(),
-    );
-  }
-
-  Widget _buildCalendarGrid(int daysInMonth, int firstWeekday) {
-    final cells = <Widget>[];
-    for (int i = 1; i < firstWeekday; i++) {
-      cells.add(const SizedBox());
-    }
-    for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(currentMonth.year, currentMonth.month, day);
-      final key = _dateKey(date);
-      final records = attendanceHistory[key];
-      final isFuture = date.isAfter(DateTime.now());
-      final isToday = _isSameDay(date, DateTime.now());
-
-      Color? dotColor;
-      if (records != null && records.isNotEmpty) {
-        final p = records.where((r) => r.status == 'Present').length;
-        final a = records.where((r) => r.status == 'Absent').length;
-        final l = records.where((r) => r.status == 'Leave').length;
-        if (p >= a && p >= l) dotColor = Colors.green;
-        else if (a >= l) dotColor = Colors.red;
-        else dotColor = Colors.orange;
-      }
-
-      cells.add(GestureDetector(
-        onTap: isFuture || records == null
-            ? null
-            : () => _showHistoryDialog(key, records),
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: isToday ? Colors.indigo.withOpacity(0.1) : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isToday ? Colors.indigo : Colors.grey.shade200,
-              width: isToday ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('$day',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                    color: isFuture ? Colors.grey[350] : Colors.black87,
-                  )),
-              const SizedBox(height: 3),
-              if (dotColor != null)
-                Container(width: 6, height: 6, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle))
-              else
-                const SizedBox(height: 6),
-            ],
-          ),
-        ),
-      ));
-    }
-
-    return GridView.count(
-      crossAxisCount: 7,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.0,
-      children: cells,
-    );
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.day == b.day && a.month == b.month && a.year == b.year;
-
-  // ==================== HISTORY DIALOG WITH FILTER ====================
-  void _showHistoryDialog(String dateKey, List<StudentAttendance> records) {
-    const filterList = ["All", "Present", "Absent", "Leave"];
-    String selectedFilter = "All";
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final filteredRecords = selectedFilter == "All"
-              ? records
-              : records.where((r) => r.status == selectedFilter).toList();
-
-          return Container(
-            padding: const EdgeInsets.all(16),
-            height: MediaQuery.of(context).size.height * 0.7,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text('Attendance • $dateKey',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: filterList.length,
-                    itemBuilder: (_, index) {
-                      final filter = filterList[index];
-                      final isSelected = selectedFilter == filter;
-                      final color = filter == "All"
-                          ? Colors.indigo
-                          : _getStatusColor(filter);
-                      return GestureDetector(
-                        onTap: () => setModalState(() => selectedFilter = filter),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? color : color.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected ? color : color.withOpacity(0.25),
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            filter,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : color,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: filteredRecords.isEmpty
-                      ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.filter_alt_off, size: 48, color: Colors.grey[300]),
-                        const SizedBox(height: 8),
-                        Text('No records found',
-                            style: TextStyle(color: Colors.grey[500], fontSize: 14)),
-                      ],
-                    ),
-                  )
-                      : ListView.builder(
-                    itemCount: filteredRecords.length,
-                    itemBuilder: (_, i) {
-                      final s = filteredRecords[i];
-                      final c = _getStatusColor(s.status);
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: c.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: c.withOpacity(0.2)),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.indigo.shade50,
-                              child: Text(s.name[0],
-                                  style: TextStyle(color: Colors.indigo.shade700, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                  Text('Roll: ${s.rollNumber}',
-                                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: c.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(s.status,
-                                  style: TextStyle(color: c, fontSize: 11, fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
+  // ==================== SKELETON ====================
   Widget _buildSkeleton() {
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -868,6 +653,7 @@ class StudentAttendance {
   final String rollNumber;
   final String className;
   final String status;
+  final String sClass;
 
   StudentAttendance({
     required this.id,
@@ -875,6 +661,7 @@ class StudentAttendance {
     required this.rollNumber,
     required this.className,
     required this.status,
+    required this.sClass,
   });
 
   StudentAttendance copyWith({
@@ -883,6 +670,7 @@ class StudentAttendance {
     String? rollNumber,
     String? className,
     String? status,
+    String? sClass,
   }) {
     return StudentAttendance(
       id: id ?? this.id,
@@ -890,6 +678,7 @@ class StudentAttendance {
       rollNumber: rollNumber ?? this.rollNumber,
       className: className ?? this.className,
       status: status ?? this.status,
+      sClass: sClass ?? this.sClass,
     );
   }
 }

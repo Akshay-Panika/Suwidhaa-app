@@ -491,7 +491,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                   _push(const TeacherLeaveListScreen());
                   break;
                 case "Salary":
-                  _push( TeacherSalaryScreen());
+                  _push(TeacherSalaryScreen());
                   break;
                 default:
                   _snack('${item.label} tapped');
