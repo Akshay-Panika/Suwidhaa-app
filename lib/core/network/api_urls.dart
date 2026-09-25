@@ -9,6 +9,10 @@ class ApiUrls {
   static const String studentCreate = 'v1/school/student/create/';
   static const String studentDetail = 'v1/school/student/';  // + id
 
+  // Student Leave endpoints
+  static const String studentLeaveList = 'v1/school/student-leave/list/';
+  static const String studentLeaveApproval = 'v1/school/student-leave/approval/';
+
   // Teacher endpoints
   static const String teacherList = 'v1/school/teacher/list/';
   static const String teacherCreate = 'v1/school/teacher/create/';
@@ -26,6 +30,11 @@ class ApiUrls {
   static const String teacherAttendanceCheckIn  = 'v1/school/teacher-attendance/check-in/';
   static const String teacherAttendanceCheckOut = 'v1/school/teacher-attendance/check-out/';
   static const String teacherAttendanceToday    = 'v1/school/teacher-attendance/today/';
+
+  // Student Attendance endpoints
+  static const String studentAttendanceCreate = 'v1/school/student-attendance/create/';
+  static const String studentAttendanceList   = 'v1/school/student-attendance/list/';
+  static const String studentAttendanceDetail = 'v1/school/student-attendance/list/';
 
   // Class endpoints
   static const String classList = 'v1/school/class/list/';
@@ -50,6 +59,7 @@ class ApiUrls {
   // Transport endpoints
   static const String transportList = 'v1/school/transport/list/';
   static const String transportDetail = 'v1/school/transport/';
+  static const String transportCreate = 'v1/school/transport/create/';
 
   // College Banner endpoints
   static const String collegeBannerList = 'v1/college/college-banner/list/';

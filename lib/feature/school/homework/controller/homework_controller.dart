@@ -275,7 +275,7 @@ class HomeworkController extends GetxController {
       case 'Today':
         return Colors.blue;
       default:
-        return Colors.grey;
+        return Colors.indigo;
     }
   }
 

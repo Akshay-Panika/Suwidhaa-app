@@ -6,6 +6,7 @@ import 'package:untitled/feature/school/attendance/screen/subject_attendance_scr
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
 import 'package:untitled/feature/school/settings/screen/school_setting_future_manage_screen.dart';
+import '../../leave/screen/student_leave_request_screen.dart';
 import '../../attendance/screen/teacher_leave_list_screen.dart';
 import '../../documets/screen/school_documents_screen.dart';
 import '../../exams/screen/exams_schedule_screen.dart';
@@ -56,11 +57,11 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
       icon: Icons.fact_check_rounded,
       color: Colors.teal,
     ),
-    // AcademicItem(
-    //   label: "Class",
-    //   icon: Icons.grading_rounded,
-    //   color: Colors.teal,
-    // ),
+    AcademicItem(
+      label: "Student Leave",
+      icon: Icons.grading_rounded,
+      color: Colors.teal,
+    ),
     AcademicItem(
       label: "Homework",
       icon: Icons.assignment_rounded,
@@ -149,6 +150,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+      appBar: AppBar(backgroundColor: Colors.indigo,automaticallyImplyLeading: false,toolbarHeight: 0,),
       body: CustomScrollView(
         slivers: [
           // ==================== APP BAR ====================
@@ -156,8 +158,8 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             toolbarHeight: 160,
             automaticallyImplyLeading: false,
             backgroundColor: Colors.indigo,
-            pinned: true,
-            floating: false,
+            pinned: false,
+            floating: true,
             stretch: true,
             flexibleSpace: FlexibleSpaceBar(
               background: SafeArea(
@@ -528,10 +530,10 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             onTap: () {
               switch (item.label) {
                 case "Attendance":
-                  _push(const ClassAttendanceScreen());
+                  _push( ClassAttendanceScreen());
                   break;
-                case "Class":
-                  _push(const SubjectAttendanceScreen());
+                case "Student Leave":
+                  _push(const StudentLeaveRequestScreen());
                   break;
                 case "Homework":
                   _push(const TeacherHomeworkScreen());

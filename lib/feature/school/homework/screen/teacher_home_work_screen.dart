@@ -15,11 +15,9 @@ class TeacherHomeworkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeworkController());
-    final teacherController = Get.find<TeacherController>();
-
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.indigo,
         elevation: 0,
@@ -53,8 +51,6 @@ class TeacherHomeworkScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSearchBar(controller),
-              const SizedBox(height: 12),
               Obx(() => _buildHeader(controller)),
               const SizedBox(height: 16),
               Obx(() => _buildFilterChips(controller)),
@@ -94,42 +90,6 @@ class TeacherHomeworkScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(HomeworkController controller) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        onChanged: (value) => controller.setSearchQuery(value),
-        decoration: InputDecoration(
-          hintText: 'Search homework...',
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
-          suffixIcon: Obx(() {
-            if (controller.searchQuery.value.isNotEmpty) {
-              return IconButton(
-                icon: Icon(Icons.clear_rounded, color: Colors.grey[400]),
-                onPressed: () => controller.setSearchQuery(''),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(14),
         ),
       ),
     );
@@ -199,27 +159,41 @@ class TeacherHomeworkScreen extends StatelessWidget {
       child: Row(
         children: controller.filters.map((filter) {
           final isSelected = controller.selectedFilter.value == filter;
+          final color = controller.getStatusColor(filter); // ✅ dynamic
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: isSelected,
-              label: Text(
-                filter,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 13,
-                  color: isSelected ? Colors.white : Colors.grey[700],
+            child: GestureDetector(
+              onTap: () => controller.setFilter(filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : color.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? color : color.withOpacity(0.3),
+                    width: 1.2,
+                  ),
                 ),
-              ),
-              iconTheme: IconThemeData(color: Colors.white),
-              backgroundColor: Colors.grey[100],
-              selectedColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              onSelected: (selected) => controller.setFilter(filter),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.circle,
+                      size: 10,
+                      color: isSelected ? Colors.white : color,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      filter,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? Colors.white : color,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -239,6 +213,11 @@ class TeacherHomeworkScreen extends StatelessWidget {
     final daysRemaining = hw.getRemainingDays();
     final hasImage = hw.image != null && hw.image!.isNotEmpty;
 
+    final status = hw.getStatus();
+    final priority = hw.getPriority();
+    final statusColor = controller.getStatusColor(status);
+    final priorityColor = controller.getPriorityColor(priority);
+
     return InkWell(
       onTap: () => _showHomeworkDetails(context, hw, controller),
       borderRadius: BorderRadius.circular(12),
@@ -248,9 +227,14 @@ class TeacherHomeworkScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          // ✅ border uses status color
+          border: Border.all(
+            color: statusColor.withOpacity(0.25),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
+              color: statusColor.withOpacity(0.05),
               spreadRadius: 1,
               blurRadius: 3,
               offset: const Offset(0, 1),
@@ -260,7 +244,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Subject Icon with image
+            // ── Subject icon / image ──
             Container(
               width: 80,
               height: 80,
@@ -276,33 +260,55 @@ class TeacherHomeworkScreen extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: 80,
                   height: 80,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      subjectIcon,
-                      color: subjectColor,
-                      size: 40,
-                    );
-                  },
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    subjectIcon,
+                    color: subjectColor,
+                    size: 40,
+                  ),
                 ),
               )
-                  : Icon(
-                subjectIcon,
-                color: subjectColor,
-                size: 40,
-              ),
+                  : Icon(subjectIcon, color: subjectColor, size: 40),
             ),
             const SizedBox(width: 12),
+
+            // ── Middle info ──
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    hw.subjectName ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          hw.subjectName ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // ✅ Status badge (dynamic color)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: statusColor.withOpacity(0.35)),
+                        ),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -315,28 +321,68 @@ class TeacherHomeworkScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
+
+                  // ── Priority + due date ──
                   Row(
                     children: [
+                      // ✅ Priority badge (dynamic)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: priorityColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: priorityColor.withOpacity(0.35)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.bolt_rounded,
+                                size: 10, color: priorityColor),
+                            const SizedBox(width: 2),
+                            Text(
+                              priority,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: priorityColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Icon(
                         Icons.access_time_rounded,
                         size: 14,
                         color: Colors.grey[500],
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        daysRemaining > 0
-                            ? 'Due in $daysRemaining days'
-                            : daysRemaining == 0
-                            ? 'Due today'
-                            : 'Overdue by ${daysRemaining.abs()} days',
-                        style: TextStyle(
-                          color: daysRemaining < 0 ? Colors.red : Colors.grey[600],
-                          fontSize: 12,
+                      Expanded(
+                        child: Text(
+                          daysRemaining > 0
+                              ? 'Due in $daysRemaining days'
+                              : daysRemaining == 0
+                              ? 'Due today'
+                              : 'Overdue by ${daysRemaining.abs()} days',
+                          style: TextStyle(
+                            color: daysRemaining < 0
+                                ? Colors.red
+                                : daysRemaining == 0
+                                ? Colors.blue
+                                : Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  if (hw.teacherName != null && hw.teacherName!.isNotEmpty) ...[
+
+                  if (hw.teacherName != null &&
+                      hw.teacherName!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -357,18 +403,6 @@ class TeacherHomeworkScreen extends StatelessWidget {
                     ),
                   ],
                 ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.primary,
               ),
             ),
           ],
@@ -483,6 +517,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ──────── Drag handle ────────
                 Center(
                   child: Container(
                     width: 60,
@@ -494,6 +529,8 @@ class TeacherHomeworkScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // ──────── Header ────────
                 Row(
                   children: [
                     Container(
@@ -533,9 +570,19 @@ class TeacherHomeworkScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // ──────── Detail rows ────────
                 _buildDetailRow('📅 Due Date', hw.endDate ?? ''),
-                _buildDetailRow('📊 Status', status),
-                _buildDetailRow('⚡ Priority', priority),
+                _buildColoredDetailRow(
+                  '📊 Status',
+                  status,
+                  controller.getStatusColor(status),
+                ),
+                _buildColoredDetailRow(
+                  '⚡ Priority',
+                  priority,
+                  controller.getPriorityColor(priority),
+                ),
                 _buildDetailRow(
                   '⏰ Days Remaining',
                   daysRemaining > 0
@@ -550,9 +597,44 @@ class TeacherHomeworkScreen extends StatelessWidget {
                   _buildDetailRow('👨‍🏫 Teacher', hw.teacherName!),
                 if (hw.schoolType != null && hw.schoolType!.isNotEmpty)
                   _buildDetailRow('🏛️ School Type', hw.schoolType!),
-                if (hw.image != null && hw.image!.isNotEmpty)
-                  _buildImagePreview(hw.image!),
+
+                // ──────── ✅ Attachment (tap to zoom) ────────
+                if (hw.image != null && hw.image!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.image_rounded,
+                          size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Attachment',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey[700],
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Tap to view',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () => _showFullImage(hw.image!),
+                    child: _buildImagePreview(hw.image!),
+                  ),
+                ],
+
                 const SizedBox(height: 20),
+
+                // ──────── Action buttons ────────
                 Row(
                   children: [
                     Expanded(
@@ -564,7 +646,8 @@ class TeacherHomeworkScreen extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -588,7 +671,8 @@ class TeacherHomeworkScreen extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -626,6 +710,66 @@ class TeacherHomeworkScreen extends StatelessWidget {
     );
   }
 
+  void _showFullImage(String imageUrl) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: const EdgeInsets.all(8),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.broken_image_rounded,
+                            color: Colors.white54, size: 48),
+                        SizedBox(height: 8),
+                        Text(
+                          'Failed to load image',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 22),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      barrierDismissible: true,
+    );
+  }
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -647,6 +791,40 @@ class TeacherHomeworkScreen extends StatelessWidget {
                 fontSize: 14,
               ),
               textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColoredDetailRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.35)),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -743,7 +921,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1334,16 +1512,16 @@ class TeacherHomeworkScreen extends StatelessWidget {
     required IconData icon,
     String? hint,
     String? Function(String?)? validator,
-    bool readOnly = false, // 👈 NEW
+    bool readOnly = false,
   }) {
     return TextFormField(
       controller: controller,
-      readOnly: readOnly, // 👈 NEW
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.primary),
-        filled: readOnly, // 👈 grey bg if readOnly
+        filled: readOnly,
         fillColor: readOnly ? Colors.grey[100] : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1481,11 +1659,13 @@ class TeacherHomeworkScreen extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         title: const Text('Delete Homework'),
+        titleTextStyle: TextStyle(color: Colors.indigo,fontWeight: FontWeight.w600,fontSize: 18),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Are you sure you want to delete this homework?'),
+             Text('Are you sure you want to delete this homework?',
+             style: TextStyle(color: Colors.grey.shade700,fontWeight: FontWeight.w500,fontSize: 14),),
             const SizedBox(height: 8),
             Text(
               'Subject: ${hw.subjectName}',

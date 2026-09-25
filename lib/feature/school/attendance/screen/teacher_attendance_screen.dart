@@ -54,7 +54,100 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.indigo,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.calendar_month,
+                size: 24,
+                color: Colors.white,
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "My Attendance",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "School Portal",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    // Notification screen
+                  },
+                  icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Colors.white,
+                    size: 25,
+                  ),
+                ),
+
+                Positioned(
+                  right: 7,
+                  top: 7,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.blue,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       body: Obx(() {
         if (attendanceController.isLoading.value ||
             teacherController.isLoading.value) {
@@ -69,34 +162,36 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           return _buildEmptyState();
         }
 
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
-                _buildSummaryCard(),
-                const SizedBox(height: 18),
-                _buildMonthHeader(),
-                const SizedBox(height: 10),
-                _buildCalendar(),
-                const SizedBox(height: 20),
-                _buildLegend(),
-                const SizedBox(height: 24),
-                TeacherCurrentLeaveRequestCard(),
-                const SizedBox(height: 150),
-              ],
+        return Column(
+          children: [
+            _buildSummaryCard(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 18),
+                      _buildMonthHeader(),
+                      const SizedBox(height: 10),
+                      _buildCalendar(),
+                      const SizedBox(height: 20),
+                      _buildLegend(),
+                      const SizedBox(height: 24),
+                      TeacherCurrentLeaveRequestCard(),
+                      const SizedBox(height: 150),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         );
       }),
     );
   }
 
-  // ─────────────────────────────────────────────
-  // ✅ NEW: Summary Card (This Month)
-  // ─────────────────────────────────────────────
   Widget _buildSummaryCard() {
     return Obx(() {
       final map = attendanceController.attendanceMap;
@@ -127,70 +222,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
 
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_primary, _primaryDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: _primary.withOpacity(0.28),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
+        padding:  EdgeInsets.only(left: 10,right: 10,bottom: 10),
+        color: Colors.indigo,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.insights_rounded,
-                      color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("This Month",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
-                      Text("Attendance overview",
-                          style: TextStyle(
-                              color: Colors.white70, fontSize: 11)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    DateFormat('MMM yyyy').format(focused),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
             Row(
               children: [
                 _miniStat("Present", present, Colors.green.shade300),
@@ -315,7 +351,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
       final canNext = attendanceController.canGoNext;
 
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -342,23 +378,6 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _primaryLight,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "Monthly",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: _primary,
-                      fontWeight: FontWeight.w700,
-                    ),
                   ),
                 ),
               ],

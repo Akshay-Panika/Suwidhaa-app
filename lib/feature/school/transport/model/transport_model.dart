@@ -31,7 +31,6 @@ class TransportModel {
   });
 
   factory TransportModel.fromJson(Map<String, dynamic> json) {
-    // Parse students list
     List<StudentData> studentList = [];
     if (json['students'] != null && json['students'] is List) {
       studentList = (json['students'] as List)
@@ -75,10 +74,12 @@ class TransportModel {
   }
 }
 
+
 class StudentData {
   final int id;
   final String studentName;
   final String studentId;
+  final String? address;              // ✅ ADDED
   final String? pickupTime;
   final String? dropTime;
   final DateTime createdAt;
@@ -88,6 +89,7 @@ class StudentData {
     required this.id,
     required this.studentName,
     required this.studentId,
+    this.address,                     // ✅ ADDED
     this.pickupTime,
     this.dropTime,
     required this.createdAt,
@@ -99,6 +101,7 @@ class StudentData {
       id: json['id'] ?? 0,
       studentName: json['student_name'] ?? '',
       studentId: json['student_id'] ?? '',
+      address: json['address'],       // ✅ ADDED
       pickupTime: json['pickup_time'],
       dropTime: json['drop_time'],
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
@@ -111,6 +114,7 @@ class StudentData {
       'id': id,
       'student_name': studentName,
       'student_id': studentId,
+      'address': address,             // ✅ ADDED
       'pickup_time': pickupTime,
       'drop_time': dropTime,
       'created_at': createdAt.toIso8601String(),
@@ -118,6 +122,7 @@ class StudentData {
     };
   }
 }
+
 
 class TransportListResponse {
   final bool success;

@@ -1,4 +1,5 @@
 // lib/feature/school/transport/controller/transport_controller.dart
+import 'dart:io';
 import 'package:get/get.dart';
 import '../model/transport_model.dart';
 import '../repository/transport_repository.dart';
@@ -8,6 +9,7 @@ class TransportController extends GetxController {
 
   // Observables
   var isLoading = false.obs;
+  var isCreating = false.obs;
   var transportList = <TransportModel>[].obs;
   var filteredTransportList = <TransportModel>[].obs;
   var selectedTransport = Rxn<TransportModel>();
@@ -22,6 +24,7 @@ class TransportController extends GetxController {
     getTransportList();
   }
 
+  // ==================== GET LIST ====================
   Future<void> getTransportList() async {
     try {
       isLoading.value = true;
@@ -53,6 +56,7 @@ class TransportController extends GetxController {
     await getTransportList();
   }
 
+  // ==================== GET DETAIL ====================
   Future<void> getTransportDetail(int id) async {
     try {
       isLoading.value = true;
@@ -78,10 +82,53 @@ class TransportController extends GetxController {
     }
   }
 
+  // ==================== CREATE TRANSPORT ====================
+  Future<bool> createTransport({
+    required String transportType,
+    required String schoolType,
+    required String vehicleNumber,
+    required String driverName,
+    required String driverNumber,
+    String? capacity,
+    String? routeName,
+    File? driverImage,
+  }) async {
+    try {
+      isCreating.value = true;
+
+      final newTransport = await _repository.createTransport(
+        transportType: transportType,
+        schoolType: schoolType,
+        vehicleNumber: vehicleNumber,
+        driverName: driverName,
+        driverNumber: driverNumber,
+        capacity: capacity,
+        routeName: routeName,
+        driverImage: driverImage,
+      );
+
+      // Add to local list (optimistic update)
+      transportList.insert(0, newTransport);
+      applyFilters();
+
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceFirst('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+      return false;
+    } finally {
+      isCreating.value = false;
+    }
+  }
+
+  // ==================== FILTERS ====================
   void applyFilters() {
     var list = transportList.toList();
 
-    // Filter by search query
     if (searchQuery.value.isNotEmpty) {
       list = list.where((item) {
         final query = searchQuery.value.toLowerCase();
@@ -92,7 +139,6 @@ class TransportController extends GetxController {
       }).toList();
     }
 
-    // Filter by type
     if (filterByType.value.isNotEmpty) {
       list = list.where((item) {
         return item.transportType
@@ -120,12 +166,9 @@ class TransportController extends GetxController {
     applyFilters();
   }
 
-  /// Get total number of routes
-  int get totalRoutes {
-    return transportList.length;
-  }
+  // ==================== GETTERS ====================
+  int get totalRoutes => transportList.length;
 
-  /// Get total number of students across all transports
   int get totalStudents {
     int total = 0;
     for (var transport in transportList) {
@@ -134,7 +177,6 @@ class TransportController extends GetxController {
     return total;
   }
 
-  /// Get list of unique transport types
   List<String> get uniqueTransportTypes {
     final types = <String>{};
     for (var transport in transportList) {

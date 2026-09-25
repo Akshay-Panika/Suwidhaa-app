@@ -2,10 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:untitled/core/widget/contact_helper.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../controller/transport_controller.dart';
 import '../model/transport_model.dart';
+import 'add_bus_screen.dart';
+import 'add_student_screen.dart';
 
 class SchoolStudentTransportScreen extends StatelessWidget {
   const SchoolStudentTransportScreen({super.key});
@@ -20,16 +21,109 @@ class SchoolStudentTransportScreen extends StatelessWidget {
     final TransportController controller = Get.put(TransportController());
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.indigo,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.directions_bus,
+                size: 24,
+                color: Colors.white,
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "School Transport",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Manage Buses & Student",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    // Notification screen
+                  },
+                  icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Colors.white,
+                    size: 25,
+                  ),
+                ),
+
+                Positioned(
+                  right: 7,
+                  top: 7,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.blue,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Summary Cards
-          Obx(() => _buildSummaryCards(controller)),
+          // ==================== HEADER ====================
+          _buildHeader(context, controller),
 
           // Routes Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: Row(
               children: [
                 Container(
@@ -51,22 +145,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _primaryLight,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "Live",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: _primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -90,17 +168,116 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 onRefresh: () => controller.refreshTransportList(),
                 child: ListView.builder(
                   padding:
-                  const EdgeInsets.only(bottom: 12, left: 14, right: 14),
+                  const EdgeInsets.only(bottom: 100, left: 14, right: 14),
                   itemCount: controller.filteredTransportList.length,
                   itemBuilder: (context, index) {
                     final transport = controller.filteredTransportList[index];
-                    return _buildTransportCard(context, transport);
+                    return _buildTransportCard(context, transport, controller);
                   },
                 ),
               );
             }),
           ),
         ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // HEADER (with Add Bus + Add Student)
+  // ============================================================
+  Widget _buildHeader(BuildContext context, TransportController controller) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Transport',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          // Add Bus Button
+          _buildHeaderButton(
+            icon: Icons.directions_bus,
+            label: 'Add Bus',
+            color: _primary,
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AddBusScreen(),
+                ),
+              );
+              if (result == true) {
+                controller.refreshTransportList();
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          // Add Student Button
+          _buildHeaderButton(
+            icon: Icons.person_add_alt_1_rounded,
+            label: 'Add Student',
+            color: Colors.green.shade700,
+            onTap: () {
+              if (controller.transportList.isEmpty) {
+                FlutterToast.error('Please add a bus first');
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddStudentScreen(
+                    transports: controller.transportList,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -133,154 +310,8 @@ class SchoolStudentTransportScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Routes will appear here once added',
+            'Tap "+ Bus" to add a new route',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // SUMMARY CARDS
-  // ============================================================
-  Widget _buildSummaryCards(TransportController controller) {
-    final totalRoutes = controller.totalRoutes;
-    final totalStudents = controller.totalStudents;
-
-    return Container(
-      margin: const EdgeInsets.all(14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_primary, _primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: _primary.withOpacity(0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.directions_bus_rounded,
-                    color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Transport Management",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      "Live tracking & routes",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  icon: Icons.directions_bus_rounded,
-                  label: 'Total Routes',
-                  value: '$totalRoutes',
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildSummaryCard(
-                  icon: Icons.school_rounded,
-                  label: 'Students',
-                  value: '$totalStudents',
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 14),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -293,6 +324,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
   Widget _buildTransportCard(
       BuildContext context,
       TransportModel transport,
+      TransportController controller,
       ) {
     String routeName = transport.routeName ??
         '${transport.transportType} - ${transport.vehicleNumber}';
@@ -313,14 +345,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Top color strip
-          Container(
-            height: 4,
-            decoration: const BoxDecoration(
-              color: _primary,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -365,7 +389,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Transport type badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
@@ -386,7 +409,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Row 2: Vehicle Details Chips
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
@@ -418,7 +440,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 // Row 3: Driver Info + Action Buttons
                 Row(
                   children: [
-                    // Driver Image
                     Container(
                       width: 40,
                       height: 40,
@@ -446,7 +467,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                           size: 20, color: _primary),
                     ),
                     const SizedBox(width: 12),
-                    // Driver Name and Number
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +499,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Action Buttons
                     Row(
                       spacing: 8,
                       children: [
@@ -500,7 +519,13 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                         _buildActionButton(
                           icon: Icons.arrow_forward_ios_rounded,
                           color: _primary,
-                          onTap: () => _showBusDetails(context, transport),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TransportDetailScreen(transport: transport),
+                            ),
+                          ),
                           tooltip: 'View Details',
                         ),
                       ],
@@ -569,190 +594,111 @@ class SchoolStudentTransportScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  // ============================================================
-  // BOTTOM SHEET
-  // ============================================================
-  void _showBusDetails(BuildContext context, TransportModel transport) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
+// ============================================================
+// TRANSPORT DETAIL SCREEN
+// ============================================================
+class TransportDetailScreen extends StatelessWidget {
+  final TransportModel transport;
+
+  const TransportDetailScreen({super.key, required this.transport});
+
+  static const Color _primary = Colors.indigo;
+  static const Color _primaryDark = Color(0xFF283593);
+  static const Color _primaryLight = Color(0xFFE8EAF6);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.88,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
+      appBar: AppBar(
+        backgroundColor: _primary,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              transport.routeName ?? 'Transport Route',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: Column(
-                children: [
-                  // Drag Handle
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Vehicle: ${transport.vehicleNumber}',
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDriverCard(),
+            const SizedBox(height: 20),
+            _buildStudentList(transport.students),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        ContactHelper.call(transport.driverNumber),
+                    icon: const Icon(Icons.call_rounded, size: 16),
+                    label: const Text('Call'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      side: BorderSide(color: Colors.green.shade300),
+                      foregroundColor: Colors.green.shade700,
                     ),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: _primaryLight,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close_rounded,
-                                      size: 18, color: _primary),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      transport.routeName ?? 'Transport Route',
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.black87,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Vehicle: ${transport.vehicleNumber}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Driver Details Card
-                          _buildDriverCard(transport),
-
-                          const SizedBox(height: 20),
-
-                          // Students List
-                          _buildStudentList(transport.students),
-                          const SizedBox(height: 24),
-
-                          // Action Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => ContactHelper.call(
-                                      transport.driverNumber),
-                                  icon: const Icon(Icons.call_rounded,
-                                      size: 16),
-                                  label: const Text('Call'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    side: BorderSide(
-                                        color: Colors.green.shade300),
-                                    foregroundColor: Colors.green.shade700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => ContactHelper.whatsapp(
-                                      transport.driverNumber,
-                                      'Hello, I need assistance with my transport service.'),
-                                  icon: const Icon(Icons.chat_rounded,
-                                      size: 16),
-                                  label: const Text('WhatsApp'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    side: const BorderSide(
-                                        color: Color(0xFF25D366)),
-                                    foregroundColor:
-                                    const Color(0xFF25D366),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.done_rounded,
-                                  size: 18),
-                              label: const Text('Close'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _primary,
-                                foregroundColor: Colors.white,
-                                padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => ContactHelper.whatsapp(
+                        transport.driverNumber,
+                        'Hello, I need assistance with my transport service.'),
+                    icon: const Icon(Icons.chat_rounded, size: 16),
+                    label: const Text('WhatsApp'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                      side: const BorderSide(color: Color(0xFF25D366)),
+                      foregroundColor: const Color(0xFF25D366),
                     ),
                   ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 
-  // ============================================================
-  // DRIVER CARD (in bottom sheet)
-  // ============================================================
-  Widget _buildDriverCard(TransportModel transport) {
+  Widget _buildDriverCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -826,8 +772,8 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    _driverInfoRow(Icons.phone_rounded,
-                        transport.driverNumber),
+                    _driverInfoRow(
+                        Icons.phone_rounded, transport.driverNumber),
                     if (transport.capacity != null &&
                         transport.capacity!.isNotEmpty)
                       _driverInfoRow(Icons.person_outline,
@@ -870,9 +816,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // STUDENT LIST (in bottom sheet)
-  // ============================================================
   Widget _buildStudentList(List<StudentData> students) {
     if (students.isEmpty) {
       return Container(
@@ -903,11 +846,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'Students will appear here',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
             ],
           ),
         ),
@@ -937,11 +875,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 color: Colors.black87,
               ),
             ),
-            const Spacer(),
-            // Legend
-            _buildLegendDot(Colors.green, 'Pickup'),
-            const SizedBox(width: 8),
-            _buildLegendDot(Colors.orange, 'Drop'),
           ],
         ),
         const SizedBox(height: 12),
@@ -951,26 +884,8 @@ class SchoolStudentTransportScreen extends StatelessWidget {
           itemCount: students.length,
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            final student = students[index];
-            return _buildStudentTile(student);
+            return _buildStudentTile(students[index]);
           },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLegendDot(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
         ),
       ],
     );
@@ -993,7 +908,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Student Avatar
           Container(
             width: 42,
             height: 42,
@@ -1019,7 +933,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Student Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1045,10 +958,20 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (student.address != null && student.address!.isNotEmpty)
+                  Text(
+                    'Address: ${student.address}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),
-          // Pickup Time
           if (student.pickupTime != null &&
               student.pickupTime!.isNotEmpty) ...[
             _buildTimeBadge(

@@ -1,3 +1,5 @@
+// lib/feature/school/event/screen/school_event_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
@@ -13,69 +15,21 @@ class SchoolEventScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        backgroundColor: Colors.indigo,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        ),
-        title: const Text(
-          'School Events',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Obx(() => Stack(
-            children: [
-              IconButton(
-                onPressed: () => controller.refreshEvents(),
-                icon: AnimatedRotation(
-                  turns: controller.isLoading.value ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 500),
-                  child: Icon(
-                    Icons.refresh,
-                    color: Colors.white,
-                    size: controller.isLoading.value ? 22 : 24,
-                  ),
-                ),
-              ),
-              if (controller.isLoading.value)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-            ],
-          )),
-        ],
-      ),
+      appBar: _buildAppBar(context,controller),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSearchBar(controller),
-              const SizedBox(height: 12),
               Obx(() => _buildHeader(controller)),
               const SizedBox(height: 16),
               Obx(() => _buildFilterChips(controller)),
               const SizedBox(height: 16),
               Expanded(
                 child: Obx(() {
-                  if (controller.isLoading.value && controller.eventList.isEmpty) {
+                  if (controller.isLoading.value &&
+                      controller.eventList.isEmpty) {
                     return _buildShimmerLoading();
                   }
 
@@ -106,6 +60,58 @@ class SchoolEventScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  // ==================== APP BAR ====================
+  PreferredSizeWidget _buildAppBar(BuildContext context,SchoolEventController controller) {
+    return AppBar(
+      backgroundColor: Colors.indigo,
+      elevation: 0,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+      ),
+      title: const Text(
+        'School Events',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 18,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        Obx(() => Stack(
+          children: [
+            IconButton(
+              onPressed: () => controller.refreshEvents(),
+              icon: AnimatedRotation(
+                turns: controller.isLoading.value ? 0.5 : 0,
+                duration: const Duration(milliseconds: 500),
+                child: Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                  size: controller.isLoading.value ? 22 : 24,
+                ),
+              ),
+            ),
+            if (controller.isLoading.value)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        )),
+      ],
     );
   }
 
@@ -164,28 +170,6 @@ class SchoolEventScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Container(
-                          height: 12,
-                          width: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          height: 12,
-                          width: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -193,43 +177,6 @@ class SchoolEventScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  // ==================== SEARCH BAR ====================
-  Widget _buildSearchBar(SchoolEventController controller) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        onChanged: (value) => controller.setSearchQuery(value),
-        decoration: InputDecoration(
-          hintText: 'Search events...',
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
-          suffixIcon: Obx(() {
-            if (controller.searchQuery.value.isNotEmpty) {
-              return IconButton(
-                icon: Icon(Icons.clear_rounded, color: Colors.grey[400]),
-                onPressed: () => controller.setSearchQuery(''),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(14),
-        ),
-      ),
     );
   }
 
@@ -343,7 +290,7 @@ class SchoolEventScreen extends StatelessWidget {
     );
   }
 
-  // ==================== FILTER CHIPS ====================
+  // ==================== FILTER CHIPS (DYNAMIC COLORS) ====================
   Widget _buildFilterChips(SchoolEventController controller) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -351,28 +298,44 @@ class SchoolEventScreen extends StatelessWidget {
       child: Row(
         children: controller.filters.map((filter) {
           final isSelected = controller.selectedFilter.value == filter;
+          final color = filter == 'All'
+              ? Colors.indigo
+              : controller.getStatusColor(filter);
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: isSelected,
-              label: Text(
-                filter,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  fontSize: 13,
-                  color: isSelected ? Colors.white : Colors.grey[700],
+            child: GestureDetector(
+              onTap: () => controller.setFilter(filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : color.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? color : color.withOpacity(0.3),
+                    width: 1.2,
+                  ),
                 ),
-              ),
-              backgroundColor: Colors.grey[100],
-              selectedColor: Colors.indigo,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              elevation: isSelected ? 2 : 0,
-              onSelected: (selected) => controller.setFilter(filter),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? Colors.indigo : Colors.transparent,
-                  width: 1,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getStatusIcon(filter),
+                      size: 13,
+                      color: isSelected ? Colors.white : color,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      filter,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? Colors.white : color,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -395,24 +358,33 @@ class SchoolEventScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.indigo.shade100,
+          color: statusColor.withOpacity(0.25),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => _showEventDetails(context, event, controller),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Image with Overlay
+            // ── Banner image ──
             if (hasImage)
               Stack(
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
+                      top: Radius.circular(12),
                     ),
                     child: Image.network(
                       event.bannerImage!,
@@ -444,7 +416,6 @@ class SchoolEventScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  // Gradient Overlay
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -463,7 +434,7 @@ class SchoolEventScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Status Badge on Image
+                  // ✅ Status badge (dynamic color)
                   Positioned(
                     top: 12,
                     right: 12,
@@ -506,12 +477,12 @@ class SchoolEventScreen extends StatelessWidget {
                   ),
                 ],
               ),
+
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     event.title ?? 'Untitled Event',
                     style: const TextStyle(
@@ -522,8 +493,8 @@ class SchoolEventScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  // Description
-                  if (event.description != null && event.description!.isNotEmpty)
+                  if (event.description != null &&
+                      event.description!.isNotEmpty)
                     Text(
                       event.description!,
                       style: TextStyle(
@@ -535,7 +506,6 @@ class SchoolEventScreen extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 10),
-                  // Date, Time, Location
                   Wrap(
                     spacing: 12,
                     runSpacing: 4,
@@ -549,7 +519,8 @@ class SchoolEventScreen extends StatelessWidget {
                           icon: Icons.access_time_rounded,
                           label: event.time!,
                         ),
-                      if (event.location != null && event.location!.isNotEmpty)
+                      if (event.location != null &&
+                          event.location!.isNotEmpty)
                         _buildInfoChip(
                           icon: Icons.location_on_rounded,
                           label: event.location!,
@@ -557,7 +528,6 @@ class SchoolEventScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Assigned Classes and Teachers
                   if (event.assignedClasses != null &&
                       event.assignedClasses!.isNotEmpty)
                     Padding(
@@ -604,7 +574,6 @@ class SchoolEventScreen extends StatelessWidget {
                       ],
                     ),
                   const SizedBox(height: 12),
-                  // View Details Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -627,6 +596,7 @@ class SchoolEventScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+                      // ✅ Button uses status color
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -634,7 +604,10 @@ class SchoolEventScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.indigo.shade400, Colors.indigo.shade600],
+                            colors: [
+                              statusColor,
+                              statusColor.withOpacity(0.8),
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -813,7 +786,6 @@ class SchoolEventScreen extends StatelessWidget {
           ),
           child: Column(
             children: [
-              // Handle
               Container(
                 margin: const EdgeInsets.only(top: 12),
                 width: 40,
@@ -823,7 +795,6 @@ class SchoolEventScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Header
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -871,7 +842,6 @@ class SchoolEventScreen extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -879,7 +849,6 @@ class SchoolEventScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Banner Image
                       if (event.bannerImage != null &&
                           event.bannerImage!.isNotEmpty)
                         ClipRRect(
@@ -915,8 +884,6 @@ class SchoolEventScreen extends StatelessWidget {
                           ),
                         ),
                       const SizedBox(height: 20),
-
-                      // Status Badge
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -950,8 +917,6 @@ class SchoolEventScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Description
                       if (event.description != null &&
                           event.description!.isNotEmpty) ...[
                         const Text(
@@ -979,8 +944,6 @@ class SchoolEventScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                       ],
-
-                      // Event Information
                       const Text(
                         '📋 Event Information',
                         style: TextStyle(
@@ -997,11 +960,14 @@ class SchoolEventScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildDetailRow('📅 Start Date', event.getFormattedDate()),
+                            _buildDetailRow(
+                                '📅 Start Date', event.getFormattedDate()),
                             _buildDetailRow('📅 End Date', event.endDate ?? ''),
                             _buildDetailRow('⏰ Time', event.time ?? ''),
-                            _buildDetailRow('📍 Location', event.location ?? ''),
-                            _buildDetailRow('🏫 School Type', event.schoolType ?? ''),
+                            _buildDetailRow(
+                                '📍 Location', event.location ?? ''),
+                            _buildDetailRow(
+                                '🏫 School Type', event.schoolType ?? ''),
                             if (event.assignedClasses != null &&
                                 event.assignedClasses!.isNotEmpty)
                               _buildDetailRow(
@@ -1017,8 +983,6 @@ class SchoolEventScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      // Event Details (Nested)
                       if (event.eventDetails != null) ...[
                         const SizedBox(height: 20),
                         const Text(
@@ -1048,8 +1012,10 @@ class SchoolEventScreen extends StatelessWidget {
                                 '🎤 Guest Speaker',
                                 event.eventDetails!.guestSpeaker ?? '',
                               ),
-                              if (event.eventDetails!.eventDescription != null &&
-                                  event.eventDetails!.eventDescription!.isNotEmpty)
+                              if (event.eventDetails!.eventDescription !=
+                                  null &&
+                                  event.eventDetails!.eventDescription!
+                                      .isNotEmpty)
                                 _buildDetailRow(
                                   '📝 Description',
                                   event.eventDetails!.eventDescription!,
@@ -1062,9 +1028,8 @@ class SchoolEventScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-
-                      // PDF File
-                      if (event.pdfFile != null && event.pdfFile!.isNotEmpty) ...[
+                      if (event.pdfFile != null &&
+                          event.pdfFile!.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         const Text(
                           '📄 Attachments',
@@ -1082,7 +1047,6 @@ class SchoolEventScreen extends StatelessWidget {
                           ),
                           child: InkWell(
                             onTap: () {
-                              // Open PDF
                               FlutterToast.success('Opening PDF...');
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -1096,7 +1060,8 @@ class SchoolEventScreen extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Event PDF Document',
@@ -1132,10 +1097,7 @@ class SchoolEventScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-
                       const SizedBox(height: 24),
-
-                      // Close Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -1201,10 +1163,12 @@ class SchoolEventScreen extends StatelessWidget {
     );
   }
 
-  // ==================== HELPER METHODS ====================
+  // ==================== STATUS ICON ====================
   IconData _getStatusIcon(String? status) {
     if (status == null) return Icons.info_rounded;
     switch (status.toLowerCase()) {
+      case 'all':
+        return Icons.apps_rounded;
       case 'upcoming':
         return Icons.upcoming_rounded;
       case 'ongoing':

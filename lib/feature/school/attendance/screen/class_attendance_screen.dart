@@ -1,11 +1,16 @@
+// lib/feature/student_attendance/screen/class_attendance_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-import '../../profile/controller/teacher_controller.dart';
+import 'package:untitled/feature/school/attendance/screen/student_attendance_detail_screen.dart';
+import 'package:untitled/feature/school/leave/screen/student_leave_request_screen.dart';
+
 import '../../student/controller/student_list_controller.dart';
+import '../controller/student_attendance_controller.dart';
+import '../model/student_attendance_model.dart';
 
 class ClassAttendanceScreen extends StatefulWidget {
   const ClassAttendanceScreen({super.key});
@@ -15,16 +20,20 @@ class ClassAttendanceScreen extends StatefulWidget {
 }
 
 class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
-  // ==================== STATE ====================
-  final teacherController = Get.find<TeacherController>();
+  // ==================== CONTROLLER ====================
+  final studentListController = Get.find<StudentListController>();
+  final studentAttendanceController = Get.find<StudentAttendanceController>();
 
+  // ==================== STATE ====================
   String section = 'A';
 
   // 🔹 Class filter state
   String selectedClass = 'All';
 
+  // 🔹 Selected date (default = today)
+  DateTime selectedDate = DateTime.now();
+
   bool isLoading = true;
-  bool isSubmitting = false;
   String errorMessage = '';
   String searchQuery = '';
 
@@ -35,10 +44,18 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
   int leaveCount = 0;
   int totalStudents = 0;
 
+  /// 🔹 Format date → "YYYY-MM-DD"
+  String get selectedDateStr {
+    final d = selectedDate;
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
   @override
   void initState() {
     super.initState();
-    _fetchStudents(); // ✅ API call only
+    _fetchStudents();
   }
 
   // ==================== FETCH FROM API ====================
@@ -49,10 +66,6 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
     });
 
     try {
-      final studentListController = Get.isRegistered<StudentListController>()
-          ? Get.find<StudentListController>()
-          : Get.put(StudentListController());
-
       if (studentListController.studentList.isEmpty) {
         await studentListController.loadStudentList();
       }
@@ -66,20 +79,34 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
         return;
       }
 
-      final fetchedStudents = studentListController.studentList
-          .map((s) => StudentAttendance(
-        id: s.id.toString(),
-        name: s.fullName,
-        rollNumber: s.studentIdCard,
-        className: '${s.studentClass} $section',
-        status: 'Present',
-        sClass: s.studentClass
-      ))
-          .toList();
+      final dateForFetch = selectedDateStr;
+
+      // 🔹 हर student का attendance parallel में fetch
+      final results = await Future.wait(
+        studentListController.studentList.map((s) async {
+          final studentCardId = s.studentIdCard;
+
+          debugPrint('🔍 Processing: $studentCardId (${s.fullName})');
+
+          final status = await _fetchStatusForDate(
+            studentCardId,
+            dateForFetch,
+          );
+
+          return StudentAttendance(
+            id: s.id.toString(),
+            name: s.fullName,
+            rollNumber: studentCardId,
+            className: '${s.studentClass} $section',
+            status: status,
+            sClass: s.studentClass,
+          );
+        }),
+      );
 
       if (!mounted) return;
       setState(() {
-        students = fetchedStudents;
+        students = results;
         _updateCounts();
         isLoading = false;
       });
@@ -99,6 +126,51 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
     totalStudents = students.length;
   }
 
+
+  Future<String> _fetchStatusForDate(
+      String studentCardId,
+      String dateStr,
+      ) async {
+    try {
+      await studentAttendanceController.fetchStudentAttendance(studentCardId);
+
+      final data = studentAttendanceController.attendanceData.value;
+
+      if (data == null || data.status == false) {
+        debugPrint('   ❌ $studentCardId → status false → Absent');
+        return 'Absent';
+      }
+
+      if (data.history.isEmpty) {
+        debugPrint('   ❌ $studentCardId → history empty → Absent');
+        return 'Absent';
+      }
+
+      for (final yearEntry in data.history.entries) {
+        for (final monthEntry in yearEntry.value.entries) {
+          for (final record in monthEntry.value) {
+            if (record.date == dateStr) {
+              final status = record.attendanceStatus.toLowerCase();
+              debugPrint('   ✅ $studentCardId → $dateStr → $status');
+
+              if (status == 'present') return 'Present';
+              if (status == 'absent') return 'Absent';
+              if (status == 'leave') return 'Leave';
+              return 'Absent';
+            }
+          }
+        }
+      }
+
+      debugPrint(
+          '   ❌ $studentCardId → $dateStr का record नहीं → Absent (default)');
+      return 'Absent';
+    } catch (e) {
+      debugPrint('   ❌ $studentCardId failed: $e');
+      return 'Absent';
+    }
+  }
+
   void _updateStudentStatus(String id, String status) {
     HapticFeedback.selectionClick();
     setState(() {
@@ -110,26 +182,70 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
     });
   }
 
-  Future<void> _submitAttendance() async {
-    setState(() => isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(children: const [
-          Icon(Icons.check_circle, color: Colors.white),
-          SizedBox(width: 8),
-          Text('Attendance saved successfully!'),
-        ]),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+  // ==================== DATE PICKER ====================
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 1),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.indigo,
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
-    setState(() => isSubmitting = false);
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+      // 🔹 नई date का data fetch करो
+      await _fetchStudents();
+    }
+  }
+
+  // ==================== SUBMIT ====================
+  Future<void> _handleSubmit(List<StudentAttendance> list) async {
+    if (list.isEmpty) {
+      Get.snackbar('No Data', 'Koi student select nahi hai');
+      return;
+    }
+
+    // 🔹 चुनी हुई date use करो (आज की नहीं)
+    final dateStr = selectedDateStr;
+
+    // 🔹 UI से data collect करो
+    final items = list.map((s) {
+      return StudentAttendanceItem(
+        studentCardId: s.rollNumber,
+        studentName: s.name,
+        studentClass: '${s.sClass}th',
+        schoolType: section, // 'A'
+        date: dateStr,
+        attendanceStatus: s.status.toLowerCase(),
+        remarks: '',
+      );
+    }).toList();
+
+    debugPrint('📤 Submitting ${items.length} students for $dateStr...');
+
+    final success =
+    await studentAttendanceController.submitBulkAttendance(items);
+
+    if (success) {
+      debugPrint('✅ Attendance saved!');
+    } else {
+      debugPrint('❌ Failed to save');
+    }
   }
 
   // ==================== BUILD ====================
@@ -139,23 +255,19 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: _buildAppBar(),
       body: Obx(() {
-        if (teacherController.isLoading.value) {
+        if (studentListController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (teacherController.errorMessage.value.isNotEmpty) {
-          return const SizedBox.shrink();
+        if (studentListController.errorMessage.value.isNotEmpty) {
+          return _buildErrorState();
         }
 
-        if (teacherController.hasData) {
-          return isLoading
-              ? _buildSkeleton()
-              : errorMessage.isNotEmpty
-              ? _buildErrorState()
-              : _buildMarkAttendanceTab();
-        }
-
-        return const SizedBox.shrink();
+        return isLoading
+            ? _buildSkeleton()
+            : errorMessage.isNotEmpty
+            ? _buildErrorState()
+            : _buildMarkAttendanceTab();
       }),
     );
   }
@@ -166,17 +278,15 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
       elevation: 0,
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+        icon:
+        const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
       ),
-      title: const Text('Class Attendance',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 18)),
+      title: const Text(
+        'Class Attendance',
+        style: TextStyle(
+            color: Colors.white, fontWeight: FontWeight.w600, fontSize: 18),
+      ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          onPressed: _fetchStudents,
-          icon: const Icon(Icons.refresh, color: Colors.white),
-        ),
-      ],
     );
   }
 
@@ -184,7 +294,8 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
   Widget _buildMarkAttendanceTab() {
     final filtered = students.where((s) {
       final studentClass = s.className.split(' ').first;
-      final classMatch = selectedClass == 'All' || studentClass == selectedClass;
+      final classMatch =
+          selectedClass == 'All' || studentClass == selectedClass;
 
       final searchMatch = searchQuery.isEmpty ||
           s.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
@@ -203,7 +314,10 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
               : ListView.builder(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
             itemCount: filtered.length,
-            itemBuilder: (_, i) => _buildStudentCard(filtered[i]),
+            itemBuilder: (context, index) {
+              final student = filtered[index];
+              return _buildStudentCard(student);
+            },
           ),
         ),
         _buildBottomSubmitBar(filtered),
@@ -219,15 +333,89 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
     final leave = list.where((s) => s.status == 'Leave').length;
     final total = list.length;
 
+    // ✅ selectedDate दिखाओ (आज की नहीं)
+    final displayDate = selectedDateStr;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Row(
-        children: [
-          _statChip('Present', present, Colors.green, Icons.check_circle_rounded),
-          _statChip('Absent', absent, Colors.red, Icons.cancel_rounded),
-          _statChip('Leave', leave, Colors.orange, Icons.beach_access_rounded),
-          _statChip('Total', total, Colors.indigo, Icons.people_rounded),
-        ],
+      child: Container(
+        color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// date select
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  InkWell(
+                    onTap: _pickDate, // 👈 date picker open
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.indigo.withOpacity(0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 8,
+                        children: [
+                          const Icon(Icons.calendar_month,
+                              size: 20, color: Colors.indigo),
+                          Text(
+                            "Date: $displayDate",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_drop_down,
+                              size: 18, color: Colors.indigo),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  InkWell(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.indigo.withOpacity(0.25),
+                        ),
+                      ),
+                      child: Text("0 Leave", style: TextStyle(fontSize: 14,fontWeight: FontWeight.w500,color: Colors.red),),
+                    ),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => StudentLeaveRequestScreen(),));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                _statChip(
+                    'Present', present, Colors.green, Icons.check_circle_rounded),
+                _statChip('Absent', absent, Colors.red, Icons.cancel_rounded),
+                _statChip(
+                    'Leave', leave, Colors.orange, Icons.beach_access_rounded),
+                _statChip(
+                    'Total', total, Colors.indigo, Icons.people_rounded),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -240,7 +428,11 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
           color: Colors.white,
           border: Border.all(color: color.withOpacity(0.15)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -248,9 +440,13 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('$count',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text(
+              '$count',
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: color),
+            ),
+            Text(label,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600])),
           ],
         ),
       ),
@@ -265,7 +461,6 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
         children: [
           Row(
             children: [
-              /// Class selector (tappable)
               GestureDetector(
                 onTap: _showClassFilterSheet,
                 child: Container(
@@ -286,9 +481,13 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        selectedClass == 'All' ? "All Class" : "Class ${selectedClass}",
+                        selectedClass == 'All'
+                            ? "All Class"
+                            : "Class $selectedClass",
                         style: TextStyle(
-                          color: selectedClass == 'All' ? Colors.black : Colors.indigo,
+                          color: selectedClass == 'All'
+                              ? Colors.black
+                              : Colors.indigo,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -297,7 +496,9 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
                       Icon(
                         Icons.arrow_drop_down,
                         size: 18,
-                        color: selectedClass == 'All' ? Colors.black54 : Colors.indigo,
+                        color: selectedClass == 'All'
+                            ? Colors.black54
+                            : Colors.indigo,
                       ),
                     ],
                   ),
@@ -316,8 +517,10 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
                     onChanged: (v) => setState(() => searchQuery = v),
                     decoration: InputDecoration(
                       hintText: 'Search student or roll no...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
-                      prefixIcon: Icon(Icons.search, size: 20, color: Colors.grey[500]),
+                      hintStyle:
+                      TextStyle(fontSize: 13, color: Colors.grey[400]),
+                      prefixIcon:
+                      Icon(Icons.search, size: 20, color: Colors.grey[500]),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 11),
                     ),
@@ -442,53 +645,81 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
+            InkWell(
+              onTap: () {
+                Get.to(() => StudentAttendanceDetailScreen(
+                  studentCardId: student.rollNumber,
+                  studentName: student.name,
+                  studentClass: student.sClass,
+                ));
+              },
+              child: Container(
+                width: 60,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.indigo.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo.shade700,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(student.name,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 2),
-                      Text('Class: ${student.sClass}th',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[900])),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              student.name,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Class: ${student.sClass}th',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[900]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'ID: ${student.rollNumber}',
+                        style:
+                        TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
                     ],
                   ),
-                ),
-                Text('ID: ${student.rollNumber}',
-          style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _statusBtn(student, 'Present', Colors.green),
-                _statusBtn(student, 'Absent', Colors.red),
-                _statusBtn(student, 'Leave', Colors.orange),
-              ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _statusBtn(student, 'Present', Colors.green),
+                      _statusBtn(student, 'Absent', Colors.red),
+                      _statusBtn(student, 'Leave', Colors.orange),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -531,8 +762,10 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
         children: [
           Icon(Icons.search_off, size: 56, color: Colors.grey[300]),
           const SizedBox(height: 8),
-          Text('No student found',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+          Text(
+            'No student found',
+            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+          ),
         ],
       ),
     );
@@ -544,75 +777,108 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
     final present = list.where((s) => s.status == 'Present').length;
     final total = list.length;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2)),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                '$present/$total marked',
-                style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.w600),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: isSubmitting ? null : _submitAttendance,
-              icon: isSubmitting
-                  ? const SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.save_rounded, size: 18),
-              label: Text(isSubmitting ? 'Saving...' : 'Submit'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+    // 👇 controller का reactive isSubmitting use करो
+    return Obx(() {
+      final submitting = studentAttendanceController.isSubmitting.value;
+
+      return Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
-      ),
-    );
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$present/$total Marked',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.indigo,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: submitting ? null : () => _handleSubmit(list),
+                icon: submitting
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : const Icon(Icons.save_rounded, size: 18),
+                label: Text(submitting ? 'Saving...' : 'Submit'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   // ==================== SKELETON ====================
   Widget _buildSkeleton() {
     return ListView(
       padding: const EdgeInsets.all(12),
-      children: List.generate(6, (_) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        height: 66,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(width: 120, height: 12, color: Colors.grey.shade200),
-                  const SizedBox(height: 6),
-                  Container(width: 60, height: 10, color: Colors.grey.shade100),
-                ],
+      children: List.generate(
+        6,
+            (_) => Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          height: 66,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                        width: 120, height: 12, color: Colors.grey.shade200),
+                    const SizedBox(height: 6),
+                    Container(
+                        width: 60, height: 10, color: Colors.grey.shade100),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      )),
+      ),
     );
   }
 

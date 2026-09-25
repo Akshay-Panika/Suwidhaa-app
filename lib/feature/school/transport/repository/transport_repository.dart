@@ -1,4 +1,5 @@
 // lib/feature/school/transport/repository/transport_repository.dart
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
@@ -7,6 +8,7 @@ import '../model/transport_model.dart';
 class TransportRepository {
   final Dio dio = ApiClient.dio;
 
+  // ==================== GET LIST ====================
   Future<TransportListResponse> getTransportList() async {
     try {
       final response = await dio.get(ApiUrls.transportList);
@@ -14,7 +16,8 @@ class TransportRepository {
       if (response.statusCode == 200) {
         return TransportListResponse.fromJson(response.data);
       } else {
-        throw Exception('Failed to load transport data: ${response.statusCode}');
+        throw Exception(
+            'Failed to load transport data: ${response.statusCode}');
       }
     } on DioException catch (e) {
       throw Exception('Network error: ${e.message}');
@@ -23,6 +26,7 @@ class TransportRepository {
     }
   }
 
+  // ==================== GET DETAIL ====================
   Future<TransportModel?> getTransportDetail(int id) async {
     try {
       final response = await dio.get('${ApiUrls.transportDetail}$id/');
@@ -34,10 +38,80 @@ class TransportRepository {
         }
         return null;
       } else {
-        throw Exception('Failed to load transport detail: ${response.statusCode}');
+        throw Exception(
+            'Failed to load transport detail: ${response.statusCode}');
       }
     } on DioException catch (e) {
       throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // ==================== CREATE TRANSPORT ====================
+  Future<TransportModel> createTransport({
+    required String transportType,
+    required String schoolType,
+    required String vehicleNumber,
+    required String driverName,
+    required String driverNumber,
+    String? capacity,
+    String? routeName,
+    File? driverImage,
+  }) async {
+    try {
+      // Build FormData
+      final Map<String, dynamic> formMap = {
+        'transport_type': transportType,
+        'school_type': schoolType,
+        'vehicle_number': vehicleNumber,
+        'driver_name': driverName,
+        'driver_number': driverNumber,
+      };
+
+      if (capacity != null && capacity.isNotEmpty) {
+        formMap['capacity'] = capacity;
+      }
+      if (routeName != null && routeName.isNotEmpty) {
+        formMap['route_name'] = routeName;
+      }
+
+      // Attach image if available
+      if (driverImage != null) {
+        final fileName = driverImage.path.split('/').last;
+        formMap['driver_image'] = await MultipartFile.fromFile(
+          driverImage.path,
+          filename: fileName,
+        );
+      }
+
+      final formData = FormData.fromMap(formMap);
+
+      final response = await dio.post(
+        ApiUrls.transportCreate,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data['success'] == true && data['data'] != null) {
+          return TransportModel.fromJson(data['data']);
+        } else {
+          throw Exception(data['message'] ?? 'Failed to create transport');
+        }
+      } else {
+        throw Exception(
+            'Failed to create transport: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      // Extract backend error message if available
+      final msg = e.response?.data?['message'] ??
+          e.message ??
+          'Something went wrong';
+      throw Exception(msg);
     } catch (e) {
       throw Exception('Error: $e');
     }
