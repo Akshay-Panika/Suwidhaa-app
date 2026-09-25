@@ -60,6 +60,9 @@ class ApiUrls {
   static const String transportList = 'v1/school/transport/list/';
   static const String transportDetail = 'v1/school/transport/';
   static const String transportCreate = 'v1/school/transport/create/';
+  static const String transportAddStudent = 'v1/school/transport/';
+  static const String transportRemoveStudent = 'v1/school/transport/';
+
 
   // College Banner endpoints
   static const String collegeBannerList = 'v1/college/college-banner/list/';

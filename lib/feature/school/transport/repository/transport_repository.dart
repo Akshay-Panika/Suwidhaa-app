@@ -48,6 +48,50 @@ class TransportRepository {
     }
   }
 
+  // ==================== ADD STUDENT TO TRANSPORT ====================
+  Future<bool> addStudentToTransport({
+    required int transportId,
+    required String studentName,
+    required String studentId,
+    required String pickupTime,
+    required String dropTime,
+    required String address,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'student_name': studentName,
+        'student_id': studentId,
+        'pickup_time': pickupTime,
+        'drop_time': dropTime,
+        'address': address,
+      });
+
+      final response = await dio.post(
+        '${ApiUrls.transportAddStudent}$transportId/students/add/',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data['success'] == true) {
+          return true;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to add student');
+        }
+      } else {
+        throw Exception('Failed to add student: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ??
+          e.message ??
+          'Something went wrong';
+      throw Exception(msg);
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   // ==================== CREATE TRANSPORT ====================
   Future<TransportModel> createTransport({
     required String transportType,
@@ -108,6 +152,60 @@ class TransportRepository {
       }
     } on DioException catch (e) {
       // Extract backend error message if available
+      final msg = e.response?.data?['message'] ??
+          e.message ??
+          'Something went wrong';
+      throw Exception(msg);
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<bool> deleteTransport(int id) async {
+    try {
+      final response = await dio.delete('${ApiUrls.transportDetail}$id/');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          return true;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to delete transport');
+        }
+      } else {
+        throw Exception('Failed to delete transport: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ??
+          e.message ??
+          'Something went wrong';
+      throw Exception(msg);
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // ==================== REMOVE STUDENT FROM TRANSPORT ====================
+  Future<bool> removeStudentFromTransport({
+    required int transportId,
+    required String studentId,
+  }) async {
+    try {
+      final response = await dio.delete(
+        '${ApiUrls.transportRemoveStudent}$transportId/students/$studentId/delete/',
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['success'] == true) {
+          return true;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to remove student');
+        }
+      } else {
+        throw Exception('Failed to remove student: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
       final msg = e.response?.data?['message'] ??
           e.message ??
           'Something went wrong';

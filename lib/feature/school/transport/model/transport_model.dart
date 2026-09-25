@@ -72,6 +72,38 @@ class TransportModel {
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  TransportModel copyWith({
+    int? id,
+    String? transportType,
+    String? schoolType,
+    String? vehicleNumber,
+    String? driverName,
+    String? driverNumber,
+    String? driverImage,
+    String? capacity,
+    String? routeName,
+    List<StudentData>? students,
+    int? studentCount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return TransportModel(
+      id: id ?? this.id,
+      transportType: transportType ?? this.transportType,
+      schoolType: schoolType ?? this.schoolType,
+      vehicleNumber: vehicleNumber ?? this.vehicleNumber,
+      driverName: driverName ?? this.driverName,
+      driverNumber: driverNumber ?? this.driverNumber,
+      driverImage: driverImage ?? this.driverImage,
+      capacity: capacity ?? this.capacity,
+      routeName: routeName ?? this.routeName,
+      students: students ?? this.students,
+      studentCount: studentCount ?? this.studentCount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 

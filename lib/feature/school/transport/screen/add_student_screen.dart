@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../../student/controller/student_list_controller.dart';
 import '../../student/model/student_list_model.dart';
+import '../controller/transport_controller.dart';
 import '../model/transport_model.dart';
 
 class AddStudentScreen extends StatefulWidget {
@@ -28,22 +29,24 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   TimeOfDay? _dropTime;
 
   late StudentListController _studentController;
+  late TransportController _transportController;
 
   @override
   void initState() {
     super.initState();
 
-    if (widget.transports.isNotEmpty) {
-      _selectedTransport = widget.transports.first;
-    }
-
     _studentController = Get.find<StudentListController>();
+    _transportController = Get.find<TransportController>();
+
 
     if (_studentController.studentList.isEmpty) {
       _studentController.loadStudentList();
     }
   }
 
+  void _clearTransport() {
+    setState(() => _selectedTransport = null);
+  }
   // ==================== TIME PICKER ====================
   Future<void> _pickTime({required bool isPickup}) async {
     final initial = isPickup
@@ -125,7 +128,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     setState(() => _selectedStudent = null);
   }
 
-  // ==================== SAVE ====================
   Future<void> _saveStudent() async {
     if (_selectedTransport == null) {
       FlutterToast.error('Please select a transport');
@@ -135,17 +137,33 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       FlutterToast.error('Please select a student');
       return;
     }
+    if (_pickupTime == null) {
+      FlutterToast.error('Please select pickup time');
+      return;
+    }
+    if (_dropTime == null) {
+      FlutterToast.error('Please select drop time');
+      return;
+    }
 
-    // TODO: Call your API here with:
-    // transportId: _selectedTransport!.id
-    // studentName: _selectedStudent!.fullName
-    // studentId: _selectedStudent!.studentIdCard
-    // address: _selectedStudent!.address
-    // pickupTime: _formatTime(_pickupTime)
-    // dropTime: _formatTime(_dropTime)
+    // Address fallback if student has none
+    final address = (_selectedStudent!.address?.trim().isNotEmpty ?? false)
+        ? _selectedStudent!.address!
+        : 'N/A';
 
-    FlutterToast.success('Student added successfully');
-    Navigator.pop(context, true);
+    final success = await _transportController.addStudentToTransport(
+      transportId: _selectedTransport!.id,
+      studentName: _selectedStudent!.fullName,
+      studentId: _selectedStudent!.studentIdCard,
+      pickupTime: _formatTime(_pickupTime),
+      dropTime: _formatTime(_dropTime),
+      address: address,
+    );
+
+    if (success) {
+      FlutterToast.success('Student added successfully');
+      if (mounted) Navigator.pop(context, true);
+    }
   }
 
   @override
@@ -173,8 +191,30 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             // ==================== TRANSPORT ====================
-            _sectionTitle('Transport'),
+            Row(
+              children: [
+                _sectionTitle('Transport'),
+                const Spacer(),
+                if (_selectedTransport != null)
+                  TextButton.icon(
+                    onPressed: _clearTransport,
+                    icon: const Icon(Icons.close_rounded,
+                        size: 14, color: Colors.red),
+                    label: const Text(
+                      'Clear',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
             _buildTransportSelectorButton(),
 
@@ -216,22 +256,36 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             const SizedBox(height: 24),
 
             // ==================== SAVE ====================
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _saveStudent,
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: const Text('Save Student'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            Obx(() {
+              final loading = _transportController.isAddingStudent.value;
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: loading ? null : _saveStudent,
+                  icon: loading
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Icon(Icons.check_rounded, size: 18),
+                  label: Text(loading ? 'Saving...' : 'Save Student'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: _primary.withOpacity(0.6),
+                    disabledForegroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
             const SizedBox(height: 20),
           ],
         ),
@@ -250,7 +304,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       onTap: _openTransportPicker,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: hasTransport
               ? _primaryLight.withOpacity(0.4)
@@ -267,21 +321,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           children: [
             // ✅ Driver image or icon
             Container(
-              width: 42,
-              height: 42,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
-                gradient: hasImage
-                    ? null
-                    : (hasTransport
-                    ? null
-                    : const LinearGradient(
-                  colors: [_primary, _primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )),
-                color: hasImage
-                    ? null
-                    : (hasTransport ? _primary.withOpacity(0.15) : null),
+                color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(10),
                 border: hasImage
                     ? Border.all(
@@ -297,7 +340,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   height: 42,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Icon(
-                    Icons.directions_bus_rounded,
+                    Icons.directions_bus,
                     size: 20,
                     color: hasTransport
                         ? _primary
@@ -308,9 +351,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   : Center(
                 child: Icon(
                   hasTransport
-                      ? Icons.directions_bus_rounded
-                      : Icons.add_road_rounded,
-                  size: 18,
+                      ? Icons.directions_bus
+                      : Icons.directions_bus,
+                  size: 30,
                   color: hasTransport
                       ? _primary
                       : Colors.grey.shade600,
@@ -371,7 +414,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       onTap: _openStudentPicker,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: hasStudent
               ? _primaryLight.withOpacity(0.4)
@@ -387,6 +430,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: Row(
           children: [
             Container(
+              height: 60,width: 60,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasStudent
@@ -398,7 +442,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 hasStudent
                     ? Icons.person_rounded
                     : Icons.person_search_rounded,
-                size: 18,
+                size: 30,
                 color: hasStudent ? _primary : Colors.grey.shade600,
               ),
             ),
@@ -1398,23 +1442,20 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_primary, _primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+               color: Colors.indigo.shade50,
                 borderRadius: BorderRadius.circular(10),
+                image: DecorationImage(image: NetworkImage(student.studentProfile!))
               ),
-              child: Center(
+              child: student.studentProfile!.isNotEmpty? null: Center(
                 child: Text(
                   student.displayName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: Colors.indigo,
                   ),
                 ),
               ),
@@ -1429,7 +1470,7 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                         ? student.fullName
                         : 'Unknown',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                     ),
@@ -1437,16 +1478,18 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    [
-                      if (student.studentIdCard.isNotEmpty)
-                        'ID: ${student.studentIdCard}',
-                      if (student.studentClass.isNotEmpty)
-                        'Class: ${student.studentClass}',
-                    ].join(' • '),
+                  Text('ID: ${student.studentIdCard}',
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text('Class: ${student.studentClass}th',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -1,6 +1,7 @@
 // lib/feature/school/transport/controller/transport_controller.dart
 import 'dart:io';
 import 'package:get/get.dart';
+import 'package:untitled/core/widget/flutter_toast.dart';
 import '../model/transport_model.dart';
 import '../repository/transport_repository.dart';
 
@@ -10,6 +11,12 @@ class TransportController extends GetxController {
   // Observables
   var isLoading = false.obs;
   var isCreating = false.obs;
+  var isAddingStudent = false.obs;
+  var isDeleting = false.obs;
+  var removingStudentIds = <String>{}.obs;
+
+  bool isRemovingStudent(String studentId) => removingStudentIds.contains(studentId);
+
   var transportList = <TransportModel>[].obs;
   var filteredTransportList = <TransportModel>[].obs;
   var selectedTransport = Rxn<TransportModel>();
@@ -35,18 +42,10 @@ class TransportController extends GetxController {
         filteredTransportList.value = response.data;
         applyFilters();
       } else {
-        Get.snackbar(
-          'Error',
-          'Failed to load transport data',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        FlutterToast.error('Failed to load transport data');
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       isLoading.value = false;
     }
@@ -65,18 +64,10 @@ class TransportController extends GetxController {
       if (transport != null) {
         selectedTransport.value = transport;
       } else {
-        Get.snackbar(
-          'Error',
-          'Transport not found',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        FlutterToast.error('Transport not found');
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       isLoading.value = false;
     }
@@ -92,7 +83,8 @@ class TransportController extends GetxController {
     String? capacity,
     String? routeName,
     File? driverImage,
-  }) async {
+  })
+  async {
     try {
       isCreating.value = true;
 
@@ -122,6 +114,39 @@ class TransportController extends GetxController {
       return false;
     } finally {
       isCreating.value = false;
+    }
+  }
+// ==================== ADD STUDENT TO TRANSPORT ====================
+  Future<bool> addStudentToTransport({
+    required int transportId,
+    required String studentName,
+    required String studentId,
+    required String pickupTime,
+    required String dropTime,
+    required String address,
+  }) async {
+    try {
+      isAddingStudent.value = true;
+
+      final success = await _repository.addStudentToTransport(
+        transportId: transportId,
+        studentName: studentName,
+        studentId: studentId,
+        pickupTime: pickupTime,
+        dropTime: dropTime,
+        address: address,
+      );
+
+      if (success) {
+        // Refresh the transport list so student count updates
+        await getTransportList();
+      }
+      return success;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isAddingStudent.value = false;
     }
   }
 
@@ -185,5 +210,55 @@ class TransportController extends GetxController {
       }
     }
     return types.toList();
+  }
+
+
+  // ==================== DELETE TRANSPORT ====================
+  Future<bool> deleteTransport(int id) async {
+    try {
+      isDeleting.value = true;
+
+      final success = await _repository.deleteTransport(id);
+
+      if (success) {
+        // Remove from local lists
+        transportList.removeWhere((t) => t.id == id);
+        filteredTransportList.removeWhere((t) => t.id == id);
+        applyFilters();
+
+        FlutterToast.success('Transport deleted successfully');
+      }
+      return success;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isDeleting.value = false;
+    }
+  }
+
+  Future<bool> removeStudentFromTransport({
+    required int transportId,
+    required String studentId,
+  }) async {
+    try {
+      removingStudentIds.add(studentId);   // ✅ add only this ID
+
+      final success = await _repository.removeStudentFromTransport(
+        transportId: transportId,
+        studentId: studentId,
+      );
+
+      if (success) {
+        await getTransportList();
+        FlutterToast.success('Student removed successfully');
+      }
+      return success;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      removingStudentIds.remove(studentId);   // ✅ remove from set
+    }
   }
 }
