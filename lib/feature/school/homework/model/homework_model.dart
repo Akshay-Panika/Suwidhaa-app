@@ -87,12 +87,15 @@ class HomeworkModel {
     );
   }
 
+  // ───── Status / Priority helpers ─────
   String getStatus() {
     if (endDate == null) return 'Pending';
     try {
       final endDateObj = DateTime.parse(endDate!);
       final now = DateTime.now();
-      final days = endDateObj.difference(now).inDays;
+      final today = DateTime(now.year, now.month, now.day);
+      final due = DateTime(endDateObj.year, endDateObj.month, endDateObj.day);
+      final days = due.difference(today).inDays;
       if (days < 0) return 'Overdue';
       if (days == 0) return 'Today';
       return 'Pending';
@@ -126,6 +129,68 @@ class HomeworkModel {
       return 0;
     }
   }
+
+  // ───── ✅ NEW: Date helpers for year/month filtering ─────
+  DateTime? get issueDateTime {
+    if (issueDate == null || issueDate!.isEmpty) return null;
+    try {
+      return DateTime.parse(issueDate!);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? get endDateTime {
+    if (endDate == null || endDate!.isEmpty) return null;
+    try {
+      return DateTime.parse(endDate!);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// "2026"
+  String get yearLabel {
+    final d = issueDateTime ?? endDateTime;
+    return d?.year.toString() ?? 'Unknown';
+  }
+
+  /// "Sep"
+  String get monthLabel {
+    final d = issueDateTime ?? endDateTime;
+    return d == null ? 'Unknown' : monthName(d.month);
+  }
+
+  /// "Sep 2026"
+  String get monthYearLabel {
+    final d = issueDateTime ?? endDateTime;
+    if (d == null) return 'Unknown';
+    return '${monthName(d.month)} ${d.year}';
+  }
+
+  /// 9 (for sorting)
+  int get monthNumber {
+    final d = issueDateTime ?? endDateTime;
+    return d?.month ?? 0;
+  }
+
+  /// For chronological sorting
+  DateTime get sortDate =>
+      issueDateTime ?? endDateTime ?? DateTime(1900);
+
+  static String monthName(int m) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    if (m < 1 || m > 12) return 'Unknown';
+    return months[m - 1];
+  }
+
+  static List<String> get allMonths => const [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 }
 
 class HomeworkResponse {

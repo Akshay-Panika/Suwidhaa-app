@@ -115,4 +115,10 @@ class ApiUrls {
   }
 
 
+  static const String reportCardCreate      = 'v1/school/report-cards/create/';
+  static const String reportCardList        = 'v1/school/report-cards/list/';
+  static const String reportCardDetailBase  = 'v1/school/report-cards/list/';       // + id/
+  static const String reportCardByAdminBase = 'v1/school/report-cards/adminid/';
+
+
 }

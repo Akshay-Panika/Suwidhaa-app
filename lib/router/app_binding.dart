@@ -25,6 +25,7 @@ import '../feature/school/leave/controller/student_leave_controller.dart';
 import '../feature/school/payment/controller/teacher_salary_controller.dart';
 import '../feature/school/profile/controller/student_controller.dart';
 import '../feature/school/profile/controller/teacher_controller.dart';
+import '../feature/school/report/controller/report_card_controller.dart';
 import '../feature/school/student/controller/student_list_controller.dart';
 import '../feature/school/transport/controller/transport_controller.dart';
 
@@ -57,5 +58,6 @@ class AppBindings implements Bindings {
     Get.lazyPut<OttReelController>(() => OttReelController(), fenix: true);
     Get.lazyPut<WebseriesController>(() => WebseriesController(), fenix: true);
     Get.lazyPut<CollegeBookingController>(() => CollegeBookingController(), fenix: true);
+    Get.lazyPut<ReportCardController>(() => ReportCardController(), fenix: true);
   }
 }

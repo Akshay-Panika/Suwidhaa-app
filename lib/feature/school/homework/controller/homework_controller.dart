@@ -17,6 +17,15 @@ class HomeworkController extends GetxController {
   final selectedFilter = 'All'.obs;
   final filters = <String>['All', 'Pending', 'Today', 'Overdue'].obs;
 
+  // ───── ✅ NEW: Subject / Year / Month filter observables ─────
+  final selectedSubject = 'All'.obs;
+  final selectedYear = 'All'.obs;
+  final selectedMonth = 'All'.obs;
+
+  final subjectFilters = <String>['All'].obs;
+  final yearFilters = <String>['All'].obs;
+  final monthFilters = <String>['All', ...HomeworkModel.allMonths].obs;
+
   // Class options
   final classOptions = <String>[
     'Nursery', 'LKG', 'UKG',
@@ -28,7 +37,6 @@ class HomeworkController extends GetxController {
   final schoolTypeOptions = <String>['school A', 'school B'];
   final selectedSchoolType = ''.obs;
 
-  // Subject colors mapping
   final Map<String, Color> subjectColors = {
     'Mathematics': Colors.blue,
     'Science': Colors.green,
@@ -44,6 +52,7 @@ class HomeworkController extends GetxController {
     'Physics': Colors.deepPurple,
     'Social Studies': Colors.brown,
     'Math': Colors.blue,
+    'Maths': Colors.blue,
     'Urdu': Colors.teal,
     'Islamiat': Colors.green,
     'Pakistan Studies': Colors.orange,
@@ -64,6 +73,7 @@ class HomeworkController extends GetxController {
     'Physics': Icons.bolt_rounded,
     'Social Studies': Icons.groups_rounded,
     'Math': Icons.calculate_rounded,
+    'Maths': Icons.calculate_rounded,
     'Urdu': Icons.translate_rounded,
     'Islamiat': Icons.mosque_rounded,
     'Pakistan Studies': Icons.flag_rounded,
@@ -75,7 +85,7 @@ class HomeworkController extends GetxController {
     fetchHomeworkList();
   }
 
-  // Fetch all homework
+  // ───── Fetch all ─────
   Future<void> fetchHomeworkList() async {
     try {
       isLoading.value = true;
@@ -85,6 +95,7 @@ class HomeworkController extends GetxController {
 
       if (response.success && response.data != null) {
         homeworkList.assignAll(response.data!);
+        _buildFilterOptions(); // ✅ build year/subject dropdowns
       } else {
         errorMessage.value = response.message ?? 'Failed to load homework';
       }
@@ -95,11 +106,43 @@ class HomeworkController extends GetxController {
     }
   }
 
-  // Get single homework
+  // ───── ✅ Build dynamic filter options from data ─────
+  void _buildFilterOptions() {
+    final subjects = <String>{'All'};
+    final years = <String>{'All'};
+
+    for (final hw in homeworkList) {
+      if (hw.subjectName?.isNotEmpty ?? false) {
+        subjects.add(hw.subjectName!);
+      }
+      final y = hw.yearLabel;
+      if (y != 'Unknown') years.add(y);
+    }
+
+    subjectFilters.assignAll(subjects.toList()..sort());
+
+    final sortedYears = years.toList()..sort((a, b) {
+      if (a == 'All') return -1;
+      if (b == 'All') return 1;
+      return b.compareTo(a); // latest year first
+    });
+    yearFilters.assignAll(sortedYears);
+
+    // Keep existing selections if still valid
+    if (!subjectFilters.contains(selectedSubject.value)) {
+      selectedSubject.value = 'All';
+    }
+    if (!yearFilters.contains(selectedYear.value)) {
+      selectedYear.value = 'All';
+    }
+  }
+
+  // ───── Get single ─────
   Future<void> fetchHomeworkById(int id) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      selectedHomework.value = null;
 
       final response = await _repository.getHomeworkById(id);
 
@@ -115,7 +158,7 @@ class HomeworkController extends GetxController {
     }
   }
 
-  // Create homework
+  // ───── Create ─────
   Future<bool> createHomework(Map<String, dynamic> data) async {
     try {
       isSubmitting.value = true;
@@ -135,6 +178,7 @@ class HomeworkController extends GetxController {
 
       if (response.success && response.homework != null) {
         homeworkList.insert(0, response.homework!);
+        _buildFilterOptions();
         return true;
       } else {
         errorMessage.value = response.message ?? 'Failed to create homework';
@@ -148,10 +192,9 @@ class HomeworkController extends GetxController {
     }
   }
 
-  // Update homework
+  // ───── Update ─────
   Future<bool> updateHomework(int? id, Map<String, dynamic> data) async {
     if (id == null) return false;
-
     try {
       isSubmitting.value = true;
       errorMessage.value = '';
@@ -177,6 +220,7 @@ class HomeworkController extends GetxController {
         if (selectedHomework.value?.id == id) {
           selectedHomework.value = response.homework!;
         }
+        _buildFilterOptions();
         return true;
       } else {
         errorMessage.value = response.message ?? 'Failed to update homework';
@@ -190,10 +234,9 @@ class HomeworkController extends GetxController {
     }
   }
 
-  // Delete homework
+  // ───── Delete ─────
   Future<bool> deleteHomework(int? id) async {
     if (id == null) return false;
-
     try {
       isSubmitting.value = true;
       errorMessage.value = '';
@@ -205,6 +248,7 @@ class HomeworkController extends GetxController {
         if (selectedHomework.value?.id == id) {
           selectedHomework.value = null;
         }
+        _buildFilterOptions();
         return true;
       } else {
         errorMessage.value = 'Failed to delete homework';
@@ -218,38 +262,78 @@ class HomeworkController extends GetxController {
     }
   }
 
-  // Filter methods
-  void setFilter(String filter) {
-    selectedFilter.value = filter;
+  // ───── Filter methods ─────
+  void setFilter(String filter) => selectedFilter.value = filter;
+  void setSelectedSubject(String v) => selectedSubject.value = v;
+  void setSelectedYear(String v) => selectedYear.value = v;
+  void setSelectedMonth(String v) => selectedMonth.value = v;
+
+  void resetFilters() {
+    selectedFilter.value = 'All';
+    selectedSubject.value = 'All';
+    selectedYear.value = 'All';
+    selectedMonth.value = 'All';
+    searchQuery.value = '';
   }
 
+  bool get hasActiveFilter =>
+      selectedFilter.value != 'All' ||
+          selectedSubject.value != 'All' ||
+          selectedYear.value != 'All' ||
+          selectedMonth.value != 'All' ||
+          searchQuery.value.isNotEmpty;
+
+  int get activeFilterCount {
+    int c = 0;
+    if (selectedFilter.value != 'All') c++;
+    if (selectedSubject.value != 'All') c++;
+    if (selectedYear.value != 'All') c++;
+    if (selectedMonth.value != 'All') c++;
+    if (searchQuery.value.isNotEmpty) c++;
+    return c;
+  }
+
+  // ───── ✅ Combined filtering ─────
   List<HomeworkModel> getFilteredHomework() {
     final query = searchQuery.value.toLowerCase().trim();
-    final filter = selectedFilter.value;
+    final statusFilter = selectedFilter.value;
+    final subjectFilter = selectedSubject.value;
+    final yearFilter = selectedYear.value;
+    final monthFilter = selectedMonth.value;
 
     return homeworkList.where((hw) {
-      // Search filter
+      // 1. Search
       if (query.isNotEmpty) {
-        final subjectName = hw.subjectName?.toLowerCase() ?? '';
-        final subjectTopic = hw.subjectTopic?.toLowerCase() ?? '';
-        if (!subjectName.contains(query) && !subjectTopic.contains(query)) {
-          return false;
-        }
+        final s = hw.subjectName?.toLowerCase() ?? '';
+        final t = hw.subjectTopic?.toLowerCase() ?? '';
+        if (!s.contains(query) && !t.contains(query)) return false;
       }
 
-      // Status filter
-      if (filter != 'All') {
-        final status = hw.getStatus();
-        if (status != filter) {
-          return false;
-        }
+      // 2. Status
+      if (statusFilter != 'All' && hw.getStatus() != statusFilter) {
+        return false;
+      }
+
+      // 3. Subject
+      if (subjectFilter != 'All' && hw.subjectName != subjectFilter) {
+        return false;
+      }
+
+      // 4. Year
+      if (yearFilter != 'All' && hw.yearLabel != yearFilter) {
+        return false;
+      }
+
+      // 5. Month
+      if (monthFilter != 'All' && hw.monthLabel != monthFilter) {
+        return false;
       }
 
       return true;
     }).toList();
   }
 
-  // Count methods
+  // ───── Counts / Colors ─────
   Map<String, int> getStatusCounts() {
     final counts = <String, int>{};
     for (final hw in homeworkList) {
@@ -259,11 +343,9 @@ class HomeworkController extends GetxController {
     return counts;
   }
 
-  int getCompletedCount() {
-    return homeworkList.where((hw) => hw.getStatus() == 'Completed').length;
-  }
+  int getCompletedCount() =>
+      homeworkList.where((hw) => hw.getStatus() == 'Completed').length;
 
-  // Color methods
   Color getStatusColor(String status) {
     switch (status) {
       case 'Completed':
@@ -304,26 +386,12 @@ class HomeworkController extends GetxController {
     return subjectIcons[subjectName] ?? Icons.book_rounded;
   }
 
-  // Search
-  void setSearchQuery(String query) {
-    searchQuery.value = query;
-  }
+  void setSearchQuery(String query) => searchQuery.value = query;
 
-  // Refresh
-  Future<void> refreshHomework() async {
-    await fetchHomeworkList();
-  }
+  Future<void> refreshHomework() async => await fetchHomeworkList();
 
-  void clearSelectedHomework() {
-    selectedHomework.value = null;
-  }
+  void clearSelectedHomework() => selectedHomework.value = null;
 
-  // Set class and school type
-  void setSelectedClass(String value) {
-    selectedClass.value = value;
-  }
-
-  void setSelectedSchoolType(String value) {
-    selectedSchoolType.value = value;
-  }
+  void setSelectedClass(String value) => selectedClass.value = value;
+  void setSelectedSchoolType(String value) => selectedSchoolType.value = value;
 }

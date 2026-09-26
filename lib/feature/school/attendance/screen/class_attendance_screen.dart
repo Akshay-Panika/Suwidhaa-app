@@ -163,7 +163,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
       }
 
       debugPrint(
-          '   ❌ $studentCardId → $dateStr का record नहीं → Absent (default)');
+          '   ❌ $studentCardId → $dateStr of  record not → Absent (default)');
       return 'Absent';
     } catch (e) {
       debugPrint('   ❌ $studentCardId failed: $e');
@@ -216,7 +216,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
   // ==================== SUBMIT ====================
   Future<void> _handleSubmit(List<StudentAttendance> list) async {
     if (list.isEmpty) {
-      Get.snackbar('No Data', 'Koi student select nahi hai');
+      Get.snackbar('No Data', 'Not Selected Student');
       return;
     }
 

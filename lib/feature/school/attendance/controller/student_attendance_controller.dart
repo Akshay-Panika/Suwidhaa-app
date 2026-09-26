@@ -32,7 +32,7 @@ class StudentAttendanceController extends GetxController {
   Future<bool> submitBulkAttendance(
       List<StudentAttendanceItem> items) async {
     if (items.isEmpty) {
-      FlutterToast.warning('Koi student select nahi hai');
+      FlutterToast.warning('Not Selected Student');
       return false;
     }
 
