@@ -120,5 +120,11 @@ class ApiUrls {
   static const String reportCardDetailBase  = 'v1/school/report-cards/list/';       // + id/
   static const String reportCardByAdminBase = 'v1/school/report-cards/adminid/';
 
+  // Meeting endpoints
+  static const String meetingCreate = 'v1/school/meeting/create/';
+  static const String meetingList   = 'v1/school/meeting/list/';
+  static const String meetingDelete = 'v1/school/meeting/delete/';   // + id/
+  static String meetingDetail(int id) => 'v1/school/meeting/$id/';
+
 
 }
