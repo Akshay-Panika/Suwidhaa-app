@@ -77,9 +77,9 @@ class StudentDashboardCard extends StatelessWidget {
                       ),
 
                       // Events Carousel
-                      Expanded(
-                        child: SchoolEventDashboardCard(),
-                      ),
+                      // Expanded(
+                      //   child: SchoolEventDashboardCard(),
+                      // ),
 
                       Container(
                         width: double.infinity,

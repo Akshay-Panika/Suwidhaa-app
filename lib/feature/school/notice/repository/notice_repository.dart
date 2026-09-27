@@ -2,182 +2,166 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
-import '../model/school_event_model.dart';
+import '../model/notice_model.dart';
 
-class SchoolEventRepository {
+class NoticeRepository {
   final Dio _dio = ApiClient.dio;
 
   // ============================================================
-  // 1. LIST EVENTS
-  //    GET /v1/school/event/list/
+  // 1. LIST NOTICES
+  //    GET /v1/school/notice/list/
   // ============================================================
-  Future<List<SchoolEventModel>> getEvents({
-    String? category,
+  Future<List<NoticeModel>> getNotices({
+    String? priority,
     String? audience,
-    String? status,
+    String? assignedClass,
   }) async {
     try {
       final query = <String, dynamic>{};
-      if (category != null && category.isNotEmpty && category != "All") {
-        query['category'] = category;
-      }
+      if (priority != null && priority.isNotEmpty) query['priority'] = priority;
       if (audience != null && audience.isNotEmpty) query['audience'] = audience;
-      if (status != null && status.isNotEmpty && status != "All") {
-        query['status'] = status;
+      if (assignedClass != null && assignedClass.isNotEmpty) {
+        query['class'] = assignedClass;
       }
 
       final res = await _dio.get(
-        ApiUrls.eventList,
+        ApiUrls.noticeList,
         queryParameters: query.isEmpty ? null : query,
       );
 
       if (res.statusCode == 200 && res.data['success'] == true) {
         final List data = res.data['data'] ?? [];
-        return data.map((e) => SchoolEventModel.fromJson(e)).toList();
+        return data.map((e) => NoticeModel.fromJson(e)).toList();
       }
-      throw Exception(res.data['message'] ?? 'Failed to load events');
+      throw Exception(res.data['message'] ?? 'Failed to load notices');
     } on DioException catch (e) {
       throw Exception(_dioError(e));
     }
   }
 
   // ============================================================
-  // 2. CREATE EVENT (multipart for banner upload)
-  //    POST /v1/school/event/create/
+  // 2. CREATE NOTICE (multipart for file upload)
+  //    POST /v1/school/notice/create/
   // ============================================================
-  Future<SchoolEventModel> createEvent({
+  Future<NoticeModel> createNotice({
     required String title,
     required String description,
-    required String category,
-    required String venue,
-    required String startDate,
-    required String endDate,
-    required String startTime,
-    required String endTime,
+    required String priority,
     required String audience,
-    required String status,
+    required String assignedClass,
     required bool isPinned,
-    String organizer = 'teacher_101',
-    PlatformFile? banner,
+    String createdBy = 'teacher_101',
+    PlatformFile? attachment,
   }) async {
     try {
       final map = <String, dynamic>{
         'title': title,
         'description': description,
-        'category': category,
-        'venue': venue,
-        'start_date': startDate,
-        'end_date': endDate,
-        'start_time': startTime,
-        'end_time': endTime,
+        'priority': priority,
         'audience': audience,
-        'status': status,
+        'assigned_class': assignedClass,
         'is_pinned': isPinned.toString(),
-        'organizer': organizer,
+        'created_by': createdBy,
       };
 
       final formData = FormData.fromMap(map);
 
-      if (banner != null && banner.path != null) {
-        formData.files.add(MapEntry(
-          'banner',
-          await MultipartFile.fromFile(
-            banner.path!,
-            filename: banner.name,
+      if (attachment != null && attachment.path != null) {
+        formData.files.add(
+          MapEntry(
+            'attachment',
+            await MultipartFile.fromFile(
+              attachment.path!,
+              filename: attachment.name,
+            ),
           ),
-        ));
+        );
       }
 
       final res = await _dio.post(
-        ApiUrls.eventCreate,
+        ApiUrls.noticeCreate,
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
 
       if (res.statusCode == 201 && res.data['success'] == true) {
-        return SchoolEventModel.fromJson(res.data['data']);
+        return NoticeModel.fromJson(res.data['data']);
       }
-      throw Exception(res.data['message'] ?? 'Failed to create event');
+      throw Exception(res.data['message'] ?? 'Failed to create notice');
     } on DioException catch (e) {
       throw Exception(_dioError(e));
     }
   }
 
   // ============================================================
-  // 3. UPDATE EVENT
-  //    PUT /v1/school/event/<id>/
+  // 3. UPDATE NOTICE
+  //    PUT /v1/school/notice/<id>/
   // ============================================================
-  Future<SchoolEventModel> updateEvent({
+  Future<NoticeModel> updateNotice({
     required int id,
     required String title,
     required String description,
-    required String category,
-    required String venue,
-    required String startDate,
-    required String endDate,
-    required String startTime,
-    required String endTime,
+    required String priority,
     required String audience,
-    required String status,
+    required String assignedClass,
     required bool isPinned,
-    String organizer = 'teacher_101',
-    PlatformFile? banner,
-    bool removeBanner = false,
+    String createdBy = 'teacher_101',
+    PlatformFile? attachment,
+    bool removeAttachment = false,
   }) async {
     try {
       final map = <String, dynamic>{
         'title': title,
         'description': description,
-        'category': category,
-        'venue': venue,
-        'start_date': startDate,
-        'end_date': endDate,
-        'start_time': startTime,
-        'end_time': endTime,
+        'priority': priority,
         'audience': audience,
-        'status': status,
+        'assigned_class': assignedClass,
         'is_pinned': isPinned.toString(),
-        'organizer': organizer,
+        'created_by': createdBy,
       };
 
-      if (removeBanner) map['banner'] = null;
+      if (removeAttachment) {
+        map['attachment'] = null;
+      }
 
       final formData = FormData.fromMap(map);
 
-      if (banner != null && banner.path != null) {
-        formData.files.add(MapEntry(
-          'banner',
-          await MultipartFile.fromFile(
-            banner.path!,
-            filename: banner.name,
+      if (attachment != null && attachment.path != null) {
+        formData.files.add(
+          MapEntry(
+            'attachment',
+            await MultipartFile.fromFile(
+              attachment.path!,
+              filename: attachment.name,
+            ),
           ),
-        ));
+        );
       }
 
       final res = await _dio.put(
-        ApiUrls.eventDetail(id),
+        ApiUrls.noticeDetail(id),
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
 
       if (res.statusCode == 200 && res.data['success'] == true) {
-        return SchoolEventModel.fromJson(res.data['data']);
+        return NoticeModel.fromJson(res.data['data']);
       }
-      throw Exception(res.data['message'] ?? 'Failed to update event');
+      throw Exception(res.data['message'] ?? 'Failed to update notice');
     } on DioException catch (e) {
       throw Exception(_dioError(e));
     }
   }
 
   // ============================================================
-  // 4. DELETE EVENT
-  //    DELETE /v1/school/event/<id>/
+  // 4. DELETE NOTICE
+  //    DELETE /v1/school/notice/<id>/
   // ============================================================
-  Future<void> deleteEvent(int id) async {
+  Future<void> deleteNotice(int id) async {
     try {
-      final res = await _dio.delete(ApiUrls.eventDetail(id));
+      final res = await _dio.delete(ApiUrls.noticeDetail(id));
       if (res.statusCode != 200) {
-        throw Exception(res.data['message'] ?? 'Failed to delete event');
+        throw Exception(res.data['message'] ?? 'Failed to delete notice');
       }
     } on DioException catch (e) {
       throw Exception(_dioError(e));
@@ -186,13 +170,13 @@ class SchoolEventRepository {
 
   // ============================================================
   // 5. TOGGLE PIN
-  //    POST /v1/school/event/<id>/toggle-pin/
+  //    POST /v1/school/notice/<id>/toggle-pin/
   // ============================================================
-  Future<SchoolEventModel> togglePin(int id) async {
+  Future<NoticeModel> togglePin(int id) async {
     try {
-      final res = await _dio.post(ApiUrls.eventTogglePin(id));
+      final res = await _dio.post(ApiUrls.noticeTogglePin(id));
       if (res.statusCode == 200 && res.data['success'] == true) {
-        return SchoolEventModel.fromJson(res.data['data']);
+        return NoticeModel.fromJson(res.data['data']);
       }
       throw Exception(res.data['message'] ?? 'Failed to toggle pin');
     } on DioException catch (e) {
@@ -201,7 +185,7 @@ class SchoolEventRepository {
   }
 
   // ============================================================
-  // Friendly error message
+  // Helper: friendly error message
   // ============================================================
   String _dioError(DioException e) {
     if (e.response?.data is Map && e.response!.data['message'] != null) {

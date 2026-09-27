@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:untitled/core/utils/app_color.dart';
 import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
 import 'package:untitled/feature/school/attendance/screen/class_attendance_screen.dart';
@@ -6,13 +8,17 @@ import 'package:untitled/feature/school/attendance/screen/subject_attendance_scr
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
 import 'package:untitled/feature/school/settings/screen/school_setting_future_manage_screen.dart';
+import '../../event/controller/school_event_controller.dart';
+import '../../event/widget/school_current_event_card.dart';
 import '../../leave/screen/student_leave_request_screen.dart';
 import '../../attendance/screen/teacher_leave_list_screen.dart';
 import '../../documets/screen/school_documents_screen.dart';
 import '../../exams/screen/exams_schedule_screen.dart';
 import '../../meeting/screen/school_meeting_screen.dart';
 import '../../messages/screen/student_contact_screen.dart';
+import '../../notice/controller/notice_controller.dart';
 import '../../notice/screen/teacher_assign_notice_screen.dart';
+import '../../notice/widget/notice_pined_card.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/teacher_assign_report_screen.dart';
 import '../../sports/screen/annual_sports_meet_screen.dart';
@@ -27,6 +33,27 @@ class SchoolTeacherHomeScreen extends StatefulWidget {
 }
 
 class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
+
+  final _schoolEvent = Get.find<SchoolEventController>();
+  final _schoolNotice = Get.find<NoticeController>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ✅ Fetch Events (silently)
+      if (_schoolEvent.events.isEmpty && !_schoolEvent.isLoading.value) {
+        _schoolEvent.fetchEvents(silent: true);
+      }
+
+      // ✅ Fetch Notices (silently) — NoticePinedCard ke liye
+      if (_schoolNotice.notices.isEmpty && !_schoolNotice.isLoading.value) {
+        _schoolNotice.fetchNotices(silent: true);
+      }
+    });
+  }
+
   // ==================== DATA ====================
   final List<AcademicItem> _selfManagement = [
     AcademicItem(
@@ -313,12 +340,18 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             child: TeacherCheckinCheckoutButton(),
           ),
 
+          SliverToBoxAdapter(child: SchoolCurrentEventCard()),
+
           SliverToBoxAdapter(
             child: _buildSection(
               title: "Student Management",
               items: _studentManagement,
               builder: _buildStudentCard,
             ),
+          ),
+
+          SliverToBoxAdapter(
+            child: NoticePinedCard(),
           ),
 
           // ==================== SCHOOL FEATURES ====================
@@ -330,70 +363,6 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             ),
           ),
 
-          // ==================== ACTIVITY CARD ====================
-          SliverToBoxAdapter(
-            child: Card(
-              elevation: 0,
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              color: Colors.grey.shade50,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.directions_run_rounded,
-                              color: Colors.indigo, size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Annual Sports Meet",
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              "New activity • Register now",
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          _push(const AnnualSportsMeetScreen()),
-                      child: const Text(
-                        "More",
-                        style: TextStyle(
-                          color: Colors.indigo,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
 
           // ==================== OTHER ACCESS ====================
           SliverToBoxAdapter(

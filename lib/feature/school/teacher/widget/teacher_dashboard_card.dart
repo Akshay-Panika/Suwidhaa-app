@@ -68,9 +68,9 @@ class TeacherDashboardCard extends StatelessWidget {
                       ClassAttendanceCard(),
 
                       // Events Carousel
-                      Expanded(
-                        child:  SchoolEventDashboardCard(),
-                      ),
+                      // Expanded(
+                      //   child:  SchoolEventDashboardCard(),
+                      // ),
                     ],
                   ),
                 ),

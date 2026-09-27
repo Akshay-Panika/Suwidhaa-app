@@ -1,133 +1,158 @@
-import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import '../model/school_event_model.dart';
 import '../repository/school_event_repository.dart';
 
 class SchoolEventController extends GetxController {
-  final SchoolEventRepository _repository = SchoolEventRepository();
+  final SchoolEventRepository _repo = SchoolEventRepository();
 
-  // Observable states
-  final eventList = <SchoolEventModel>[].obs;
-  final isLoading = false.obs;
-  final errorMessage = ''.obs;
-  final selectedEvent = Rxn<SchoolEventModel>();
-  final searchQuery = ''.obs;
-  final selectedFilter = 'All'.obs;
+  // ==================== STATE ====================
+  final RxList<SchoolEventModel> events = <SchoolEventModel>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxBool isSubmitting = false.obs;
+  final RxString error = ''.obs;
 
-  // Filter options
-  final filters = <String>['All', 'Upcoming', 'Ongoing', 'Completed', 'Cancelled'].obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    fetchEvents();
+  // ==================== SORTED (pinned first) ====================
+  List<SchoolEventModel> get sortedEvents {
+    final list = [...events];
+    list.sort((a, b) {
+      final pa = a.isPinned ? 0 : 1;
+      final pb = b.isPinned ? 0 : 1;
+      if (pa != pb) return pa.compareTo(pb);
+      return b.id.compareTo(a.id);
+    });
+    return list;
   }
 
-  // Fetch all events
-  Future<void> fetchEvents() async {
-    try {
+  // ==================== FETCH ====================
+  Future<void> fetchEvents({bool silent = false}) async {
+    if (!silent) {
       isLoading.value = true;
-      errorMessage.value = '';
-
-      final response = await _repository.getEventList();
-
-      if (response.success) {
-        eventList.assignAll(response.data);
-      } else {
-        errorMessage.value = 'Failed to load events';
-      }
+      error.value = '';
+    }
+    try {
+      final result = await _repo.getEvents();
+      events.assignAll(result);
     } catch (e) {
-      errorMessage.value = 'Error: $e';
+      error.value = e.toString().replaceFirst('Exception: ', '');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Get event by ID
-  Future<void> getEventById(int id) async {
+  // ==================== CREATE ====================
+  Future<bool> createEvent({
+    required String title,
+    required String description,
+    required String category,
+    required String venue,
+    required String startDate,
+    required String endDate,
+    required String startTime,
+    required String endTime,
+    required String audience,
+    required String status,
+    required bool isPinned,
+    String organizer = 'teacher_101',
+    PlatformFile? banner,
+  }) async {
+    isSubmitting.value = true;
     try {
-      isLoading.value = true;
-      errorMessage.value = '';
-
-      final event = await _repository.getEventById(id);
-      selectedEvent.value = event;
-    } catch (e) {
-      errorMessage.value = 'Error: $e';
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Filter methods
-  void setFilter(String filter) {
-    selectedFilter.value = filter;
-  }
-
-  List<SchoolEventModel> getFilteredEvents() {
-    final query = searchQuery.value.toLowerCase().trim();
-    final filter = selectedFilter.value;
-
-    return eventList.where((event) {
-      // Search filter
-      if (query.isNotEmpty) {
-        final title = event.title?.toLowerCase() ?? '';
-        final description = event.description?.toLowerCase() ?? '';
-        if (!title.contains(query) && !description.contains(query)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filter != 'All') {
-        final status = event.status ?? '';
-        if (status.toLowerCase() != filter.toLowerCase()) {
-          return false;
-        }
-      }
-
+      final created = await _repo.createEvent(
+        title: title,
+        description: description,
+        category: category,
+        venue: venue,
+        startDate: startDate,
+        endDate: endDate,
+        startTime: startTime,
+        endTime: endTime,
+        audience: audience,
+        status: status,
+        isPinned: isPinned,
+        organizer: organizer,
+        banner: banner,
+      );
+      events.insert(0, created);
       return true;
-    }).toList();
-  }
-
-  // Get status count
-  Map<String, int> getStatusCounts() {
-    final counts = <String, int>{};
-    for (final event in eventList) {
-      final status = event.status ?? 'Unknown';
-      counts[status] = (counts[status] ?? 0) + 1;
+    } catch (e) {
+      error.value = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      isSubmitting.value = false;
     }
-    return counts;
   }
 
-  // Search
-  void setSearchQuery(String query) {
-    searchQuery.value = query;
+  // ==================== UPDATE ====================
+  Future<bool> updateEvent({
+    required int id,
+    required String title,
+    required String description,
+    required String category,
+    required String venue,
+    required String startDate,
+    required String endDate,
+    required String startTime,
+    required String endTime,
+    required String audience,
+    required String status,
+    required bool isPinned,
+    String organizer = 'teacher_101',
+    PlatformFile? banner,
+    bool removeBanner = false,
+  }) async {
+    isSubmitting.value = true;
+    try {
+      final updated = await _repo.updateEvent(
+        id: id,
+        title: title,
+        description: description,
+        category: category,
+        venue: venue,
+        startDate: startDate,
+        endDate: endDate,
+        startTime: startTime,
+        endTime: endTime,
+        audience: audience,
+        status: status,
+        isPinned: isPinned,
+        organizer: organizer,
+        banner: banner,
+        removeBanner: removeBanner,
+      );
+      final i = events.indexWhere((e) => e.id == id);
+      if (i != -1) events[i] = updated;
+      return true;
+    } catch (e) {
+      error.value = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
   }
 
-  // Refresh
-  Future<void> refreshEvents() async {
-    await fetchEvents();
+  // ==================== DELETE ====================
+  Future<bool> deleteEvent(int id) async {
+    try {
+      await _repo.deleteEvent(id);
+      events.removeWhere((e) => e.id == id);
+      return true;
+    } catch (e) {
+      error.value = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    }
   }
 
-  // Clear selected event
-  void clearSelectedEvent() {
-    selectedEvent.value = null;
-  }
-
-  // Get status color
-  Color getStatusColor(String? status) {
-    if (status == null) return Colors.grey;
-    switch (status.toLowerCase()) {
-      case 'upcoming':
-        return Colors.blue;
-      case 'ongoing':
-        return Colors.green;
-      case 'completed':
-        return Colors.grey;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
+  // ==================== TOGGLE PIN ====================
+  Future<bool> togglePin(int id) async {
+    try {
+      final updated = await _repo.togglePin(id);
+      final i = events.indexWhere((e) => e.id == id);
+      if (i != -1) events[i] = updated;
+      return true;
+    } catch (e) {
+      error.value = e.toString().replaceFirst('Exception: ', '');
+      return false;
     }
   }
 }

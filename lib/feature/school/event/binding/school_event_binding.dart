@@ -1,3 +1,5 @@
+// lib/feature/school/student_leave/binding/student_leave_binding.dart
+
 import 'package:get/get.dart';
 import '../controller/school_event_controller.dart';
 

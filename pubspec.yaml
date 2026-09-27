@@ -29,9 +29,12 @@ dependencies:
   fluttertoast: ^9.0.0
   dio: ^5.11.0
   get: ^4.7.3
+
   shared_preferences: ^2.5.5
   file_picker: ^10.3.10
   image_picker: ^1.0.7
+  open_filex: ^4.5.0
+
   shimmer: ^3.0.0
   readmore: ^3.0.0
 

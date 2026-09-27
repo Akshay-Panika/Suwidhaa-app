@@ -126,5 +126,17 @@ class ApiUrls {
   static const String meetingDelete = 'v1/school/meeting/delete/';   // + id/
   static String meetingDetail(int id) => 'v1/school/meeting/$id/';
 
+  // ==================== NOTICE ====================
+  static const String noticeList   = 'v1/school/notice/list/';
+  static const String noticeCreate = 'v1/school/notice/create/';
+  static String noticeDetail(int id)   => 'v1/school/notice/$id/';
+  static String noticeTogglePin(int id) => 'v1/school/notice/$id/toggle-pin/';
+
+  // ==================== SCHOOL EVENT ====================
+  static const String eventList   = 'v1/school/event/list/';
+  static const String eventCreate = 'v1/school/event/create/';
+  static String eventDetail(int id)    => 'v1/school/event/$id/';
+  static String eventTogglePin(int id) => 'v1/school/event/$id/toggle-pin/';
+
 
 }
