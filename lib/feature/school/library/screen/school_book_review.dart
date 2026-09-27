@@ -1,440 +1,552 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../core/widget/flutter_toast.dart';
+import '../controller/library_controller.dart';
+import '../model/library_book_model.dart';
+import 'school_library_form_screen.dart';
 
 class SchoolBookReview extends StatefulWidget {
-  final Map<String, dynamic> book;
+  /// Pass at least `id` — screen will fetch fresh data from API.
+  final LibraryBookModel? book;
 
-  const SchoolBookReview({super.key, required this.book});
+  const SchoolBookReview({super.key, this.book});
 
   @override
   State<SchoolBookReview> createState() => _SchoolBookReviewState();
 }
 
 class _SchoolBookReviewState extends State<SchoolBookReview> {
-  // ==================== COLOR HELPERS ====================
-  Color _statusColor(String s) {
-    switch (s) {
-      case "Available": return Colors.green;
-      case "Out of Stock": return Colors.red;
-      case "Upcoming": return Colors.orange;
-      default: return Colors.grey;
+  LibraryController get c => Get.find<LibraryController>();
+
+  LibraryBookModel? _book;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _book = widget.book;
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_book?.id == null) {
+      setState(() {
+        _loading = false;
+        _error = "No book id provided";
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final fresh = await c.fetchBookById(_book!.id!);
+      if (!mounted) return;
+      setState(() {
+        _book = fresh ?? _book;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
-  IconData _statusIcon(String s) {
-    switch (s) {
-      case "Available": return Icons.check_circle_rounded;
-      case "Out of Stock": return Icons.cancel_rounded;
-      case "Upcoming": return Icons.schedule_rounded;
-      default: return Icons.info_rounded;
-    }
-  }
-
+  // ==================== HELPERS ====================
   Color _subjectColor(String s) {
-    switch (s) {
-      case "Maths": return Colors.indigo;
-      case "Physics": return Colors.blue;
-      case "Chemistry": return Colors.deepPurple;
-      case "Biology": return Colors.green;
-      case "English": return Colors.orange;
-      case "Hindi": return Colors.brown;
-      case "History": return Colors.teal;
-      case "Geography": return Colors.cyan;
-      case "Computer": return Colors.blueGrey;
+    switch (s.toLowerCase()) {
+      case "maths": return Colors.indigo;
+      case "physics": return Colors.blue;
+      case "chemistry": return Colors.deepPurple;
+      case "biology": return Colors.green;
+      case "english": return Colors.orange;
+      case "hindi": return Colors.brown;
+      case "history": return Colors.teal;
+      case "geography": return Colors.cyan;
+      case "computer": return Colors.blueGrey;
       default: return Colors.grey;
     }
-  }
-
-  List<Color> _subjectGradient(String s) {
-    final c = _subjectColor(s);
-    return [c, Color.lerp(c, Colors.black, 0.35)!];
   }
 
   IconData _subjectIcon(String s) {
-    switch (s) {
-      case "Maths": return Icons.calculate_rounded;
-      case "Physics": return Icons.science_rounded;
-      case "Chemistry": return Icons.biotech_rounded;
-      case "Biology": return Icons.eco_rounded;
-      case "English": return Icons.translate_rounded;
-      case "Hindi": return Icons.text_fields_rounded;
-      case "History": return Icons.history_edu_rounded;
-      case "Geography": return Icons.public_rounded;
-      case "Computer": return Icons.computer_rounded;
+    switch (s.toLowerCase()) {
+      case "maths": return Icons.calculate_rounded;
+      case "physics": return Icons.science_rounded;
+      case "chemistry": return Icons.biotech_rounded;
+      case "biology": return Icons.eco_rounded;
+      case "english": return Icons.translate_rounded;
+      case "hindi": return Icons.text_fields_rounded;
+      case "history": return Icons.history_edu_rounded;
+      case "geography": return Icons.public_rounded;
+      case "computer": return Icons.computer_rounded;
       default: return Icons.menu_book_rounded;
     }
   }
 
-  void _snack(String msg, {Color? color}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: color ?? Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  String _displayClass(String raw) {
+    if (raw.startsWith("Class ")) return raw;
+    return "Class $raw";
   }
 
+  // ==================== ACTIONS ====================
+  Future<void> _onEdit() async {
+    if (_book?.id == null) return;
+
+    final ok = await Get.to(
+          () => SchoolLibraryFormScreen(
+        book: {
+          'id': _book!.id,
+          'author': _book!.author,
+          'book_class': _book!.bookClass,
+          'subject': _book!.subject,
+          'quantity': _book!.quantity,
+          'front_image': _book!.frontImage,
+          'back_image': _book!.backImage,
+        },
+      ),
+    );
+
+    if (ok == true) {
+      await _load();
+      await c.fetchBooks();
+      if (mounted) {
+        FlutterToast.success("Book details updated");
+      }
+    }
+  }
+
+  Future<void> _onDelete() async {
+    if (_book?.id == null) return;
+
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title:  Text("Delete Book?",style: TextStyle(fontSize: 20,fontWeight: FontWeight.w600),),
+        content: const Text(
+            "Are you sure you want to delete this book?\n\nThis action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Get.back(result: true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      final done = await c.deleteBook(_book!.id!);
+      if (done && mounted) {
+        Get.back();
+        FlutterToast.success("Book has been deleted");
+      }
+    }
+  }
+
+  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
-    final b = widget.book;
-    final sc = _subjectColor(b['subject'] as String);
-    final statusColor = _statusColor(b['status'] as String);
-    final grad = _subjectGradient(b['subject'] as String);
-
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: sc,
+        backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Get.back(),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
         title: const Text("Book Details",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ==================== HEADER WITH BOOK COVER ====================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-              decoration: BoxDecoration(
-                color: sc.withOpacity(0.08),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Book cover
-                  Container(
-                    width: 110, height: 155,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: grad,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: sc.withOpacity(0.35),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0, top: 0, bottom: 0,
-                          child: Container(
-                            width: 6,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.25),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                bottomLeft: Radius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Center(
-                          child: Icon(_subjectIcon(b['subject'] as String),
-                              color: Colors.white, size: 48),
-                        ),
-                        Positioned(
-                          bottom: 8, left: 0, right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                b['class'].toString().replaceAll("Class ", "C-"),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Book title + author + chips
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          b['title'] as String,
-                          style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              height: 1.3),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(Icons.person_rounded,
-                                size: 13, color: Colors.grey[700]),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                b['author'] as String,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[700],
-                                    fontStyle: FontStyle.italic),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 6, runSpacing: 6,
-                          children: [
-                            _miniChip(b['class'] as String, Colors.indigo,
-                                icon: Icons.class_rounded),
-                            _miniChip(b['subject'] as String, sc,
-                                icon: _subjectIcon(b['subject'] as String)),
-                            _miniChip(b['status'] as String, statusColor,
-                                icon: _statusIcon(b['status'] as String)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        actions: [
+          if (_book != null) ...[
+            IconButton(
+              tooltip: "Edit",
+              onPressed: _onEdit,
+              icon: const Icon(Icons.edit_rounded),
             ),
-
-            const SizedBox(height: 20),
-
-            // ==================== INFO CARD ====================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  children: [
-                    _kvRow(Icons.tag_rounded, "Book ID", b['id'] as String),
-                    const Divider(height: 20),
-                    _kvRow(Icons.qr_code_rounded, "ISBN", b['isbn'] as String),
-                    const Divider(height: 20),
-                    _kvRow(Icons.calendar_today_rounded, "Published",
-                        b['year'] as String),
-                    const Divider(height: 20),
-                    _kvRow(Icons.shelves, "Shelf No.", b['shelf'] as String),
-                    const Divider(height: 20),
-                    _kvRow(Icons.inventory_2_rounded, "Copies Available",
-                        "${b['copies']} / ${b['total']}"),
-                  ],
-                ),
-              ),
+            IconButton(
+              tooltip: "Delete",
+              onPressed: _onDelete,
+              icon: const Icon(Icons.delete_rounded),
             ),
-
-            const SizedBox(height: 20),
-
-            // ==================== STOCK INFO CARD ====================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(_statusIcon(b['status'] as String),
-                          color: statusColor, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            b['status'] as String,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: statusColor,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            b['status'] == "Available"
-                                ? "${b['copies']} copies available for issue"
-                                : b['status'] == "Out of Stock"
-                                ? "Currently unavailable"
-                                : "Coming soon",
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.grey[700]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ==================== ACTION BUTTON ====================
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildActionButton(b),
-            ),
-
-            const SizedBox(height: 30),
           ],
-        ),
+        ],
       ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildActionButton(Map<String, dynamic> b) {
-    final status = b['status'] as String;
-
-    if (status == "Available") {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.pop(context);
-            _snack("Book issued successfully!");
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null || _book == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  size: 60, color: Colors.red),
+              const SizedBox(height: 12),
+              Text(
+                _error ?? "Book not found",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text("Retry"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
-          icon: const Icon(Icons.book_rounded,
-              color: Colors.white, size: 20),
-          label: const Text("Issue Book",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15)),
-        ),
-      );
-    } else if (status == "Out of Stock") {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.pop(context);
-            _snack("You'll be notified when available",
-                color: Colors.orange);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          icon: const Icon(Icons.notifications_active_rounded,
-              color: Colors.white, size: 20),
-          label: const Text("Notify Me",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15)),
         ),
       );
     }
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () {},
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          side: const BorderSide(color: Colors.orange),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+
+    final b = _book!;
+    final subColor = _subjectColor(b.subject);
+    final statusColor =
+    b.status == "Available" ? Colors.green : Colors.red;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+               Row(
+                 spacing: 10,
+                 children: [
+                   Expanded(
+                     child: _imageBlock(
+                       title: "Front Image",
+                       url: b.frontImage,
+                       icon: _subjectIcon(b.subject),
+                       color: subColor,
+                     ),
+                   ),
+          
+                   Expanded(
+                     child: _imageBlock(
+                       title: "Back Image",
+                       url: b.backImage,
+                       icon: Icons.menu_book_rounded,
+                       color: subColor,
+                     ),
+                   ),
+                 ],
+               ),
+                const SizedBox(height: 14),
+          
+                // ===== HEADER CARD =====
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(_subjectIcon(b.subject),
+                              color: Colors.indigo, size: 26),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              b.subject.isEmpty ? "Book" : b.subject,
+                              style: const TextStyle(
+                                color: Colors.indigo,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _displayClass(b.bookClass),
+                              style: const TextStyle(
+                                color: Colors.indigo,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  b.status == "Available"
+                                      ? Icons.check_circle_rounded
+                                      : Icons.cancel_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  b.status,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+          
+                // const SizedBox(height: 10),
+          
+                // ===== INFO ROWS =====
+                _infoRow(
+                  icon: Icons.person_rounded,
+                  label: "Author",
+                  value: b.author.isEmpty ? "—" : b.author,
+                ),
+                _infoRow(
+                  icon: Icons.class_rounded,
+                  label: "Class",
+                  value: _displayClass(b.bookClass),
+                ),
+                _infoRow(
+                  icon: _subjectIcon(b.subject),
+                  label: "Subject",
+                  value: b.subject.isEmpty ? "—" : b.subject,
+                ),
+                _infoRow(
+                  icon: Icons.inventory_2_rounded,
+                  label: "Quantity",
+                  value: "${b.quantity}",
+                ),
+                _infoRow(
+                  icon: Icons.info_outline_rounded,
+                  label: "Status",
+                  value: b.status,
+                  valueColor: statusColor,
+                ),
+                if (b.id != null)
+                  _infoRow(
+                    icon: Icons.tag_rounded,
+                    label: "ID",
+                    value: "#${b.id}",
+                  ),
+          
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
-        icon: const Icon(Icons.schedule_rounded,
-            color: Colors.orange, size: 20),
-        label: const Text("Coming Soon",
-            style: TextStyle(
-                color: Colors.orange,
-                fontWeight: FontWeight.w700,
-                fontSize: 15)),
-      ),
-    );
-  }
-
-  Widget _kvRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
-        const SizedBox(width: 10),
-        Text(
-          label,
-          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 30),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _onDelete,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Colors.red),
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.delete_rounded, size: 18),
+                  label: const Text(
+                    "Delete",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: _onEdit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.edit_rounded, size: 18),
+                  label: const Text(
+                    "Edit Book",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _miniChip(String text, Color color, {IconData? icon}) {
+  // ==================== IMAGE BLOCK ====================
+  Widget _imageBlock({
+    required String title,
+    required String? url,
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      width: double.infinity,
+      height: 300,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (url != null && url.isNotEmpty)
+            Image.network(
+              url,
+              fit: BoxFit.cover,
+              loadingBuilder: (_, child, progress) {
+                if (progress == null) return child;
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              },
+              errorBuilder: (_, __, ___) => _imgPlaceholder(icon, color),
+            )
+          else
+            _imgPlaceholder(icon, color),
+
+          Positioned(
+            left: 8, bottom: 8,
+            child: Container(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imgPlaceholder(IconData icon, Color color) {
+    return Container(
+      color: color.withOpacity(0.1),
+      child: Center(
+        child: Icon(icon, size: 48, color: color),
+      ),
+    );
+  }
+
+  // ==================== INFO ROW ====================
+  Widget _infoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 11, color: color),
-            const SizedBox(width: 4),
-          ],
+          Icon(icon, size: 18, color: Colors.indigo),
+          const SizedBox(width: 12),
           Text(
-            text,
+            label,
             style: TextStyle(
-              fontSize: 10,
-              color: color,
-              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

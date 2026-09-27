@@ -138,5 +138,9 @@ class ApiUrls {
   static String eventDetail(int id)    => 'v1/school/event/$id/';
   static String eventTogglePin(int id) => 'v1/school/event/$id/toggle-pin/';
 
+  // ==================== SCHOOL LIBRARY ====================
+  static const String libraryCreate = 'v1/school/library/create/';
+  static const String libraryList   = 'v1/school/library/list/';
+  static String libraryDetail(int id) => 'v1/school/library/$id/';
 
 }

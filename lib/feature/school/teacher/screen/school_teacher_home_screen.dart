@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:untitled/core/utils/app_color.dart';
+import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
 import 'package:untitled/feature/school/attendance/screen/class_attendance_screen.dart';
 import 'package:untitled/feature/school/attendance/screen/subject_attendance_screen.dart';
@@ -23,6 +24,7 @@ import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/teacher_assign_report_screen.dart';
 import '../../sports/screen/annual_sports_meet_screen.dart';
 import '../widget/teacher_checkin_checkout_button.dart';
+import '../widget/teacher_profile_card.dart';
 
 class SchoolTeacherHomeScreen extends StatefulWidget {
   final Function(int index)? onNavigate;
@@ -158,14 +160,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
 
   // ==================== HELPER ====================
   void _snack(String msg, {Color? color}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: color ?? Colors.indigo,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    FlutterToast.error(msg);
   }
 
   void _push(Widget screen) {
@@ -189,141 +184,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
             floating: true,
             stretch: true,
             flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Row(
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              widget.onNavigate?.call(3);
-                            },
-                            child: CircleAvatar(
-                              radius: 26,
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Good Morning",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  "Mr. Akshay Panika",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  "Mathematics • 10th Grade",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  // Notification screen
-                                },
-                                icon: const Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Colors.white,
-                                  size: 25,
-                                ),
-                              ),
-
-                              Positioned(
-                                right: 7,
-                                top: 7,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.blue,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.school_rounded,
-                                color: Colors.white, size: 18),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                "Springfield High School",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                "2025-26",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              background: TeacherProfileCard(onNavigate:widget.onNavigate,),
             ),
           ),
 

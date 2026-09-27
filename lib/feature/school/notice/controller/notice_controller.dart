@@ -13,10 +13,14 @@ class NoticeController extends GetxController {
   final RxBool isSubmitting = false.obs;
   final RxString error = ''.obs;
 
-  // Filter state (optional)
+  // Filter state
   final RxString filterPriority = ''.obs;
   final RxString filterAudience = ''.obs;
   final RxString filterClass = ''.obs;
+
+  // ✅ NEW: class + date filter (client-side)
+  final RxString selectedClass = 'All'.obs;
+  final Rxn<DateTime> selectedDate = Rxn<DateTime>();
 
   // ==================== SORTED LIST (pinned first) ====================
   List<NoticeModel> get sortedNotices {
@@ -28,6 +32,84 @@ class NoticeController extends GetxController {
       return b.id.compareTo(a.id); // latest first
     });
     return list;
+  }
+
+  // ==================== FILTERED LIST (class + date) ====================
+  List<NoticeModel> get filteredNotices {
+    final cls = selectedClass.value;
+    final date = selectedDate.value;
+
+    return sortedNotices.where((n) {
+      // ---- Class filter ----
+      if (cls != 'All') {
+        final nc = n.assignedClass.trim();
+        if (nc != cls && nc != 'All Classes') return false;
+      }
+
+      // ---- Date filter (match same calendar day) ----
+      if (date != null) {
+        final parsed = _parseDate(n.createdAt);
+        if (parsed == null) return false;
+        if (parsed.year != date.year ||
+            parsed.month != date.month ||
+            parsed.day != date.day) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// All unique classes from loaded notices + 'All Classes' + 'All'
+  List<String> getUniqueClasses() {
+    final set = <String>{};
+    for (final n in notices) {
+      final c = n.assignedClass.trim();
+      if (c.isNotEmpty && c != 'All Classes') set.add(c);
+    }
+    final sorted = set.toList()..sort();
+    return ['All', 'All Classes', ...sorted];
+  }
+
+  bool get hasActiveFilters =>
+      selectedClass.value != 'All' || selectedDate.value != null;
+
+  // ==================== FILTER SETTERS ====================
+  void setClassFilter(String v) {
+    selectedClass.value = v;
+  }
+
+  void setDateFilter(DateTime? v) {
+    selectedDate.value = v;
+  }
+
+  void clearFilters() {
+    selectedClass.value = 'All';
+    selectedDate.value = null;
+  }
+
+  // Existing server-side filters (keep them)
+  void setFilterPriority(String v) {
+    filterPriority.value = v;
+    fetchNotices();
+  }
+
+  void setFilterAudience(String v) {
+    filterAudience.value = v;
+    fetchNotices();
+  }
+
+  void setFilterClass(String v) {
+    filterClass.value = v;
+    fetchNotices();
+  }
+
+  void clearServerFilters() {
+    filterPriority.value = '';
+    filterAudience.value = '';
+    filterClass.value = '';
+    fetchNotices();
   }
 
   // ==================== FETCH ====================
@@ -50,7 +132,7 @@ class NoticeController extends GetxController {
     }
   }
 
-  // ==================== CREATE ====================
+  // ==================== CREATE / UPDATE / DELETE / TOGGLE ====================
   Future<bool> createNotice({
     required String title,
     required String description,
@@ -83,7 +165,6 @@ class NoticeController extends GetxController {
     }
   }
 
-  // ==================== UPDATE ====================
   Future<bool> updateNotice({
     required int id,
     required String title,
@@ -121,7 +202,6 @@ class NoticeController extends GetxController {
     }
   }
 
-  // ==================== DELETE ====================
   Future<bool> deleteNotice(int id) async {
     try {
       await _repo.deleteNotice(id);
@@ -133,7 +213,6 @@ class NoticeController extends GetxController {
     }
   }
 
-  // ==================== TOGGLE PIN ====================
   Future<bool> togglePin(int id) async {
     try {
       final updated = await _repo.togglePin(id);
@@ -146,26 +225,18 @@ class NoticeController extends GetxController {
     }
   }
 
-  // ==================== FILTER SETTERS ====================
-  void setFilterPriority(String v) {
-    filterPriority.value = v;
-    fetchNotices();
-  }
+  // ==================== HELPERS ====================
+  DateTime? _parseDate(String raw) {
+    if (raw.trim().isEmpty) return null;
+    // Try ISO first
+    final iso = DateTime.tryParse(raw);
+    if (iso != null) return iso.toLocal();
 
-  void setFilterAudience(String v) {
-    filterAudience.value = v;
-    fetchNotices();
-  }
-
-  void setFilterClass(String v) {
-    filterClass.value = v;
-    fetchNotices();
-  }
-
-  void clearFilters() {
-    filterPriority.value = '';
-    filterAudience.value = '';
-    filterClass.value = '';
-    fetchNotices();
+    // Try common formats
+    try {
+      return DateTime.parse(raw).toLocal();
+    } catch (_) {
+      return null;
+    }
   }
 }

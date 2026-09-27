@@ -74,8 +74,8 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
           color: Colors.white,
           borderRadius: BorderRadius.all(Radius.circular(15)),
           border: Border.symmetric(
-            horizontal: BorderSide(color: Colors.green),
-            vertical: BorderSide(color: Colors.green),
+            horizontal: BorderSide(color: Colors.indigo,width: 0.3),
+            vertical: BorderSide(color: Colors.indigo,width: 0.3),
           ),
         ),
         child: Column(
@@ -113,7 +113,7 @@ class _SchoolTeacherDashboardScreenState extends State<SchoolTeacherDashboardScr
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.indigo.shade400,
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);

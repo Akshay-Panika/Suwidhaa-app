@@ -5,7 +5,8 @@ import '../../profile/controller/teacher_controller.dart';
 import '../../profile/model/teacher_model.dart';
 
 class TeacherProfileCard extends StatelessWidget {
-  const TeacherProfileCard({super.key});
+  final Function(int index)? onNavigate;
+  const TeacherProfileCard({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -37,52 +38,84 @@ class TeacherProfileCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Shimmer.fromColors(
-        baseColor: Colors.grey.shade300,
-        highlightColor: Colors.grey.shade100,
-        child: Row(
+        // ✅ Indigo shades
+        baseColor: Colors.indigo.shade300,
+        highlightColor: Colors.indigo.shade100,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Shimmer Circle Avatar
-            Container(
-              width: 70,
-              height: 70,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
+            // ===== Top Row (avatar + name + bell) =====
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Name + subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 140,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 110,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Bell icon
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            // Shimmer Text Lines
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 20,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 150,
-                    height: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 200,
-                    height: 14,
-                    color: Colors.white,
-                  ),
-                ],
+
+            const SizedBox(height: 14),
+
+            // ===== Bottom Bar (school + year) =====
+            Container(
+              width: double.infinity,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ],
@@ -90,7 +123,6 @@ class TeacherProfileCard extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildErrorState(TeacherController controller) {
     return Container(
       width: double.infinity,
@@ -220,143 +252,140 @@ class TeacherProfileCard extends StatelessWidget {
   }
 
   Widget _buildProfileContent(TeacherData teacher, TeacherController controller) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Profile Image
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.blue.shade200,
-                width: 2,
-              ),
-              image: teacher.teacherProfile != null && teacher.teacherProfile!.isNotEmpty
-                  ? DecorationImage(
-                image: NetworkImage(teacher.teacherProfile!),
-                fit: BoxFit.cover,
-              )
-                  : null,
-            ),
-            child: teacher.teacherProfile == null || teacher.teacherProfile!.isEmpty
-                ? CircleAvatar(
-              radius: 35,
-              backgroundColor: Colors.blue.shade100,
-              child: Text(
-                controller.fullName.isNotEmpty
-                    ? controller.fullName[0].toUpperCase()
-                    : 'T',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-            )
-                : null,
-          ),
-
-          const SizedBox(width: 16),
-
-          // Teacher Information
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
               children: [
-                // Name
-                Text(
-                  controller.fullName.isNotEmpty
-                      ? controller.fullName
-                      : "Teacher Name",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: Colors.blue,
+                InkWell(
+                  onTap: () {
+                    onNavigate?.call(3);
+                  },
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundImage: NetworkImage(teacher.teacherProfile!),
+                    child: teacher.teacherProfile!.isNotEmpty ? null: Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-
-                const SizedBox(height: 5),
-                // Teacher ID
-                Row(
+                const SizedBox(width: 12),
+                 Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Good Morning",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "${teacher.gender == "Male"?"Mr.":"Miss"} ${teacher.fullName}",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "${teacher.subjectsString}",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Icon(
-                      Icons.badge,
-                      size: 14,
-                      color: Colors.grey.shade600,
+                    IconButton(
+                      onPressed: () {
+                        // Notification screen
+                      },
+                      icon: const Icon(
+                        Icons.notifications_none_rounded,
+                        color: Colors.white,
+                        size: 25,
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "ID: ${controller.teacherIdCard}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+
+                    Positioned(
+                      right: 7,
+                      top: 7,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.blue,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 3),
-
-                // Qualification
-                Row(
-                  children: [
-                    Icon(
-                      Icons.school,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      controller.qualification.isNotEmpty
-                          ? controller.qualification
-                          : "Teacher",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 3),
-
-                // Experience & Gender
-                Row(
-                  children: [
-                    Icon(
-                      Icons.work_outline,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Experience: ${controller.experienceString}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-
+                )
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.school_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                   Expanded(
+                    child: Text(
+                      "${teacher.schoolType}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child:  Text(
+                      "Joining Date:${teacher.joinDate}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
