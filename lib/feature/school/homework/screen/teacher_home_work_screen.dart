@@ -3,11 +3,8 @@ import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_add_homework_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_homework_details_screen.dart';
-import 'dart:io';
-
 import '../../../../core/utils/app_color.dart';
-import '../../../../core/widget/flutter_toast.dart';
-import '../../profile/controller/teacher_controller.dart';
+
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
 
@@ -35,7 +32,7 @@ class TeacherHomeworkScreen extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
         actions: [
           // ✅ Filter icon with badge
           Obx(() => Stack(
@@ -67,14 +64,19 @@ class TeacherHomeworkScreen extends StatelessWidget {
                 ),
             ],
           )),
-          IconButton(
-            onPressed: () => controller.refreshHomework(),
-            icon: const Icon(Icons.refresh, color: Colors.white),
+          SizedBox(width: 20,),
+
+          InkWell(
+            onTap: () => Get.to(() => const TeacherAddHomeworkScreen()),
+            child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 0.3),
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 20,)),
           ),
-          IconButton(
-            onPressed: () => Get.to(() => const TeacherAddHomeworkScreen()),
-            icon: const Icon(Icons.add, color: Colors.white),
-          ),
+          SizedBox(width: 20,)
         ],
       ),
       body: SafeArea(

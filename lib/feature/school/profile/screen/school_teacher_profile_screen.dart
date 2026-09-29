@@ -8,7 +8,6 @@ import '../../auth/controller/school_auth_controller.dart';
 import '../../student/widget/student_attendance_card.dart';
 import '../controller/teacher_controller.dart';
 import '../model/teacher_model.dart';
-import '../widget/school_facilitie_card.dart';
 
 class SchoolTeacherProfileScreen extends StatelessWidget {
   const SchoolTeacherProfileScreen({super.key});
@@ -33,20 +32,14 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
 
         // Show teacher data
         if (teacherController.hasData) {
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                toolbarHeight: 200,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                    background: _buildTeacherCard(teacherController)),
+          return  Column(
+            children: [
+              Expanded(child: _buildTeacherCard(teacherController)),
+              TeacherAttendanceCard(),
+              Expanded(
+                flex: 2,
+                child: _buildSchoolFeatures(context, teacherController, authController),
               ),
-              SliverToBoxAdapter(child: TeacherAttendanceCard()),
-              SliverToBoxAdapter(
-                child: _buildSchoolFeatures(
-                    context, teacherController, authController),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
         }
@@ -411,10 +404,17 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            // Teacher ID
-            Text(
-              "Teacher ID: ${teacherController.teacherIdCard}",
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade100),
+              ),
+              child: Text(
+                "Teacher ID: ${teacherController.teacherIdCard}",
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
             ),
             const SizedBox(height: 4),
             // Experience
@@ -458,6 +458,7 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
             _buildAboutSchool(),
             const SizedBox(height: 16),
             _buildContactSection(context, authController),
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -708,6 +709,7 @@ class SchoolTeacherProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

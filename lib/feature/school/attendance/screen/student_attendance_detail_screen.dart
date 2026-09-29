@@ -220,7 +220,7 @@ class _StudentAttendanceDetailScreenState
               fontWeight: FontWeight.w600,
               fontSize: 18),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

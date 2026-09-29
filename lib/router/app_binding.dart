@@ -20,6 +20,7 @@ import '../feature/school/attendance/controller/teacher_checkin_checkout_control
 import '../feature/school/attendance/controller/teacher_leave_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
+import '../feature/school/exams/controller/exams_controller.dart';
 import '../feature/school/homework/controller/homework_controller.dart';
 import '../feature/school/leave/controller/student_leave_controller.dart';
 import '../feature/school/library/controller/library_controller.dart';
@@ -65,5 +66,6 @@ class AppBindings implements Bindings {
     Get.lazyPut<MeetingController>(() => MeetingController(), fenix: true);
     Get.lazyPut<NoticeController>(() => NoticeController(), fenix: true);
     Get.lazyPut<LibraryController>(() => LibraryController(), fenix: true);
+    Get.lazyPut<ExamsController>(() => ExamsController(), fenix: true);
   }
 }

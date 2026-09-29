@@ -173,23 +173,45 @@ class _TeacherAssignDetailsScreenState
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
         ),
         actions: [
-          IconButton(
-            onPressed: _togglePin,
-            icon: Icon(
-              _notice.isPinned
-                  ? Icons.push_pin_rounded
-                  : Icons.push_pin_outlined,
-              color: _notice.isPinned ? Colors.orange : Colors.white,
+          InkWell(
+            onTap: _togglePin,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 0.3),
+              ),
+              child: Icon(size: 20,
+                _notice.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                color: _notice.isPinned ? Colors.orange : Colors.white,
+              ),
             ),
           ),
-          IconButton(
-            onPressed: _edit,
-            icon: const Icon(Icons.edit_rounded),
+          SizedBox(width: 20,),
+          InkWell(
+            onTap: _edit,
+            child:  Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 0.3),
+                ),
+                child: Icon(Icons.edit_rounded, size: 20,)),
           ),
-          IconButton(
-            onPressed: _delete,
-            icon: const Icon(Icons.delete_outline_rounded),
+          SizedBox(width: 20,),
+          InkWell(
+            onTap: _delete,
+            child:  Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 0.3),
+                ),
+                child: Icon(Icons.delete_outline_rounded, size: 20,)),
           ),
+          SizedBox(width: 20,),
         ],
       ),
       body: SingleChildScrollView(

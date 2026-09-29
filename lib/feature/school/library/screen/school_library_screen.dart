@@ -203,20 +203,20 @@ class _SchoolLibraryScreenState extends State<SchoolLibraryScreen> {
               ],
             );
           }),
-          const SizedBox(width: 12),
+          const SizedBox(width: 20),
           InkWell(
             onTap: _openAddBook,
             customBorder: const CircleBorder(),
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white),
+                border: Border.all(color: Colors.white, width: 0.3),
               ),
               child: const Icon(Icons.add, color: Colors.white, size: 20),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
         ],
       ),
       body: _buildBody(),

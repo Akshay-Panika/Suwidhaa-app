@@ -8,7 +8,6 @@ import '../../../../core/widget/flutter_toast.dart';
 import '../../student/controller/student_list_controller.dart';
 import '../../student/model/student_list_model.dart';
 
-
 class StudentContactScreen extends StatefulWidget {
   const StudentContactScreen({super.key});
 
@@ -23,7 +22,6 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = "";
   String _selectedClass = "All Classes";
-  bool _whatsappOnly = false;
 
   @override
   void initState() {
@@ -43,7 +41,6 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
   List<StudentListData> get _filteredStudents {
     var list = List<StudentListData>.from(controller.studentList);
 
-    // Search
     if (_searchQuery.isNotEmpty) {
       list = list.where((s) {
         return s.fullName.toLowerCase().contains(_searchQuery) ||
@@ -54,14 +51,8 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
       }).toList();
     }
 
-    // Class
     if (_selectedClass != "All Classes") {
       list = list.where((s) => s.studentClass == _selectedClass).toList();
-    }
-
-    // WhatsApp only
-    if (_whatsappOnly) {
-      list = list.where((s) => s.parentPhone.isNotEmpty).toList();
     }
 
     return list;
@@ -95,14 +86,15 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        centerTitle: false,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios),
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
         title: const Text(
           "Student Contacts",
@@ -114,17 +106,16 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
             onPressed: () => controller.refreshStudents(),
             icon: const Icon(Icons.refresh_rounded),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Obx(() {
-        // Loading
         if (controller.isLoading.value && controller.studentList.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(color: Colors.indigo),
           );
         }
 
-        // Error
         if (controller.errorMessage.isNotEmpty &&
             controller.studentList.isEmpty) {
           return _errorState(controller.errorMessage.value);
@@ -134,165 +125,10 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
 
         return Column(
           children: [
-            // ===== SEARCH + FILTER BAR =====
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-              child: Column(
-                children: [
-                  // Search
-                  TextField(
-                    controller: _searchCtrl,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: "Search name, roll or phone...",
-                      hintStyle: const TextStyle(fontSize: 13),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: Colors.indigo, size: 20),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                        onPressed: () => _searchCtrl.clear(),
-                        icon: const Icon(Icons.clear_rounded,
-                            size: 18, color: Colors.grey),
-                      )
-                          : null,
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                        BorderSide(color: Colors.grey.shade200),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                        BorderSide(color: Colors.grey.shade200),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Colors.indigo, width: 1.4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+            _filterSection(),
+            _countStrip(filtered.length),
+            const Divider(height: 1, color: Color(0xFFEEF0F5)),
 
-                  // Class + WhatsApp filter
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12),
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.grey.shade200),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedClass,
-                              isExpanded: true,
-                              icon: const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  color: Colors.indigo,
-                                  size: 20),
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                              items: _classes
-                                  .map((c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c),
-                              ))
-                                  .toList(),
-                              onChanged: (v) => setState(
-                                      () => _selectedClass = v!),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // WhatsApp filter toggle
-                      InkWell(
-                        onTap: () => setState(
-                                () => _whatsappOnly = !_whatsappOnly),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          height: 40,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: _whatsappOnly
-                                ? const Color(0xFF25D366)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _whatsappOnly
-                                  ? const Color(0xFF25D366)
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.chat_rounded,
-                                size: 16,
-                                color: _whatsappOnly
-                                    ? Colors.white
-                                    : const Color(0xFF25D366),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                "WhatsApp",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _whatsappOnly
-                                      ? Colors.white
-                                      : Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-
-            // ===== COUNT STRIP =====
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "${filtered.length} contacts",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-
-            // ===== STUDENT LIST =====
             Expanded(
               child: filtered.isEmpty
                   ? _emptyState()
@@ -300,7 +136,7 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
                 onRefresh: controller.refreshStudents,
                 color: Colors.indigo,
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
                   itemCount: filtered.length,
                   separatorBuilder: (_, __) =>
                   const SizedBox(height: 10),
@@ -315,37 +151,215 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
     );
   }
 
+  // ==================== FILTER SECTION ====================
+  Widget _filterSection() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchCtrl,
+            style: const TextStyle(fontSize: 13.5),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: "Search name, roll or phone...",
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Colors.indigo,
+                size: 20,
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                onPressed: () => _searchCtrl.clear(),
+                icon: const Icon(Icons.clear_rounded,
+                    size: 18, color: Colors.grey),
+              )
+                  : null,
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                const BorderSide(color: Colors.indigo, width: 1.4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Class dropdown
+          Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedClass,
+                isExpanded: true,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.indigo,
+                  size: 20,
+                ),
+                dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                items: _classes
+                    .map((c) => DropdownMenuItem(
+                  value: c,
+                  child: Row(
+                    children: [
+                      Icon(
+                        c == "All Classes"
+                            ? Icons.groups_rounded
+                            : Icons.class_rounded,
+                        size: 15,
+                        color: Colors.indigo,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(c),
+                    ],
+                  ),
+                ))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedClass = v!),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== COUNT STRIP ====================
+  Widget _countStrip(int count) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.indigo,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            'CONTACTS',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: Colors.black54,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.indigo.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                color: Colors.indigo,
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          const Spacer(),
+          if (count > 0)
+            Text(
+              count == 1 ? '1 student' : '$count students',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // ==================== STUDENT TILE ====================
   Widget _buildStudentTile(StudentListData s) {
     final color = s.genderColor;
     final initials = s.displayName + _secondInitial(s.fullName);
     final phone = s.parentPhone;
+    final hasPhone = phone.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          // Avatar
+          // ---------- Avatar ----------
           Stack(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: color.withOpacity(0.15),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.15),
+                      color.withOpacity(0.06),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   initials,
                   style: TextStyle(
                     fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: color,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              if (phone.isNotEmpty)
+              if (hasPhone)
                 Positioned(
                   right: -2,
                   bottom: -2,
@@ -354,18 +368,17 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF25D366),
                       shape: BoxShape.circle,
-                      border:
-                      Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     child: const Icon(Icons.chat_rounded,
-                        color: Colors.white, size: 10),
+                        color: Colors.white, size: 9),
                   ),
                 ),
             ],
           ),
           const SizedBox(width: 12),
 
-          // Info
+          // ---------- Info ----------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,57 +386,49 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
                 Text(
                   s.fullName,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1F36),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 5),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        "Roll ${s.rollNumber}",
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: Colors.indigo,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                    _miniChip(
+                      icon: Icons.tag_rounded,
+                      text: "Roll ${s.rollNumber}",
+                      color: Colors.indigo,
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
-                        "Class ${s.studentClass}",
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[600],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: _miniChip(
+                        icon: Icons.class_rounded,
+                        text: "Class ${s.studentClass}",
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.phone_rounded,
-                        size: 10, color: Colors.grey[600]),
-                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.phone_rounded,
+                      size: 11,
+                      color: hasPhone ? Colors.indigo : Colors.grey.shade400,
+                    ),
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        phone.isNotEmpty ? phone : 'No phone',
+                        hasPhone ? phone : 'No phone',
                         style: TextStyle(
-                          fontSize: 10.5,
-                          color: Colors.grey[700],
+                          fontSize: 11,
+                          color: hasPhone
+                              ? const Color(0xFF1A1F36)
+                              : Colors.grey.shade500,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -435,12 +440,14 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
             ),
           ),
 
-          // ─── Action buttons ───
-          Column(
+          // ---------- Action buttons ----------
+          Row(
             children: [
-              // WhatsApp
-              InkWell(
-                onTap: phone.isNotEmpty
+              _actionBtn(
+                icon: Icons.chat_rounded,
+                color: const Color(0xFF25D366),
+                enabled: hasPhone,
+                onTap: hasPhone
                     ? () => _openWhatsApp(
                   phone,
                   s.fatherName.isNotEmpty
@@ -448,49 +455,72 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
                       : 'Parent',
                 )
                     : null,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: phone.isNotEmpty
-                        ? const Color(0xFF25D366)
-                        : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.chat_rounded,
-                    color: phone.isNotEmpty
-                        ? Colors.white
-                        : Colors.grey,
-                    size: 16,
-                  ),
-                ),
               ),
-              const SizedBox(height: 6),
-              // Call
-              InkWell(
-                onTap: phone.isNotEmpty
-                    ? () => _makeCall(phone)
-                    : null,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: phone.isNotEmpty
-                        ? Colors.indigo
-                        : Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.phone_rounded,
-                    color: phone.isNotEmpty
-                        ? Colors.white
-                        : Colors.grey,
-                    size: 16,
-                  ),
-                ),
+              const SizedBox(width: 8),
+              _actionBtn(
+                icon: Icons.phone_rounded,
+                color: Colors.indigo,
+                enabled: hasPhone,
+                onTap: hasPhone ? () => _makeCall(phone) : null,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Action button widget ----------
+  Widget _actionBtn({
+    required IconData icon,
+    required Color color,
+    required bool enabled,
+    required VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: enabled ? color : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          color: enabled ? Colors.white : Colors.grey.shade400,
+          size: 16,
+        ),
+      ),
+    );
+  }
+
+  // ---------- Mini chip ----------
+  Widget _miniChip({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 9, color: color),
+          const SizedBox(width: 3),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -508,26 +538,36 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
   // ==================== EMPTY ====================
   Widget _emptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.person_search_rounded,
-              size: 60, color: Colors.grey.shade400),
-          const SizedBox(height: 10),
-          Text(
-            "No contacts found",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.indigo.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person_search_rounded,
+                  size: 40, color: Colors.indigo),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Try changing filters or search",
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-          ),
-        ],
+            const SizedBox(height: 14),
+            const Text(
+              "No contacts found",
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1A1F36),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Try changing filters or search",
+              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -535,39 +575,55 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
   // ==================== ERROR ====================
   Widget _errorState(String error) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline_rounded,
-              size: 60, color: Colors.red.shade300),
-          const SizedBox(height: 10),
-          Text(
-            "Failed to load contacts",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.red.shade700,
-              fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.error_outline_rounded,
+                  size: 40, color: Colors.red.shade400),
             ),
-          ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
+            const SizedBox(height: 14),
+            Text(
+              "Failed to load contacts",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
             ),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton(
-            onPressed: () => controller.refreshStudents(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              foregroundColor: Colors.white,
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: () => controller.refreshStudents(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text(
+                'Retry',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
-            child: const Text('Retry'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

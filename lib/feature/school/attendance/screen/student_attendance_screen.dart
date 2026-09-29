@@ -1,7 +1,12 @@
+// lib/feature/school/attendance/screen/student_attendance_screen.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/attendance/screen/teacher_leave_form_screen.dart';
+
+import '../controller/student_attendance_controller.dart';
+import '../model/student_attendance_model.dart';
+import '../../profile/controller/student_controller.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
   const StudentAttendanceScreen({super.key});
@@ -12,343 +17,152 @@ class StudentAttendanceScreen extends StatefulWidget {
 }
 
 class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
-  DateTime _focusedDay = DateTime(2026, 8);
+  late final StudentController studentController;
+  late final StudentAttendanceController attendanceController;
 
-  // Sample attendance data
-  final Map<DateTime, AttendanceStatus> _attendance = {
-    DateTime(2026, 8, 1): AttendanceStatus.absent,
-    DateTime(2026, 8, 2): AttendanceStatus.weekOff,
-    DateTime(2026, 8, 3): AttendanceStatus.absent,
-    DateTime(2026, 8, 4): AttendanceStatus.absent,
-    DateTime(2026, 8, 5): AttendanceStatus.absent,
-    DateTime(2026, 8, 6): AttendanceStatus.absent,
-    DateTime(2026, 8, 7): AttendanceStatus.absent,
-    DateTime(2026, 8, 8): AttendanceStatus.absent,
-    DateTime(2026, 8, 9): AttendanceStatus.weekOff,
-    DateTime(2026, 8, 10): AttendanceStatus.absent,
-    DateTime(2026, 8, 11): AttendanceStatus.absent,
-    DateTime(2026, 8, 12): AttendanceStatus.absent,
-    DateTime(2026, 8, 13): AttendanceStatus.absent,
-    DateTime(2026, 8, 14): AttendanceStatus.absent,
-    DateTime(2026, 8, 15): AttendanceStatus.absent,
-    DateTime(2026, 8, 16): AttendanceStatus.weekOff,
-    DateTime(2026, 8, 17): AttendanceStatus.absent,
-    DateTime(2026, 8, 18): AttendanceStatus.absent,
-    DateTime(2026, 8, 19): AttendanceStatus.absent,
-    DateTime(2026, 8, 20): AttendanceStatus.absent,
-    DateTime(2026, 8, 21): AttendanceStatus.absent,
-    DateTime(2026, 8, 22): AttendanceStatus.absent,
-    DateTime(2026, 8, 23): AttendanceStatus.weekOff,
-    DateTime(2026, 8, 24): AttendanceStatus.absent,
-    DateTime(2026, 8, 25): AttendanceStatus.absent,
-    DateTime(2026, 8, 26): AttendanceStatus.absent,
-    DateTime(2026, 8, 27): AttendanceStatus.absent,
-    DateTime(2026, 8, 28): AttendanceStatus.absent,
-    DateTime(2026, 8, 29): AttendanceStatus.absent,
-    DateTime(2026, 8, 30): AttendanceStatus.weekOff,
-  };
+  static const Color _primary = Colors.indigo;
+  static const Color _primaryLight = Color(0xFFE8EAF6);
 
-  AttendanceStatus? _getAttendanceStatus(DateTime date) {
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    return _attendance[normalizedDate];
+  @override
+  void initState() {
+    super.initState();
+    studentController = Get.find<StudentController>();
+    attendanceController = Get.find<StudentAttendanceController>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAttendance();
+    });
+  }
+
+  void _loadAttendance() {
+    // Student controller se card id, warna fallback
+    final studentCardId =
+        studentController.studentData.value?.studentIdCard ?? 'St-Student01';
+
+    if (!attendanceController.isLoading.value &&
+        !attendanceController.hasData) {
+      attendanceController.fetchStudentAttendance(studentCardId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+      appBar: _buildAppBar(),
+      body: Obx(() {
+        if (attendanceController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (attendanceController.errorMessage.value.isNotEmpty) {
+          return _buildErrorState();
+        }
+
+        if (!attendanceController.hasData) {
+          return _buildEmptyState();
+        }
+
+        return Column(
+          children: [
+            _buildSummaryCard(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 18),
+                      _buildMonthHeader(),
+                      const SizedBox(height: 10),
+                      _buildCalendar(),
+                      const SizedBox(height: 20),
+                      _buildLegend(),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  // ==================== APP BAR ====================
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: _primary,
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
+      title: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.calendar_month,
+                size: 24, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 8),
-
-                // Month Header
-                _buildMonthHeader(),
-
-                const SizedBox(height: 8),
-
-                // Calendar
-                _buildCalendar(),
-
-                const SizedBox(height: 24),
-
-                // Legend
-                _buildLegend(),
-
-                const SizedBox(height: 28),
-
-                // Apply For Leave
-                _buildLeaveSection(),
-
-                const SizedBox(height: 30),
+                Text(
+                  "My Attendance",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  "School Portal",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               ],
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildMonthHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () {
-            setState(() {
-              _focusedDay = DateTime(
-                _focusedDay.year,
-                _focusedDay.month - 1,
-              );
-            });
-          },
-          icon: const Icon(
-            Icons.chevron_left,
-            size: 32,
-            color: Colors.black87,
-          ),
-        ),
-        Text(
-          '${DateFormat('MMMM yyyy').format(_focusedDay)}',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        IconButton(
-          onPressed: () {
-            setState(() {
-              _focusedDay = DateTime(
-                _focusedDay.year,
-                _focusedDay.month + 1,
-              );
-            });
-          },
-          icon: const Icon(
-            Icons.chevron_right,
-            size: 32,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCalendar() {
-    return TableCalendar(
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: _focusedDay,
-      calendarFormat: CalendarFormat.month,
-      selectedDayPredicate: (day) => false,
-      onDaySelected: null,
-      onPageChanged: (focusedDay) {
-        _focusedDay = focusedDay;
-      },
-      calendarStyle: CalendarStyle(
-        // Simple colors - just background color for each status
-        defaultDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-        ),
-        weekendDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-        ),
-        todayDecoration: BoxDecoration(
-          color: Colors.blue.shade100,
-          shape: BoxShape.rectangle,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        todayTextStyle: const TextStyle(
-          color: Colors.blue,
-          fontWeight: FontWeight.bold,
-        ),
-        markerDecoration: const BoxDecoration(
-          color: Colors.transparent,
-        ),
-        cellPadding: const EdgeInsets.all(4),
-        cellMargin: const EdgeInsets.all(2),
-      ),
-      headerStyle: const HeaderStyle(
-        formatButtonVisible: false,
-        titleCentered: true,
-        titleTextStyle: TextStyle(
-          fontSize: 0,
-        ),
-        leftChevronVisible: false,
-        rightChevronVisible: false,
-      ),
-      daysOfWeekStyle: DaysOfWeekStyle(
-        weekdayStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
-        weekendStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-          color: Colors.black87,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-        ),
-      ),
-      calendarBuilders: CalendarBuilders(
-        // Removed markerBuilder - no circles on dates
-        defaultBuilder: (context, date, _) {
-          final status = _getAttendanceStatus(date);
-          final isToday = isSameDay(date, DateTime.now());
-
-          Color? backgroundColor;
-          Color textColor = Colors.black87;
-
-          if (isToday) {
-            backgroundColor = Colors.blue.shade100;
-            textColor = Colors.blue.shade700;
-          } else if (status != null) {
-            // Simple background color based on status
-            backgroundColor = _getStatusColor(status);
-            textColor = Colors.white;
-          }
-
-          return Container(
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Center(
-              child: Text(
-                '${date.day}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                  color: textColor,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Color _getStatusColor(AttendanceStatus status) {
-    switch (status) {
-      case AttendanceStatus.weekOff:
-        return Colors.grey.shade300;
-      case AttendanceStatus.absent:
-        return Colors.red.shade300;
-      case AttendanceStatus.present:
-        return Colors.green.shade400;
-      case AttendanceStatus.running:
-        return Colors.green.shade300;
-      case AttendanceStatus.halfDay:
-        return Colors.orange.shade300;
-      case AttendanceStatus.leave:
-        return Colors.blue.shade300;
-    }
-  }
-
-  Widget _buildLegend() {
-    return Wrap(
-      spacing: 24,
-      runSpacing: 10,
-      children: [
-        _legendItem(color: Colors.grey.shade300, title: "Week Off"),
-        _legendItem(color: Colors.red.shade300, title: "Absent"),
-        _legendItem(color: Colors.green.shade400, title: "Present"),
-        _legendItem(color: Colors.green.shade300, title: "Running"),
-        _legendItem(color: Colors.orange.shade300, title: "Half Day"),
-        _legendItem(color: Colors.blue.shade300, title: "Leave"),
-      ],
-    );
-  }
-
-  Widget _legendItem({
-    required Color color,
-    required String title,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 18,
-          height: 18,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.black87,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLeaveSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Apply For Leave",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          height: 90,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.grey.shade200,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              const Text(
-                "No leave requests this month.",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey,
-                ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded,
+                    color: Colors.white, size: 25),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>  TeacherLeaveFormScreen(),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-                child: const Text(
-                  "Apply",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue,
+              Positioned(
+                right: 7,
+                top: 7,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.blue, width: 1.5),
                   ),
                 ),
               ),
@@ -358,13 +172,459 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       ],
     );
   }
-}
 
-enum AttendanceStatus {
-  weekOff,
-  absent,
-  present,
-  running,
-  halfDay,
-  leave,
+  // ==================== SUMMARY CARD ====================
+  Widget _buildSummaryCard() {
+    return Obx(() {
+      final map = attendanceController.attendanceMap;
+      final focused = attendanceController.focusedDay.value;
+
+      int present = 0, absent = 0, leave = 0, halfDay = 0;
+      map.forEach((date, record) {
+        if (date.year == focused.year && date.month == focused.month) {
+          switch (record.attendanceStatus.toLowerCase()) {
+            case 'present':
+            case 'running':
+              present++;
+              break;
+            case 'absent':
+              absent++;
+              break;
+            case 'leave':
+              leave++;
+              break;
+            case 'half_day':
+            case 'halfday':
+            case 'half-day':
+              halfDay++;
+              break;
+          }
+        }
+      });
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10, top: 6),
+        color: _primary,
+        child: Row(
+          children: [
+            _miniStat("Present", present, Colors.green.shade300),
+            _miniDivider(),
+            _miniStat("Absent", absent, Colors.red.shade300),
+            _miniDivider(),
+            _miniStat("Leave", leave, Colors.blue.shade300),
+            _miniDivider(),
+            _miniStat("Half Day", halfDay, Colors.orange.shade300),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _miniStat(String label, int value, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text("$value",
+              style: TextStyle(
+                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniDivider() => Container(
+    width: 1,
+    height: 30,
+    color: Colors.white.withOpacity(0.2),
+  );
+
+  // ==================== ERROR / EMPTY ====================
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text(
+              attendanceController.errorMessage.value,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAttendance,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text("Retry"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: _primaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.event_busy_rounded,
+                size: 50, color: _primary),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "No Attendance Records",
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87),
+          ),
+          const SizedBox(height: 4),
+          Text("Data will appear here once available",
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        ],
+      ),
+    );
+  }
+
+  // ==================== MONTH HEADER ====================
+  Widget _buildMonthHeader() {
+    return Obx(() {
+      final focused = attendanceController.focusedDay.value;
+      final canPrev = attendanceController.canGoPrev;
+      final canNext = attendanceController.canGoNext;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              onPressed:
+              canPrev ? () => attendanceController.goToPreviousMonth() : null,
+              icon: Icon(
+                Icons.chevron_left_rounded,
+                size: 28,
+                color: canPrev ? _primary : Colors.grey.shade300,
+              ),
+            ),
+            Text(
+              DateFormat('MMMM yyyy').format(focused),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            IconButton(
+              onPressed:
+              canNext ? () => attendanceController.goToNextMonth() : null,
+              icon: Icon(
+                Icons.chevron_right_rounded,
+                size: 28,
+                color: canNext ? _primary : Colors.grey.shade300,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  // ==================== CALENDAR ====================
+  Widget _buildCalendar() {
+    return Obx(() {
+      final focused = attendanceController.focusedDay.value;
+      final map = attendanceController.attendanceMap;
+
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: TableCalendar(
+          firstDay: DateTime.utc(2020, 1, 1),
+          lastDay: DateTime.utc(2030, 12, 31),
+          focusedDay: focused,
+          calendarFormat: CalendarFormat.month,
+          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+          startingDayOfWeek: StartingDayOfWeek.sunday,
+          selectedDayPredicate: (_) => false,
+          onDaySelected: null,
+          availableGestures: AvailableGestures.none, // swipe band
+          onPageChanged: (newFocused) {
+            final target = DateTime(newFocused.year, newFocused.month, 1);
+            final index = attendanceController.availableMonths
+                .indexWhere((m) => isSameDay(m, target));
+            if (index != -1) {
+              attendanceController.currentMonthIndex.value = index;
+              attendanceController.focusedDay.value = target;
+            } else {
+              attendanceController.focusedDay.value = focused;
+            }
+          },
+          calendarStyle: CalendarStyle(
+            defaultDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            weekendDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            outsideDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            todayDecoration: BoxDecoration(
+              color: _primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            todayTextStyle: const TextStyle(
+              color: _primary,
+              fontWeight: FontWeight.bold,
+            ),
+            markerDecoration: const BoxDecoration(color: Colors.transparent),
+            markersMaxCount: 0,
+            cellPadding: const EdgeInsets.all(3),
+            cellMargin: const EdgeInsets.all(2),
+          ),
+          headerStyle: const HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+            titleTextStyle: TextStyle(fontSize: 0),
+            leftChevronVisible: false,
+            rightChevronVisible: false,
+            headerPadding: EdgeInsets.zero,
+          ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekdayStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+            weekendStyle: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: _primary.withOpacity(0.7),
+            ),
+            decoration: const BoxDecoration(color: Colors.transparent),
+          ),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, date, _) {
+              return _buildDayCell(date, map);
+            },
+            outsideBuilder: (context, date, _) {
+              return _buildDayCell(date, map, isOutside: true);
+            },
+            todayBuilder: (context, date, _) {
+              final record = _findRecord(map, date);
+              if (record != null) {
+                return _buildDayCell(date, map);
+              }
+              return Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: _primaryLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _primary, width: 1.2),
+                ),
+                child: Center(
+                  child: Text(
+                    '${date.day}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: _primary,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  AttendanceRecord? _findRecord(
+      Map<DateTime, AttendanceRecord> map,
+      DateTime date,
+      ) {
+    for (final entry in map.entries) {
+      if (isSameDay(entry.key, date)) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildDayCell(
+      DateTime date,
+      Map<DateTime, AttendanceRecord> map, {
+        bool isOutside = false,
+      }) {
+    final record = _findRecord(map, date);
+    final isToday = isSameDay(date, DateTime.now());
+
+    Color? backgroundColor;
+    Color textColor = isOutside ? Colors.black26 : Colors.black87;
+
+    if (record != null) {
+      backgroundColor = _getStatusColor(record.attendanceStatus);
+      textColor = Colors.white;
+    } else if (isToday) {
+      backgroundColor = _primaryLight;
+      textColor = _primary;
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          '${date.day}',
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'week_off':
+      case 'weekoff':
+      case 'week-off':
+      case 'holiday':
+        return Colors.grey.shade300;
+      case 'absent':
+        return Colors.red.shade300;
+      case 'present':
+        return Colors.green.shade400;
+      case 'running':
+        return Colors.green.shade300;
+      case 'half_day':
+      case 'halfday':
+      case 'half-day':
+        return Colors.orange.shade300;
+      case 'leave':
+        return _primary.withOpacity(0.7);
+      default:
+        return Colors.grey.shade300;
+    }
+  }
+
+  // ==================== LEGEND ====================
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: _primaryLight,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.info_outline_rounded,
+                    size: 12, color: _primary),
+              ),
+              const SizedBox(width: 8),
+              const Text("Legend",
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 10,
+            children: [
+              _legendItem(color: Colors.grey.shade300, title: "Week Off"),
+              _legendItem(color: Colors.red.shade300, title: "Absent"),
+              _legendItem(color: Colors.green.shade400, title: "Present"),
+              _legendItem(color: Colors.green.shade300, title: "Running"),
+              _legendItem(color: Colors.orange.shade300, title: "Half Day"),
+              _legendItem(color: _primary.withOpacity(0.7), title: "Leave"),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendItem({required Color color, required String title}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black87,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 }

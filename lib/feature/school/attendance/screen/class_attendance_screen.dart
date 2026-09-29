@@ -286,7 +286,7 @@ class _ClassAttendanceScreenState extends State<ClassAttendanceScreen> {
         style: TextStyle(
             color: Colors.white, fontWeight: FontWeight.w600, fontSize: 18),
       ),
-      centerTitle: true,
+      centerTitle: false,
     );
   }
 

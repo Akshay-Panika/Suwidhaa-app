@@ -176,16 +176,28 @@ class _SchoolBookReviewState extends State<SchoolBookReview> {
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
           if (_book != null) ...[
-            IconButton(
-              tooltip: "Edit",
-              onPressed: _onEdit,
-              icon: const Icon(Icons.edit_rounded),
+            InkWell(
+              onTap: _onEdit,
+              child:  Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 0.3),
+                  ),
+                  child: Icon(Icons.edit_rounded, size: 20,)),
             ),
-            IconButton(
-              tooltip: "Delete",
-              onPressed: _onDelete,
-              icon: const Icon(Icons.delete_rounded),
+            SizedBox(width: 20,),
+            InkWell(
+              onTap: _onDelete,
+              child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 0.3),
+                  ),
+                  child: const Icon(Icons.delete_rounded, size: 20,)),
             ),
+            SizedBox(width: 20,),
           ],
         ],
       ),

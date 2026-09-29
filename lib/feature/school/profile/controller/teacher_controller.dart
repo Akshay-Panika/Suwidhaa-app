@@ -9,10 +9,18 @@ import '../repsitory/teacher_repository.dart';
 class TeacherController extends GetxController {
   final TeacherRepository _repository = TeacherRepository();
 
-  // Observable variables
+  // ==================== SINGLE PROFILE STATE ====================
   final isLoading = false.obs;
   final teacherData = Rxn<TeacherData>();
   final errorMessage = ''.obs;
+
+  // ==================== TEACHER LIST STATE ====================
+  final isListLoading = false.obs;
+  final teacherList = <TeacherData>[].obs;
+  final listErrorMessage = ''.obs;
+
+  /// Currently selected school type filter (null = all)
+  final selectedSchoolType = RxnString();
 
   @override
   void onInit() {
@@ -20,12 +28,12 @@ class TeacherController extends GetxController {
     loadTeacherProfile();
   }
 
+  // ==================== SINGLE PROFILE ====================
   Future<void> loadTeacherProfile() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Get teacher ID from shared preferences
       final teacherId = await _repository.getTeacherId();
 
       if (teacherId == 0) {
@@ -34,7 +42,6 @@ class TeacherController extends GetxController {
         return;
       }
 
-      // Fetch teacher profile
       final response = await _repository.getTeacherProfile(teacherId);
 
       if (response.success) {
@@ -50,62 +57,73 @@ class TeacherController extends GetxController {
     }
   }
 
-  // Refresh teacher profile
   Future<void> refreshProfile() async {
     await loadTeacherProfile();
   }
 
-  // Get full name
+  // ==================== TEACHER LIST (school_type wise) ====================
+  /// Load teachers, optionally filtered by [schoolType].
+  /// If [schoolType] is null, uses the current [selectedSchoolType].
+  Future<void> loadTeacherList({String? schoolType}) async {
+    try {
+      isListLoading.value = true;
+      listErrorMessage.value = '';
+
+      // If an explicit schoolType is passed, remember it as selection
+      if (schoolType != null) {
+        selectedSchoolType.value = schoolType;
+      }
+
+      final response = await _repository.getTeacherList(
+        schoolType: selectedSchoolType.value,
+      );
+
+      if (response.success) {
+        teacherList.assignAll(response.data);
+      } else {
+        listErrorMessage.value = 'Failed to load teacher list';
+      }
+    } catch (e) {
+      listErrorMessage.value = e.toString();
+      FlutterToast.error('Failed to load teacher list: $e');
+    } finally {
+      isListLoading.value = false;
+    }
+  }
+
+  /// Change the school type filter and reload.
+  Future<void> filterBySchoolType(String? schoolType) async {
+    selectedSchoolType.value = schoolType;
+    await loadTeacherList(schoolType: schoolType);
+  }
+
+  Future<void> refreshTeacherList() async {
+    await loadTeacherList();
+  }
+
+  // ==================== SINGLE PROFILE GETTERS ====================
   int get id => teacherData.value?.id ?? 0;
   String get fullName => teacherData.value?.fullName ?? '';
-
-  // Get profile image URL
   String get profileImage => teacherData.value?.teacherProfile ?? '';
-
-  // Get teacher ID card
   String get teacherIdCard => teacherData.value?.teacherIdCard ?? '';
-
   String get schoolType => teacherData.value?.schoolType ?? '';
-
-
-  // Get qualification
   String get qualification => teacherData.value?.qualification ?? '';
-
-  // Get experience
   String get experienceString => teacherData.value?.experienceString ?? '';
-
-  // Get subjects
   List<String> get subjects => teacherData.value?.subjects ?? [];
-
-  // Get subjects as string
   String get subjectsString => teacherData.value?.subjectsString ?? '';
-
-  // Get subjects count
   int get subjectsCount => teacherData.value?.subjectsCount ?? 0;
-
-  // Get email
   String get email => teacherData.value?.email ?? '';
-
-  // Get phone
   String get phone => teacherData.value?.phone ?? '';
-
-  // Get address
   String get address => teacherData.value?.address ?? '';
-
-  // Get gender icon
   IconData get genderIcon => teacherData.value?.genderIcon ?? Icons.person;
-
-  // Get gender color
   Color get genderColor => teacherData.value?.genderColor ?? Colors.blue;
-
-  // Get salary
   String get salary => teacherData.value?.salary ?? '0.00';
-
-  // Get join date
   String get joinDate => teacherData.value?.joinDate ?? '';
-
-  // Check if teacher data is available
   bool get hasData => teacherData.value != null;
+
+  // ==================== LIST GETTERS ====================
+  bool get hasListData => teacherList.isNotEmpty;
+  int get teacherCount => teacherList.length;
 
   @override
   void onClose() {

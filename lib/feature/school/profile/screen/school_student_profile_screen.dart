@@ -7,7 +7,6 @@ import '../../auth/controller/school_auth_controller.dart';
 import '../../student/widget/student_attendance_card.dart';
 import '../controller/student_controller.dart';
 import '../model/student_model.dart';
-import '../widget/school_facilitie_card.dart';
 
 class SchoolStudentProfileScreen extends StatelessWidget {
   const SchoolStudentProfileScreen({super.key});
@@ -20,38 +19,37 @@ class SchoolStudentProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Obx(() {
-          // Show shimmer loading
-          if (studentController.isLoading.value) {
-            return _buildShimmerLoading();
-          }
+      appBar: AppBar(toolbarHeight: 0,backgroundColor: Colors.indigo,),
+      body: Obx(() {
+        // Show shimmer loading
+        if (studentController.isLoading.value) {
+          return _buildShimmerLoading();
+        }
 
-          // Show error message
-          if (studentController.errorMessage.value.isNotEmpty) {
-            return _buildErrorState(studentController);
-          }
+        // Show error message
+        if (studentController.errorMessage.value.isNotEmpty) {
+          return _buildErrorState(studentController);
+        }
 
-          // Show student data
-          if (studentController.hasData) {
-            return Column(
-              children: [
-                Expanded(
-                  child: _buildStudentCard(studentController),
-                ),
-                const StudentAttendanceCard(),
-                Expanded(
-                  flex: 2,
-                  child: _buildSchoolFeatures(context, studentController, authController),
-                ),
-              ],
-            );
-          }
+        // Show student data
+        if (studentController.hasData) {
+          return Column(
+            children: [
+              Expanded(
+                child: _buildStudentCard(studentController),
+              ),
+              const StudentAttendanceCard(),
+              Expanded(
+                flex: 2,
+                child: _buildSchoolFeatures(context, studentController, authController),
+              ),
+            ],
+          );
+        }
 
-          // No data available
-          return _buildEmptyState();
-        }),
-      ),
+        // No data available
+        return _buildEmptyState();
+      }),
     );
   }
 
@@ -191,6 +189,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildShimmerAttendanceItem() {
     return Column(
@@ -491,7 +490,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: Colors.blue,
+                color: Colors.indigo,
               ),
             ),
             Expanded(
@@ -596,10 +595,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SchoolFacilitiesCard(),
-            const SizedBox(height: 16),
-            // Address Card with real address
-            _buildAddressCard(student),
+            _buildPersonalInfoCard(student),
             const SizedBox(height: 12),
             // About School
             _buildAboutSchool(),
@@ -609,49 +605,16 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             // Contact Section
             _buildContactSection(context, authController),
+            const SizedBox(height: 100),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFacilityItem(IconData icon, String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 14,
-        horizontal: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: Colors.blue,
-            size: 26,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAddressCard(StudentData? student) {
-    String address = student?.address ?? "Main Road, Raipur, Chhattisgarh, India";
+  Widget _buildPersonalInfoCard(StudentData? student) {
+    if (student == null) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -659,46 +622,72 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.location_on,
-            color: Colors.blue,
-            size: 25,
+          Row(
+            children: [
+              Icon(
+                Icons.person_outline,
+                color: Colors.indigo, // ← blue → indigo
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                "Student Information",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
+          const SizedBox(height: 8),
+          _buildInfoRow(Icons.email, "Email", ''),
+          _buildInfoRow(Icons.phone, "Phone", student.parentPhone),
+          _buildInfoRow(Icons.location_on, "Address", student.address),
+          _buildInfoRow(Icons.calendar_today, "Join Date", student.createdAt),
+          _buildInfoRow(Icons.attach_money, "Fee", "₹${student.feeAmount}"),
+          _buildInfoRow(Icons.work, "Class", "${student.studentClass}th"),
+          _buildInfoRow(Icons.person, "Gender", student.gender),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Text(
+            "$label:",
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "School Address",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  address,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
+            child: Text(
+              value.isNotEmpty ? value : 'N/A',
+              style: const TextStyle(fontSize: 12, color: Colors.black87),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
     );
   }
+
+
 
   Widget _buildAboutSchool() {
     return Container(
@@ -937,6 +926,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

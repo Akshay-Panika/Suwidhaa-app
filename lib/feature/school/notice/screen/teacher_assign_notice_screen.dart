@@ -115,26 +115,23 @@ class TeacherAssignNoticeScreen extends StatelessWidget {
         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
       ),
       actions: [
-
-        Container(
-          margin: const EdgeInsets.only(right: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white, width: 0.6),
-            shape: BoxShape.circle,
-          ),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () async {
-              await Get.to(
-                      () => const TeacherAssignNoticeFormScreen());
-              ctrl.fetchNotices(silent: true);
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: Icon(Icons.add, size: 20),
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () async {
+            await Get.to(
+                    () => const TeacherAssignNoticeFormScreen());
+            ctrl.fetchNotices(silent: true);
+          },
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 0.3),
             ),
+            child: Icon(Icons.add, size: 20),
           ),
         ),
+        SizedBox(width: 20,),
 
       ],
     );

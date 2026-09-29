@@ -5,7 +5,8 @@ import '../../profile/controller/student_controller.dart';
 import '../../profile/model/student_model.dart';
 
 class StudentProfileCard extends StatelessWidget {
-  const StudentProfileCard({super.key});
+  final Function(int index)? onNavigate;
+  const StudentProfileCard({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -37,52 +38,84 @@ class StudentProfileCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Shimmer.fromColors(
-        baseColor: Colors.grey.shade300,
-        highlightColor: Colors.grey.shade100,
-        child: Row(
+        // ✅ Indigo shades
+        baseColor: Colors.indigo.shade300,
+        highlightColor: Colors.indigo.shade100,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Shimmer Circle Avatar
-            Container(
-              width: 70,
-              height: 70,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
+            // ===== Top Row (avatar + name + bell) =====
+            Row(
+              children: [
+                // Avatar
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Name + subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 140,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 110,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Bell icon
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            // Shimmer Text Lines
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 20,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 150,
-                    height: 16,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 200,
-                    height: 14,
-                    color: Colors.white,
-                  ),
-                ],
+
+            const SizedBox(height: 14),
+
+            // ===== Bottom Bar (school + year) =====
+            Container(
+              width: double.infinity,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ],
@@ -90,7 +123,6 @@ class StudentProfileCard extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildErrorState(StudentController controller) {
     return Container(
       width: double.infinity,
@@ -220,120 +252,150 @@ class StudentProfileCard extends StatelessWidget {
   }
 
   Widget _buildProfileContent(StudentData student, StudentController controller) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.symmetric(horizontal:10,vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Profile Image
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.blue.shade200,
-                width: 2,
-              ),
-              image: student.studentProfile.isNotEmpty
-                  ? DecorationImage(
-                image: NetworkImage(student.studentProfile),
-                fit: BoxFit.cover,
-              )
-                  : null,
-            ),
-            child: student.studentProfile.isEmpty
-                ? CircleAvatar(
-              radius: 35,
-              backgroundColor: Colors.blue.shade100,
-              child: Text(
-                controller.fullName.isNotEmpty
-                    ? controller.fullName[0].toUpperCase()
-                    : 'S',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-            )
-                : null,
-          ),
 
-          const SizedBox(width: 16),
+    String _getGreeting() {
+      final hour = DateTime.now().hour;
+      if (hour < 12) return "Good Morning";
+      if (hour < 17) return "Good Afternoon";
+      if (hour < 21) return "Good Evening";
+      return "Good Night";
+    }
 
-          // Student Information
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
               children: [
-                Text(
-                  controller.fullName.isNotEmpty
-                      ? controller.fullName
-                      : "Student Name",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: Colors.blue,
+                InkWell(
+                  onTap: () {
+                    onNavigate?.call(3);
+                  },
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundImage: NetworkImage(student.studentProfile),
+                    child: student.studentProfile!.isNotEmpty ? null: Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-
-                const SizedBox(height: 5),
-
-                // Class and Section
-                Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${_getGreeting()}",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "${student.fullName}",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        "Class: ${student.studentClass}, ID: ${student.studentIdCard}",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Icon(
-                      Icons.class_,
-                      size: 14,
-                      color: Colors.grey.shade600,
+                    IconButton(
+                      onPressed: () {
+                        // Notification screen
+                      },
+                      icon: const Icon(
+                        Icons.notifications_none_rounded,
+                        color: Colors.white,
+                        size: 25,
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Class ${controller.studentClass}",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
+
+                    Positioned(
+                      right: 7,
+                      top: 7,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.blue,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 3),
-
-                // Student ID
-                Row(
-                  children: [
-                    Icon(
-                      Icons.badge_outlined,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "ID: ${controller.studentIdCard}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
+                )
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.school_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "${student.schoolType}",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  // Container(
+                  //   padding: const EdgeInsets.symmetric(
+                  //       horizontal: 8, vertical: 3),
+                  //   decoration: BoxDecoration(
+                  //     color: Colors.white.withOpacity(0.2),
+                  //     borderRadius: BorderRadius.circular(20),
+                  //   ),
+                  //   child:  Text(
+                  //     "Joining Date:${student.createdAt}",
+                  //     style:
+                  //     TextStyle(
+                  //       color: Colors.white,
+                  //       fontSize: 10,
+                  //       fontWeight: FontWeight.w600,
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

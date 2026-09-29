@@ -9,12 +9,14 @@ import 'package:untitled/feature/school/attendance/screen/subject_attendance_scr
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
 import 'package:untitled/feature/school/settings/screen/school_setting_future_manage_screen.dart';
+import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
+import '../../../ott/school/screen/ott_school_screen.dart';
+import '../../admission/screen/admission_inquiry_screen.dart';
 import '../../event/controller/school_event_controller.dart';
 import '../../event/widget/school_current_event_card.dart';
 import '../../leave/screen/student_leave_request_screen.dart';
 import '../../attendance/screen/teacher_leave_list_screen.dart';
-import '../../documets/screen/school_documents_screen.dart';
-import '../../exams/screen/exams_schedule_screen.dart';
+import '../../exams/screen/class_exam_timetable_list_screen.dart';
 import '../../meeting/screen/school_meeting_screen.dart';
 import '../../messages/screen/student_contact_screen.dart';
 import '../../notice/controller/notice_controller.dart';
@@ -145,15 +147,15 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
       color: Colors.blueGrey,
     ),
     OtherItem(
-      label: "Documents",
+      label: "Admission",
       subtitle: "Files & resources",
       icon: Icons.folder_rounded,
       color: Colors.blueGrey,
     ),
     OtherItem(
-      label: "Settings",
-      subtitle: "App preferences",
-      icon: Icons.settings_rounded,
+      label: "OTT",
+      subtitle: "Internment",
+      icon: Icons.video_camera_back_outlined,
       color: Colors.blueGrey,
     ),
   ];
@@ -453,16 +455,16 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
         onTap: () {
           switch (item.label) {
             case "Exams":
-              _push(const ExamsScheduleScreen());
+              _push(const ClassExamTimetableListScreen());
               break;
             case "Messages":
               _push(const StudentContactScreen());
               break;
-            case "Documents":
-              _push(const SchoolDocumentsScreen());
+            case "Admission":
+              _push( AdmissionInquiryScreen());
               break;
-            case "Settings":
-              _push(const SchoolSettingFeatureManageScreen());
+            case "OTT":
+              _push(OttDashboardScreen(currentIndex: 3,));
               break;
             default:
               _snack('${item.label} tapped');

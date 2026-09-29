@@ -398,11 +398,12 @@ class _SchoolEventScreenState extends State<SchoolEventScreen> {
           InkWell(
             onTap: _openCreate,
             child: Container(
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 0.6),
+                border: Border.all(color: Colors.white, width: 0.3),
               ),
-              child: const Icon(Icons.add),
+              child: const Icon(Icons.add,size: 20,),
             ),
           ),
           const SizedBox(width: 20),

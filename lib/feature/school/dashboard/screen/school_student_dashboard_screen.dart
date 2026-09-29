@@ -1,32 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:untitled/feature/school/attendance/screen/student_attendance_screen.dart';
-import 'package:untitled/feature/school/student/screen/school_student_home_screen.dart';
 
 import '../../../../router/app_routes.dart';
-import '../../auth/screen/school_auth_screen.dart';
+import '../../attendance/screen/student_attendance_screen.dart';
+import '../../attendance/screen/teacher_attendance_screen.dart';
 import '../../profile/screen/school_student_profile_screen.dart';
+import '../../student/screen/school_student_home_screen.dart';
+import '../../teacher/screen/school_teacher_home_screen.dart';
+import '../../profile/screen/school_teacher_profile_screen.dart';
 import '../../transport/screen/school_student_transport_screen.dart';
 
 class SchoolStudentDashboardScreen extends StatefulWidget {
   const SchoolStudentDashboardScreen({super.key});
 
   @override
-  State<SchoolStudentDashboardScreen> createState() =>
-      _SchoolStudentDashboardScreenState();
+  State<SchoolStudentDashboardScreen> createState() => _SchoolStudentDashboardScreenState();
 }
 
 class _SchoolStudentDashboardScreenState extends State<SchoolStudentDashboardScreen> {
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    SchoolStudentHomeScreen(),
-    StudentAttendanceScreen(),
-    SchoolStudentTransportScreen(),
-    SchoolStudentProfileScreen(),
+  late final List<Widget> _screens = [
+    SchoolStudentHomeScreen(
+      onNavigate: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+    ),
+    const StudentAttendanceScreen(),
+    const SchoolStudentTransportScreen(),
+    const SchoolStudentProfileScreen(),
+  ];
+
+  final  _bottomNav = [
+    {
+      "Icon":Icons.home,
+      "label":"Home"
+    },
+    {
+      "Icon":Icons.calendar_month,
+      "label":"Attendance"
+    },
+    {
+      "Icon":Icons.directions_bus,
+      "label":"Transport"
+    },
+    {
+      "Icon":Icons.person,
+      "label":"Account"
+    },
   ];
 
   /// Handle back navigation logic
@@ -50,8 +77,8 @@ class _SchoolStudentDashboardScreenState extends State<SchoolStudentDashboardScr
           color: Colors.white,
           borderRadius: BorderRadius.all(Radius.circular(15)),
           border: Border.symmetric(
-            horizontal: BorderSide(color: Colors.green),
-            vertical: BorderSide(color: Colors.green),
+            horizontal: BorderSide(color: Colors.indigo,width: 0.3),
+            vertical: BorderSide(color: Colors.indigo,width: 0.3),
           ),
         ),
         child: Column(
@@ -89,7 +116,7 @@ class _SchoolStudentDashboardScreenState extends State<SchoolStudentDashboardScr
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.indigo.shade400,
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
@@ -120,205 +147,175 @@ class _SchoolStudentDashboardScreenState extends State<SchoolStudentDashboardScr
         await _handleBack();
       },
       child: Scaffold(
+        extendBody: true,
         key: _scaffoldKey,
-        backgroundColor: Colors.grey.shade50,
-
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.blue,
-          automaticallyImplyLeading: false,
-
-          titleSpacing: 16,
-
-          title: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.school_outlined,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Suwidhaa School",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      "Student Portal",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      // Notification screen
-                    },
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      color: Colors.white,
-                      size: 25,
-                    ),
-                  ),
-
-                  Positioned(
-                    right: 7,
-                    top: 7,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.blue,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
+        backgroundColor: Colors.white,
         body: IndexedStack(
           index: _currentIndex,
           children: _screens,
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: BottomNavigationBar(
-              currentIndex: _currentIndex,
 
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
 
-              backgroundColor: Colors.white,
+        bottomNavigationBar: SizedBox(
+          height: 110,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / _bottomNav.length;
+              final targetCenter = (itemWidth * _currentIndex) + itemWidth / 2;
 
-              elevation: 0,
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: targetCenter, end: targetCenter),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                builder: (context, centerX, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // ---- Bar with animated notch shape ----
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _NotchedBarPainter(
+                            centerX: centerX,
+                            barTop: 32,
+                            notchRadius: 30,
+                          ),
+                        ),
+                      ),
 
-              type: BottomNavigationBarType.fixed,
+                      // ---- Labels (default state) ----
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 10,
+                        bottom: 0,
+                        child: Row(
+                          children: List.generate(_bottomNav.length, (index) {
+                            final isSelected = _currentIndex == index;
+                            return Expanded(
+                              child: InkWell(
+                                onTap: () => setState(() => _currentIndex = index),
+                                child: Center(
+                                  child: AnimatedOpacity(
+                                    duration: const Duration(milliseconds: 250),
+                                    opacity: isSelected ? 0 : 1,
+                                    child: Text(
+                                      _bottomNav[index]['label'] as String,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
 
-              selectedItemColor: Colors.blue,
-
-              unselectedItemColor: Colors.grey.shade500,
-
-              selectedFontSize: 11,
-
-              unselectedFontSize: 11,
-
-              selectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w400,
-              ),
-
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.home_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.home_rounded,
-                    size: 23,
-                  ),
-                  label: 'Home',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.fact_check_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.fact_check_rounded,
-                    size: 23,
-                  ),
-                  label: 'Attendance',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.directions_bus_outlined,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.directions_bus_rounded,
-                    size: 23,
-                  ),
-                  label: 'Transport',
-                ),
-
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.person_outline_rounded,
-                    size: 23,
-                  ),
-                  activeIcon: Icon(
-                    Icons.person_rounded,
-                    size: 23,
-                  ),
-                  label: 'Profile',
-                ),
-              ],
-            ),
+                      // ---- Floating circle with icon (selected state) ----
+                      Positioned(
+                        left: centerX - 26,
+                        top: 4,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(_currentIndex),
+                          tween: Tween(begin: 0.6, end: 1),
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutBack,
+                          builder: (context, scale, _) => Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: Colors.indigo,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.indigo.withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _bottomNav[_currentIndex]['Icon'] as IconData,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ),
       ),
     );
   }
+}
+class _NotchedBarPainter extends CustomPainter {
+  final double centerX;
+  final double barTop;
+  final double notchRadius;
+
+  _NotchedBarPainter({
+    required this.centerX,
+    required this.barTop,
+    required this.notchRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final r = notchRadius;
+    final depth = r * 0.95;
+
+    path.moveTo(0, barTop);
+    path.lineTo(centerX - r - 22, barTop);
+
+    // left shoulder -> notch bottom
+    path.cubicTo(
+      centerX - r - 2, barTop,
+      centerX - r + 4, barTop + depth,
+      centerX, barTop + depth,
+    );
+
+    // notch bottom -> right shoulder
+    path.cubicTo(
+      centerX + r - 4, barTop + depth,
+      centerX + r + 2, barTop,
+      centerX + r + 22, barTop,
+    );
+
+    path.lineTo(size.width, barTop);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    // shadow
+    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.35), 6, false);
+
+    canvas.drawPath(path, Paint()..color = Colors.indigo);
+
+    // top border line (aapke original design jaisa)
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.indigo.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_NotchedBarPainter old) =>
+      old.centerX != centerX ||
+          old.barTop != barTop ||
+          old.notchRadius != notchRadius;
 }

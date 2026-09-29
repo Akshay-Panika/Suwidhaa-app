@@ -374,7 +374,8 @@ class TeacherProfileCard extends StatelessWidget {
                     ),
                     child:  Text(
                       "Joining Date:${teacher.joinDate}",
-                      style: TextStyle(
+                      style:
+                      TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,

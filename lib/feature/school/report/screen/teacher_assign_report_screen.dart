@@ -341,7 +341,16 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
         title: const Text("Assign Report Card",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _openForm),
+          InkWell(
+              child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 0.3),
+              ),
+              child: const Icon(Icons.add, size: 20,)),
+              onTap: _openForm),
+          SizedBox(width: 20,)
         ],
       ),
       body: Obx(() {

@@ -51,7 +51,7 @@ class _TeacherHomeworkDetailsScreenState
             fontSize: 18,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
       body: SafeArea(
         child: Obx(() {

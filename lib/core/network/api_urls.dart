@@ -143,4 +143,9 @@ class ApiUrls {
   static const String libraryList   = 'v1/school/library/list/';
   static String libraryDetail(int id) => 'v1/school/library/$id/';
 
+  // ==================== EXAM TIMETABLE ====================
+  static const String examTimetableCreate = 'v1/school/exam-timetables/create/';
+  static const String examTimetableList   = 'v1/school/exam-timetables/list/';
+  static String examTimetableDetail(int id) => 'v1/school/exam-timetables/$id/';
+
 }

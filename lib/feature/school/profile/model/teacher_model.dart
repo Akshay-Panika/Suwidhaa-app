@@ -2,6 +2,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+// ==================== SINGLE TEACHER RESPONSE (existing) ====================
 class TeacherResponse {
   final bool success;
   final TeacherData data;
@@ -19,6 +20,32 @@ class TeacherResponse {
   }
 }
 
+// ==================== TEACHER LIST RESPONSE (NEW) ====================
+class TeacherListResponse {
+  final bool success;
+  final int count;
+  final List<TeacherData> data;
+
+  TeacherListResponse({
+    required this.success,
+    required this.count,
+    required this.data,
+  });
+
+  factory TeacherListResponse.fromJson(Map<String, dynamic> json) {
+    final list = (json['data'] as List<dynamic>? ?? [])
+        .map((e) => TeacherData.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    return TeacherListResponse(
+      success: json['success'] ?? false,
+      count: json['count'] ?? list.length,
+      data: list,
+    );
+  }
+}
+
+// ==================== TEACHER DATA (existing) ====================
 class TeacherData {
   final int id;
   final String? teacherProfile;
@@ -105,14 +132,10 @@ class TeacherData {
   }
 
   // Helper method to get subjects as comma separated string
-  String get subjectsString {
-    return subjects.join(', ');
-  }
+  String get subjectsString => subjects.join(', ');
 
   // Helper method to get subjects count
-  int get subjectsCount {
-    return subjects.length;
-  }
+  int get subjectsCount => subjects.length;
 
   // Helper method to get experience string
   String get experienceString {
