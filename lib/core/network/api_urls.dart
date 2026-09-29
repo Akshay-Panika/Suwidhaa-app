@@ -12,6 +12,9 @@ class ApiUrls {
   // Student Leave endpoints
   static const String studentLeaveList = 'v1/school/student-leave/list/';
   static const String studentLeaveApproval = 'v1/school/student-leave/approval/';
+  static const String studentLeaveByIdCard = 'v1/school/student-leave/list/';
+  static const String studentLeaveCreate = 'v1/school/student-leave/create/';
+  static const String studentLeaveDetail = 'v1/school/student-leave/';
 
   // Teacher endpoints
   static const String teacherList = 'v1/school/teacher/list/';

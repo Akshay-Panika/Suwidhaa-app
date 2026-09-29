@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:untitled/core/widget/contact_helper.dart';
 import 'package:untitled/feature/school/transport/screen/transport_detail_screen.dart';
 import '../../../../core/widget/flutter_toast.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/transport_controller.dart';
 import '../model/transport_model.dart';
 import 'add_bus_screen.dart';
@@ -19,6 +20,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TransportController controller = Get.put(TransportController());
+    final authController = Get.find<SchoolAuthController>();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -118,12 +120,13 @@ class SchoolStudentTransportScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ==================== HEADER ====================
+
+          if(authController.userType!='student')
           _buildHeader(context, controller),
 
           // Routes Title
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Row(
               children: [
                 Container(

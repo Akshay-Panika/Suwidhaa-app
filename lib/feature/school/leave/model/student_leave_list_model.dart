@@ -175,3 +175,69 @@ class StudentLeaveApprovalRequest {
     if (teacherName != null) 'teacher_name': teacherName,
   };
 }
+
+class StudentLeaveCreateResponse {
+  final bool status;
+  final String? message;
+  final StudentLeaveData? data;
+
+  StudentLeaveCreateResponse({
+    required this.status,
+    this.message,
+    this.data,
+  });
+
+  factory StudentLeaveCreateResponse.fromJson(Map<String, dynamic> json) {
+    return StudentLeaveCreateResponse(
+      status: json['status'] ?? false,
+      message: json['message'],
+      data: json['data'] != null
+          ? StudentLeaveData.fromJson(json['data'])
+          : null,
+    );
+  }
+}
+
+// lib/feature/school/student_leave/model/student_leave_list_model.dart
+// ... (existing classes ke baad)
+
+// ==================== GET SINGLE LEAVE RESPONSE ====================
+class StudentLeaveDetailResponse {
+  final bool status;
+  final String? message;
+  final StudentLeaveData? data;
+
+  StudentLeaveDetailResponse({
+    required this.status,
+    this.message,
+    this.data,
+  });
+
+  factory StudentLeaveDetailResponse.fromJson(Map<String, dynamic> json) {
+    return StudentLeaveDetailResponse(
+      status: json['status'] ?? false,
+      message: json['message'],
+      data: json['data'] != null
+          ? StudentLeaveData.fromJson(json['data'])
+          : null,
+    );
+  }
+}
+
+// ==================== DELETE RESPONSE ====================
+class StudentLeaveDeleteResponse {
+  final bool status;
+  final String? message;
+
+  StudentLeaveDeleteResponse({
+    required this.status,
+    this.message,
+  });
+
+  factory StudentLeaveDeleteResponse.fromJson(Map<String, dynamic> json) {
+    return StudentLeaveDeleteResponse(
+      status: json['status'] ?? false,
+      message: json['message'],
+    );
+  }
+}

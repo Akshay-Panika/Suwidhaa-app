@@ -1,6 +1,7 @@
 // lib/feature/school/student_leave/repository/student_leave_repository.dart
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
 import '../model/student_leave_list_model.dart';
@@ -8,10 +9,171 @@ import '../model/student_leave_list_model.dart';
 class StudentLeaveRepository {
   final Dio _dio = ApiClient.dio;
 
-  // ==================== GET LIST ====================
+  // ==================== GET LIST (All) ====================
   Future<StudentLeaveListModel> getStudentLeaveList() async {
     try {
       final response = await _dio.get(ApiUrls.studentLeaveList);
+      if (response.statusCode == 200) {
+        return StudentLeaveListModel.fromJson(response.data);
+      } else {
+        throw Exception('Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  Future<StudentLeaveCreateResponse> createLeave({
+    required String studentIdCard,
+    required String studentName,
+    required String studentClass,
+    required String schoolType,
+    required String reasonMsg,
+    required String startDate,
+    required String endDate,
+    String? imagePath,
+  }) async {
+    try {
+      final Map<String, dynamic> map = {
+        'student_id_card': studentIdCard,
+        'student_name': studentName,
+        'student_class': studentClass,
+        'school_type': schoolType,
+        'reason_msg': reasonMsg,
+        'start_date': startDate,
+        'end_date': endDate,
+      };
+
+      // Image optional hai
+      if (imagePath != null && imagePath.isNotEmpty) {
+        map['image'] = await MultipartFile.fromFile(
+          imagePath,
+          filename: imagePath.split('/').last,
+        );
+      }
+
+      final formData = FormData.fromMap(map);
+
+      final response = await _dio.post(
+        ApiUrls.studentLeaveCreate,
+        data: formData,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return StudentLeaveCreateResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  Future<StudentLeaveDetailResponse> getLeaveById(int leaveId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiUrls.studentLeaveDetail}$leaveId/',
+      );
+
+      if (response.statusCode == 200) {
+        return StudentLeaveDetailResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  Future<StudentLeaveCreateResponse> updateLeave({
+    required int leaveId,
+    required String studentIdCard,
+    required String studentName,
+    required String studentClass,
+    required String schoolType,
+    required String reasonMsg,
+    required String startDate,
+    required String endDate,
+    String? imagePath,          // new image (optional)
+    bool removeOldImage = false, // agar purani image hatani ho
+  }) async {
+    try {
+      final Map<String, dynamic> map = {
+        'student_id_card': studentIdCard,
+        'student_name': studentName,
+        'student_class': studentClass,
+        'school_type': schoolType,
+        'reason_msg': reasonMsg,
+        'start_date': startDate,
+        'end_date': endDate,
+      };
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        map['image'] = await MultipartFile.fromFile(
+          imagePath,
+          filename: imagePath.split('/').last,
+        );
+      } else if (removeOldImage) {
+        map['image'] = ''; // backend ko signal ki image clear kar do
+      }
+
+      final formData = FormData.fromMap(map);
+
+      final response = await _dio.put(
+        '${ApiUrls.studentLeaveDetail}$leaveId/',
+        data: formData,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return StudentLeaveCreateResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  Future<StudentLeaveDeleteResponse> deleteLeave(int leaveId) async {
+    try {
+      final response = await _dio.delete(
+        '${ApiUrls.studentLeaveDetail}$leaveId/',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // 204 No Content me body empty hoti hai
+        if (response.data == null || response.data is! Map) {
+          return StudentLeaveDeleteResponse(
+            status: true,
+            message: 'Leave deleted successfully',
+          );
+        }
+        return StudentLeaveDeleteResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  // ==================== GET LIST BY STUDENT CARD ID ✅ NEW ====================
+  Future<StudentLeaveListModel> getStudentLeaveByCardId(
+      String studentCardId) async {
+    try {
+      final response = await _dio.get(
+        '${ApiUrls.studentLeaveByIdCard}$studentCardId/',
+      );
       if (response.statusCode == 200) {
         return StudentLeaveListModel.fromJson(response.data);
       } else {
@@ -52,6 +214,8 @@ class StudentLeaveRepository {
       throw Exception('Something went wrong: $e');
     }
   }
+
+
 
   // ==================== ERROR HANDLER ====================
   String _handleDioError(DioException e) {

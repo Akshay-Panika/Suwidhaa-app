@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/attendance/screen/teacher_leave_form_screen.dart';
-import 'package:untitled/feature/school/attendance/screen/teacher_leave_list_screen.dart';
+import 'package:untitled/feature/school/leave/screen/teacher_leave_form_screen.dart';
+import 'package:untitled/feature/school/leave/screen/teacher_leave_list_screen.dart';
 
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_attendance_controller.dart';
 import '../model/teacher_attendance_model.dart';
 import '../widget/teacher_attendance_shimmer.dart';
-import '../widget/teacher_current_leave_request_card.dart';
+import '../../leave/widget/teacher_current_leave_request_card.dart';
 
 class TeacherAttendanceScreen extends StatefulWidget {
   const TeacherAttendanceScreen({super.key});

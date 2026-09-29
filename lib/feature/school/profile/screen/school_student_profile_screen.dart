@@ -631,7 +631,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.person_outline,
-                color: Colors.indigo, // ← blue → indigo
+                color: Colors.indigo,
                 size: 20,
               ),
               const SizedBox(width: 8),

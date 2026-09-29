@@ -4,24 +4,19 @@ import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:untitled/core/utils/app_color.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
-import 'package:untitled/feature/school/attendance/screen/class_attendance_screen.dart';
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
 import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
-import '../../admission/screen/admission_inquiry_screen.dart';
 import '../../event/controller/school_event_controller.dart';
 import '../../event/widget/school_current_event_card.dart';
-import '../../leave/screen/student_leave_request_screen.dart';
-import '../../attendance/screen/teacher_leave_list_screen.dart';
-import '../../exams/screen/class_exam_timetable_list_screen.dart';
+import '../../leave/screen/student_leave_list_screen.dart';
+import '../../leave/screen/teacher_leave_list_screen.dart';
 import '../../meeting/screen/school_meeting_screen.dart';
-import '../../messages/screen/student_contact_screen.dart';
 import '../../notice/controller/notice_controller.dart';
 import '../../notice/screen/teacher_assign_notice_screen.dart';
 import '../../notice/widget/notice_pined_card.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/teacher_assign_report_screen.dart';
-import '../../teacher/widget/teacher_checkin_checkout_button.dart';
 import '../widget/student_profile_card.dart';
 
 class SchoolStudentHomeScreen extends StatefulWidget {
@@ -113,6 +108,12 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
       icon: Icons.groups_rounded,
       color: Colors.blueGrey,
     ),
+    AcademicItem(
+      label: "OTT",
+      icon: Icons.video_camera_back_outlined,
+      color: Colors.blueGrey,
+    ),
+
   ];
 
   // ==================== HELPER ====================
@@ -180,17 +181,31 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
     required List<AcademicItem> items,
     required Widget Function(AcademicItem) builder,
   }) {
-    return Padding(
+    return Container(
       padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.indigo, width: 0.3)
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            spacing: 10,
+            children: [
+              Container(
+                height: 14,width: 3,
+                color: Colors.indigo,
+              ),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
            GridView.builder(
@@ -231,7 +246,7 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
                   widget.onNavigate?.call(3);
                   break;
                 case "Leave":
-                  _push(const TeacherLeaveListScreen());
+                  _push(const StudentLeaveListScreen());
                   break;
                 case "Fee":
                   _push(TeacherSalaryScreen());
@@ -290,6 +305,9 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
                   break;
                 case "Meetings":
                   _push(const SchoolMeetingScreen());
+                  break;
+                case "OTT":
+                  _push(OttDashboardScreen(currentIndex: 3,));
                   break;
                 default:
                   _snack('${item.label} tapped');

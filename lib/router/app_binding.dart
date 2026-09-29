@@ -17,7 +17,7 @@ import '../feature/ott/controller/webseries_controller.dart';
 import '../feature/school/attendance/controller/student_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_checkin_checkout_controller.dart';
-import '../feature/school/attendance/controller/teacher_leave_controller.dart';
+import '../feature/school/leave/controller/teacher_leave_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
 import '../feature/school/exams/controller/exams_controller.dart';

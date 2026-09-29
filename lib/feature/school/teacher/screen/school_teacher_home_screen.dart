@@ -15,7 +15,7 @@ import '../../admission/screen/admission_inquiry_screen.dart';
 import '../../event/controller/school_event_controller.dart';
 import '../../event/widget/school_current_event_card.dart';
 import '../../leave/screen/student_leave_request_screen.dart';
-import '../../attendance/screen/teacher_leave_list_screen.dart';
+import '../../leave/screen/teacher_leave_list_screen.dart';
 import '../../exams/screen/class_exam_timetable_list_screen.dart';
 import '../../meeting/screen/school_meeting_screen.dart';
 import '../../messages/screen/student_contact_screen.dart';
@@ -24,7 +24,6 @@ import '../../notice/screen/teacher_assign_notice_screen.dart';
 import '../../notice/widget/notice_pined_card.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/teacher_assign_report_screen.dart';
-import '../../sports/screen/annual_sports_meet_screen.dart';
 import '../widget/teacher_checkin_checkout_button.dart';
 import '../widget/teacher_profile_card.dart';
 
