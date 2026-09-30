@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/meeting_controller.dart';
 import '../model/meeting_model.dart';
 import 'meeting_form_screen.dart';
@@ -16,6 +17,7 @@ class MeetingDetailScreen extends StatefulWidget {
 }
 
 class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
+  final authController = Get.find<SchoolAuthController>();
   final MeetingController controller = Get.find<MeetingController>();
   late MeetingModel _m;
 
@@ -118,11 +120,13 @@ class _MeetingDetailScreenState extends State<MeetingDetailScreen> {
                 fontWeight: FontWeight.w600,
                 fontSize: 17)),
         actions: [
-          IconButton(
+          if(authController.userType!='student')
+            IconButton(
             onPressed: _edit,
             icon: const Icon(Icons.edit_rounded, color: Colors.white),
           ),
-          IconButton(
+          if(authController.userType!='student')
+            IconButton(
             onPressed: _delete,
             icon: const Icon(Icons.delete_outline_rounded,
                 color: Colors.white),

@@ -5,18 +5,19 @@ import 'package:untitled/core/utils/app_color.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
-import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
+import 'package:untitled/feature/school/homework/screen/teacher_assign_homework_screen.dart';
 import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../event/controller/school_event_controller.dart';
 import '../../event/widget/school_current_event_card.dart';
+import '../../exams/screen/class_exam_timetable_list_screen.dart';
+import '../../homework/screen/student_homework_screen.dart';
 import '../../leave/screen/student_leave_list_screen.dart';
-import '../../leave/screen/teacher_leave_list_screen.dart';
 import '../../meeting/screen/school_meeting_screen.dart';
 import '../../notice/controller/notice_controller.dart';
 import '../../notice/screen/teacher_assign_notice_screen.dart';
 import '../../notice/widget/notice_pined_card.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
-import '../../report/screen/teacher_assign_report_screen.dart';
+import '../../report/screen/student_report_card_screen.dart';
 import '../widget/student_profile_card.dart';
 
 class SchoolStudentHomeScreen extends StatefulWidget {
@@ -83,6 +84,11 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
   ];
 
   final List<AcademicItem> _schoolFeatures = [
+    AcademicItem(
+      label: "Exams",
+      icon: Icons.school,
+      color: Colors.teal,
+    ),
     AcademicItem(
       label: "Notice",
       icon: Icons.campaign_rounded,
@@ -252,10 +258,10 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
                   _push(TeacherSalaryScreen());
                   break;
                 case "Homework":
-                  _push(const TeacherHomeworkScreen());
+                  _push(const StudentHomeworkScreen());
                   break;
                 case "Report Card":
-                  _push(const TeacherAssignReportScreen());
+                  _push(const StudentReportCardScreen());
                   break;
                 default:
                   _snack('${item.label} tapped');
@@ -291,6 +297,8 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
             borderRadius: BorderRadius.circular(14),
             onTap: () {
               switch (item.label) {
+                case "Exams":
+                  _push(const ClassExamTimetableListScreen());
                 case "Notice":
                   _push(const TeacherAssignNoticeScreen());
                   break;

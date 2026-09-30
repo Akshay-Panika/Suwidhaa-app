@@ -8,6 +8,7 @@ class ApiUrls {
   static const String studentList = 'v1/school/student/list/';
   static const String studentCreate = 'v1/school/student/create/';
   static const String studentDetail = 'v1/school/student/';  // + id
+  static String studentListBySchoolType(String schoolType) => 'v1/school/student/list/school-type/$schoolType/';
 
   // Student Leave endpoints
   static const String studentLeaveList = 'v1/school/student-leave/list/';
@@ -122,6 +123,7 @@ class ApiUrls {
   static const String reportCardList        = 'v1/school/report-cards/list/';
   static const String reportCardDetailBase  = 'v1/school/report-cards/list/';       // + id/
   static const String reportCardByAdminBase = 'v1/school/report-cards/adminid/';
+  static const String reportCardByStudentBase = 'v1/school/report-cards/student-list/';
 
   // Meeting endpoints
   static const String meetingCreate = 'v1/school/meeting/create/';

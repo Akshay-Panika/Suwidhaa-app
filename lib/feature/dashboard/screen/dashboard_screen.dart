@@ -32,10 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           const ModuleScreen(),
 
-          // Promotional Bottom Sheet Widget (invisible, handles logic)
-          const PromotionalBottomSheet(),
-
-          // You can uncomment the bottom navigation if needed
+          // const PromotionalBottomSheet(),
           _buildBottomNavigation(),
         ],
       ),

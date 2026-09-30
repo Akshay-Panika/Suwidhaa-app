@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widget/flutter_toast.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/notice_controller.dart';
 import '../model/notice_model.dart';
 import 'teacher_assign_notice_form_screen.dart';
@@ -15,8 +16,11 @@ class TeacherAssignDetailsScreen extends StatefulWidget {
       _TeacherAssignDetailsScreenState();
 }
 
-class _TeacherAssignDetailsScreenState
-    extends State<TeacherAssignDetailsScreen> {
+class _TeacherAssignDetailsScreenState extends State<TeacherAssignDetailsScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
+
   final _ctrl = Get.find<NoticeController>();
   late NoticeModel _notice;
 
@@ -173,6 +177,7 @@ class _TeacherAssignDetailsScreenState
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
         ),
         actions: [
+         if(authController.userType!='student')
           InkWell(
             onTap: _togglePin,
             child: Container(
@@ -189,7 +194,9 @@ class _TeacherAssignDetailsScreenState
               ),
             ),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
+          if(authController.userType!='student')
           InkWell(
             onTap: _edit,
             child:  Container(
@@ -200,7 +207,9 @@ class _TeacherAssignDetailsScreenState
                 ),
                 child: Icon(Icons.edit_rounded, size: 20,)),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
+          if(authController.userType!='student')
           InkWell(
             onTap: _delete,
             child:  Container(
@@ -211,6 +220,7 @@ class _TeacherAssignDetailsScreenState
                 ),
                 child: Icon(Icons.delete_outline_rounded, size: 20,)),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
         ],
       ),
@@ -352,6 +362,7 @@ class _TeacherAssignDetailsScreenState
 
             const SizedBox(height: 30),
 
+            if(authController.userType!='student')
             Row(
               children: [
                 Expanded(

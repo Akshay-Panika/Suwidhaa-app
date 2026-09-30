@@ -55,6 +55,7 @@ class StudentController extends GetxController {
 
   // Get full name
   String get fullName => studentData.value?.fullName ?? '';
+  String get schoolType => studentData.value?.schoolType ?? '';
 
   // Get profile image URL
   String get profileImage => studentData.value?.studentProfile ?? '';

@@ -1,39 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:untitled/feature/school/homework/screen/teacher_add_homework_screen.dart';
-
 import '../../../../core/utils/app_color.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
+import 'teacher_assign_add_homework_screen.dart';
 
 class TeacherHomeworkDetailsScreen extends StatefulWidget {
   final int homeworkId;
-
-  const TeacherHomeworkDetailsScreen({
-    super.key,
-    required this.homeworkId,
-  });
+  const TeacherHomeworkDetailsScreen({super.key, required this.homeworkId,});
 
   @override
   State<TeacherHomeworkDetailsScreen> createState() => _TeacherHomeworkDetailsScreenState();
 }
 
-class _TeacherHomeworkDetailsScreenState
-    extends State<TeacherHomeworkDetailsScreen> {
-  final controller = Get.find<HomeworkController>();
+class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScreen> {
+
+  final hwController = Get.find<HomeworkController>();
+  HomeworkModel? _homework;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    // Fetch fresh details from API
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchHomeworkById(widget.homeworkId);
+    _load();
+  }
+
+  Future<void> _load() async {
+    final hw = await hwController.fetchHomeworkById(widget.homeworkId);
+    if (!mounted) return;
+    setState(() {
+      _homework = hw;
+      _loading = false;
     });
+  }
+
+
+  Color _subjectColor(String? s) {
+    if (s == null) return Colors.indigo;
+    const colors = [
+      Colors.indigo, Colors.teal, Colors.deepOrange,
+      Colors.purple, Colors.blue, Colors.green,
+    ];
+    return colors[s.hashCode.abs() % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
+    final hw = _homework;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -51,119 +66,170 @@ class _TeacherHomeworkDetailsScreenState
             fontSize: 18,
           ),
         ),
-        centerTitle: false,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Get.to(() => TeacherAssignAddHomeworkScreen(homework: _homework!),);
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 0.3),
+              ),
+              child: const Icon(Icons.edit, color: Colors.white, size: 20),
+            ),
+          ),
+          IconButton(
+            onPressed: () => _confirmDelete(_homework!),
+            icon: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 0.3),
+              ),
+              child: const Icon(Icons.delete, color: Colors.white, size: 20),
+            ),
+          ),
+          SizedBox(width: 10,),
+        ],
       ),
       body: SafeArea(
-        child: Obx(() {
-          // Loading state
-          if (controller.isLoading.value &&
-              controller.selectedHomework.value == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final homework = controller.selectedHomework.value;
-
-          // Error / not found
-          if (homework == null) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline,
-                      size: 48, color: Colors.grey),
-                  const SizedBox(height: 12),
-                  Text(
-                    controller.errorMessage.value.isEmpty
-                        ? 'Homework not found'
-                        : controller.errorMessage.value,
-                    style: const TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : hw == null
+            ? const Center(
+          child: Text('Homework not found',
+              style: TextStyle(color: Colors.grey)),
+        )
+            : SingleChildScrollView(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Homework'),
+              const SizedBox(height: 8),
+              _buildHeaderCard(hw),
+              const SizedBox(height: 20),
+              _buildSectionTitle('Details'),
+              const SizedBox(height: 8),
+              _buildDetailsSection(hw),
+              const SizedBox(height: 16),
+              _buildSectionTitle('Info'),
+              const SizedBox(height: 8),
+              _buildInfoSection(hw),
+              const SizedBox(height: 16),
+              _buildSectionTitle('Students (${hw.studentIdsList.length})'),
+              const SizedBox(height: 8),
+              _buildStudentsList(hw),
+              const SizedBox(height: 16),
+              if ((hw.image ?? '').isNotEmpty) ...[
+                _buildSectionTitle('Attachment'),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => _showFullImage(hw.image!),
+                  child: _buildImagePreview(hw.image!),
+                ),
+              ],
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Get.back(),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () =>
-                        controller.fetchHomeworkById(widget.homeworkId),
-                    child: const Text('Retry'),
-                  ),
-                ],
+                  child: const Text('Close'),
+                ),
               ),
-            );
-          }
-
-          // Render details
-          return RefreshIndicator(
-            onRefresh: () =>
-                controller.fetchHomeworkById(widget.homeworkId),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Homework'),
-                  const SizedBox(height: 8),
-                  _buildHeaderCard(homework, controller),
-                  const SizedBox(height: 20),
-
-                  _buildSectionTitle('Details'),
-                  const SizedBox(height: 8),
-                  _buildDetailsSection(homework, controller),
-                  const SizedBox(height: 16),
-
-                  _buildSectionTitle('Info'),
-                  const SizedBox(height: 8),
-                  _buildInfoSection(homework),
-                  const SizedBox(height: 16),
-
-                  if (homework.image != null &&
-                      homework.image!.isNotEmpty) ...[
-                    _buildSectionTitle('Attachment'),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () => _showFullImage(homework.image!),
-                      child: _buildImagePreview(homework.image!),
-                    ),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Text(
-                        'Tap image to view full size',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-
-                  _buildActionButtons(context, homework, controller),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => Get.back(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Close'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // ───── Header Card ─────
-  Widget _buildHeaderCard(
-      HomeworkModel homework, HomeworkController controller) {
-    final subjectColor = controller.getSubjectColor(homework.subjectName);
-    final subjectIcon = controller.getSubjectIcon(homework.subjectName);
+  Widget _buildStudentsList(HomeworkModel hw) {
+    if (hw.studentIdsList.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text('No students assigned'),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: hw.studentIdsList.map((s) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey.shade100,
+                  child: Icon(Icons.image,color: Colors.grey.shade400,),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Name:",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        s.studentIdcard,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (s.status ? Colors.green : Colors.orange)
+                        .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    s.status ? 'Done' : 'Pending',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: s.status ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard(HomeworkModel hw) {
+    final c = _subjectColor(hw.subjectName);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -176,10 +242,10 @@ class _TeacherHomeworkDetailsScreenState
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: subjectColor.withOpacity(0.15),
+              color: c.withOpacity(0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.menu_book_sharp, color: subjectColor, size: 32),
+            child: Icon(Icons.menu_book_sharp, color: c, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -187,15 +253,14 @@ class _TeacherHomeworkDetailsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  homework.subjectName ?? '',
+                  hw.subjectName ?? '',
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  homework.subjectTopic ?? '',
-                  style:
-                  TextStyle(color: Colors.grey[600], fontSize: 14),
+                  hw.subjectTopic ?? '',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ],
             ),
@@ -205,216 +270,99 @@ class _TeacherHomeworkDetailsScreenState
     );
   }
 
-  // ───── Details Section ─────
-  Widget _buildDetailsSection(
-      HomeworkModel homework, HomeworkController controller) {
-    final status = homework.getStatus();
-    final priority = homework.getPriority();
-    final daysRemaining = homework.getRemainingDays();
-
-    return _buildDetailCard(
-      children: [
-        _buildDetailRow('📅 Issue Date', homework.issueDate ?? '-'),
-        _buildDetailRow('📅 Due Date', homework.endDate ?? '-'),
-        _buildColoredDetailRow(
-            '📊 Status', status, controller.getStatusColor(status)),
-        _buildColoredDetailRow('⚡ Priority', priority,
-            controller.getPriorityColor(priority)),
-        _buildDetailRow(
-          '⏰ Days Remaining',
-          daysRemaining > 0
-              ? '$daysRemaining days'
-              : daysRemaining == 0
-              ? 'Due today'
-              : 'Overdue by ${daysRemaining.abs()} days',
-        ),
-      ],
-    );
+  Widget _buildDetailsSection(HomeworkModel hw) {
+    final d = hw.getRemainingDays();
+    return _buildDetailCard(children: [
+      if ((hw.className ?? '').isNotEmpty)
+        _buildDetailRow('🏫 Class', hw.className!),
+      _buildDetailRow('📅 Issue Date', hw.issueDate ?? '-'),
+      _buildDetailRow('📅 Due Date', hw.endDate ?? '-'),
+      _buildDetailRow(
+        '⏰ Days Remaining',
+        d > 0 ? '$d days' : d == 0 ? 'Due today' : 'Overdue by ${d.abs()} days',
+      ),
+    ]);
   }
 
-  // ───── Info Section ─────
-  Widget _buildInfoSection(HomeworkModel homework) {
-    return _buildDetailCard(
-      children: [
-        if (homework.className?.isNotEmpty ?? false)
-          _buildDetailRow('🏫 Class', homework.className!),
-        if (homework.teacherName?.isNotEmpty ?? false)
-          _buildDetailRow('👨‍🏫 Teacher', homework.teacherName!),
-        if (homework.teacherId?.isNotEmpty ?? false)
-          _buildDetailRow('🆔 Teacher ID', homework.teacherId!),
-        if (homework.schoolType?.isNotEmpty ?? false)
-          _buildDetailRow('🏛️ School Type', homework.schoolType!),
-      ],
-    );
-  }
+  Widget _buildInfoSection(HomeworkModel hw) => _buildDetailCard(children: [
+    if ((hw.teacherName ?? '').isNotEmpty)
+      _buildDetailRow('👨‍🏫 Teacher', hw.teacherName!),
+    if ((hw.teacherId ?? '').isNotEmpty)
+      _buildDetailRow('🆔 Teacher ID', hw.teacherId!),
+    if ((hw.schoolType ?? '').isNotEmpty)
+      _buildDetailRow('🏛️ School Type', hw.schoolType!),
+  ]);
 
-  // ───── Action Buttons ─────
-  Widget _buildActionButtons(BuildContext context, HomeworkModel homework,
-      HomeworkController controller) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => Get.to(
-                  () => TeacherAddHomeworkScreen(homework: homework),
-            ),
-            icon: const Icon(Icons.edit_rounded, size: 18),
-            label: const Text('Edit',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 14)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () =>
-                _showDeleteConfirmation(context, controller, homework),
-            icon: const Icon(Icons.delete_rounded, size: 18),
-            label: const Text('Delete',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 14)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  // ───── Section Title ─────
-  Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(2),
-          ),
+  Widget _buildSectionTitle(String title) => Row(
+    children: [
+      Container(
+        width: 4,
+        height: 16,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(2),
         ),
-        const SizedBox(width: 8),
-        Text(
-          title,
+      ),
+      const SizedBox(width: 8),
+      Text(title,
           style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
-    );
-  }
+              fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+    ],
+  );
 
-  Widget _buildDetailCard({required List<Widget> children}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
+  Widget _buildDetailCard({required List<Widget> children}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: Colors.grey[50],
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey[200]!),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+  );
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              value,
+  Widget _buildDetailRow(String l, String v) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(l, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(v,
               style: const TextStyle(
                   fontWeight: FontWeight.w600, fontSize: 13),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+              textAlign: TextAlign.right),
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildColoredDetailRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-          Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.35)),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                  color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildImagePreview(String imageUrl) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        imageUrl,
+  Widget _buildImagePreview(String url) => ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Image.network(
+      url,
+      height: 220,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, p) => p == null
+          ? child
+          : Container(
         height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            height: 220,
-            color: Colors.grey[200],
-            child: const Center(child: CircularProgressIndicator()),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 220,
-            color: Colors.grey[200],
-            child: const Center(
-              child:
-              Icon(Icons.error_outline, color: Colors.grey, size: 40),
-            ),
-          );
-        },
+        color: Colors.grey[200],
+        child: const Center(child: CircularProgressIndicator()),
       ),
-    );
-  }
+      errorBuilder: (_, __, ___) => Container(
+        height: 220,
+        color: Colors.grey[200],
+        child: const Center(
+            child: Icon(Icons.error_outline, color: Colors.grey, size: 40)),
+      ),
+    ),
+  );
 
-  void _showFullImage(String imageUrl) {
+  void _showFullImage(String url) {
     Get.dialog(
       Dialog(
         backgroundColor: Colors.black,
@@ -425,28 +373,7 @@ class _TeacherHomeworkDetailsScreenState
               minScale: 0.5,
               maxScale: 4.0,
               child: Center(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.white));
-                  },
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.broken_image_rounded,
-                            color: Colors.white54, size: 48),
-                        SizedBox(height: 8),
-                        Text('Failed to load image',
-                            style: TextStyle(color: Colors.white54)),
-                      ],
-                    ),
-                  ),
-                ),
+                child: Image.network(url, fit: BoxFit.contain),
               ),
             ),
             Positioned(
@@ -472,69 +399,46 @@ class _TeacherHomeworkDetailsScreenState
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context,
-      HomeworkController controller, HomeworkModel homework) {
+  void _confirmDelete(HomeworkModel hw) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dCtx) => AlertDialog(
         backgroundColor: Colors.white,
         title: const Text('Delete Homework'),
-        titleTextStyle: const TextStyle(
-            color: Colors.indigo,
-            fontWeight: FontWeight.w600,
-            fontSize: 18),
+        titleTextStyle: TextStyle(fontSize: 20,color: Colors.indigo,fontWeight: FontWeight.w500),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Are you sure you want to delete this homework?',
-              style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14),
-            ),
+             Text('Are you sure you want to delete this homework?',style: TextStyle(fontSize: 16,color: Colors.grey.shade600),),
             const SizedBox(height: 8),
-            Text('Subject: ${homework.subjectName}',
+            Text('Subject: ${hw.subjectName}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('Topic: ${homework.subjectTopic}',
-                style: const TextStyle(fontSize: 14)),
+            Text('Topic: ${hw.subjectTopic}'),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(dCtx),
             child: const Text('Cancel'),
           ),
-          Obx(() => ElevatedButton(
-            onPressed: controller.isSubmitting.value
-                ? null
-                : () async {
-              final success = await controller
-                  .deleteHomework(homework.id);
-              if (success) {
-                FlutterToast.success(
-                    'Homework deleted successfully');
-                Navigator.pop(dialogContext);
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dCtx);
+              final ok = await hwController.deleteHomework(hw.id!);
+              if (ok) {
+                FlutterToast.success('Homework deleted successfully');
                 Get.back();
               } else {
-                FlutterToast.error(
-                    controller.errorMessage.value);
+                FlutterToast.error('Failed to delete homework');
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: controller.isSubmitting.value
-                ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
-            )
-                : const Text('Delete'),
-          )),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

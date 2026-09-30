@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/school_event_controller.dart';
 import '../model/school_event_model.dart';
 import 'school_event_details_screen.dart';
@@ -14,6 +15,8 @@ class SchoolEventScreen extends StatefulWidget {
 }
 
 class _SchoolEventScreenState extends State<SchoolEventScreen> {
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   final _ctrl = Get.find<SchoolEventController>();
 
   // ==================== FILTERS ====================
@@ -395,6 +398,7 @@ class _SchoolEventScreenState extends State<SchoolEventScreen> {
         title: const Text("School Events",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
+          if(authController.userType!='student')
           InkWell(
             onTap: _openCreate,
             child: Container(

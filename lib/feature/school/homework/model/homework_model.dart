@@ -1,233 +1,117 @@
+class StudentHomeworkEntry {
+  final String studentIdcard;
+  final bool status;
+
+  StudentHomeworkEntry({
+    required this.studentIdcard,
+    required this.status,
+  });
+
+  factory StudentHomeworkEntry.fromJson(Map<String, dynamic> json) {
+    return StudentHomeworkEntry(
+      studentIdcard: json['studentIdcard']?.toString() ?? '',
+      status: json['status'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    "studentIdcard": studentIdcard,
+    "status": status,
+  };
+}
+
 class HomeworkModel {
   final int? id;
-  final String? subjectName;
+  final String? schoolType;
+  final String? className;
+  final String? subjectName;      // maps to `subject` in API
   final String? subjectTopic;
   final String? issueDate;
   final String? endDate;
+  final List<StudentHomeworkEntry> studentIdsList;
   final String? image;
-  final String? className;
-  final String? teacherName;
   final String? teacherId;
-  final String? schoolType;
+  final String? teacherName;
   final String? createdAt;
   final String? updatedAt;
 
   HomeworkModel({
     this.id,
+    this.schoolType,
+    this.className,
     this.subjectName,
     this.subjectTopic,
     this.issueDate,
     this.endDate,
+    this.studentIdsList = const [],
     this.image,
-    this.className,
-    this.teacherName,
     this.teacherId,
-    this.schoolType,
+    this.teacherName,
     this.createdAt,
     this.updatedAt,
   });
 
+  // ── FROM JSON ──
   factory HomeworkModel.fromJson(Map<String, dynamic> json) {
+    // Parse student_ids_list which comes as list of dicts
+    List<StudentHomeworkEntry> students = [];
+    final raw = json['student_ids_list'];
+    if (raw is List) {
+      students = raw.map((e) {
+        if (e is Map) {
+          return StudentHomeworkEntry.fromJson(Map<String, dynamic>.from(e));
+        }
+        // fallback: string or int
+        return StudentHomeworkEntry(
+          studentIdcard: e.toString(),
+          status: false,
+        );
+      }).toList();
+    }
+
     return HomeworkModel(
-      id: json['id'],
-      subjectName: json['subject_name']?.toString(),
+      id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}'),
+      schoolType: json['school_type']?.toString(),
+      className: json['class_name']?.toString(),
+      subjectName: json['subject']?.toString(),
       subjectTopic: json['subject_topic']?.toString(),
       issueDate: json['issue_date']?.toString(),
       endDate: json['end_date']?.toString(),
+      studentIdsList: students,
       image: json['image']?.toString(),
-      className: json['class_name']?.toString(),
-      teacherName: json['teacher_name']?.toString(),
       teacherId: json['teacher_id']?.toString(),
-      schoolType: json['school_type']?.toString(),
+      teacherName: json['teacher_name']?.toString(),
       createdAt: json['created_at']?.toString(),
       updatedAt: json['updated_at']?.toString(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'subject_name': subjectName,
-      'subject_topic': subjectTopic,
-      'issue_date': issueDate,
-      'end_date': endDate,
-      'class_name': className,
-      'teacher_name': teacherName,
-      'teacher_id': teacherId,
-      'school_type': schoolType,
-    };
-  }
-
-  HomeworkModel copyWith({
-    int? id,
-    String? subjectName,
-    String? subjectTopic,
-    String? issueDate,
-    String? endDate,
-    String? image,
-    String? className,
-    String? teacherName,
-    String? teacherId,
-    String? schoolType,
-    String? createdAt,
-    String? updatedAt,
-  }) {
-    return HomeworkModel(
-      id: id ?? this.id,
-      subjectName: subjectName ?? this.subjectName,
-      subjectTopic: subjectTopic ?? this.subjectTopic,
-      issueDate: issueDate ?? this.issueDate,
-      endDate: endDate ?? this.endDate,
-      image: image ?? this.image,
-      className: className ?? this.className,
-      teacherName: teacherName ?? this.teacherName,
-      teacherId: teacherId ?? this.teacherId,
-      schoolType: schoolType ?? this.schoolType,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  // ───── Status / Priority helpers ─────
+  // ── Helpers used by detail screen ──
   String getStatus() {
-    if (endDate == null) return 'Pending';
-    try {
-      final endDateObj = DateTime.parse(endDate!);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final due = DateTime(endDateObj.year, endDateObj.month, endDateObj.day);
-      final days = due.difference(today).inDays;
-      if (days < 0) return 'Overdue';
-      if (days == 0) return 'Today';
-      return 'Pending';
-    } catch (e) {
-      return 'Pending';
+    final end = DateTime.tryParse(endDate ?? '');
+    if (end == null) return 'Pending';
+    final now = DateTime.now();
+    if (end.isBefore(DateTime(now.year, now.month, now.day))) {
+      return 'Overdue';
     }
-  }
-
-  String getPriority() {
-    if (endDate == null) return 'Low';
-    try {
-      final endDateObj = DateTime.parse(endDate!);
-      final now = DateTime.now();
-      final days = endDateObj.difference(now).inDays;
-      if (days < 0) return 'Critical';
-      if (days <= 2) return 'High';
-      if (days <= 5) return 'Medium';
-      return 'Low';
-    } catch (e) {
-      return 'Low';
+    if (end.year == now.year &&
+        end.month == now.month &&
+        end.day == now.day) {
+      return 'Today';
     }
+    return 'Pending';
   }
 
   int getRemainingDays() {
-    if (endDate == null) return 0;
-    try {
-      final endDateObj = DateTime.parse(endDate!);
-      final now = DateTime.now();
-      return endDateObj.difference(now).inDays;
-    } catch (e) {
-      return 0;
-    }
+    final end = DateTime.tryParse(endDate ?? '');
+    if (end == null) return 0;
+    return end.difference(DateTime.now()).inDays;
   }
 
-  // ───── ✅ NEW: Date helpers for year/month filtering ─────
-  DateTime? get issueDateTime {
-    if (issueDate == null || issueDate!.isEmpty) return null;
-    try {
-      return DateTime.parse(issueDate!);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  DateTime? get endDateTime {
-    if (endDate == null || endDate!.isEmpty) return null;
-    try {
-      return DateTime.parse(endDate!);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// "2026"
-  String get yearLabel {
-    final d = issueDateTime ?? endDateTime;
-    return d?.year.toString() ?? 'Unknown';
-  }
-
-  /// "Sep"
-  String get monthLabel {
-    final d = issueDateTime ?? endDateTime;
-    return d == null ? 'Unknown' : monthName(d.month);
-  }
-
-  /// "Sep 2026"
-  String get monthYearLabel {
-    final d = issueDateTime ?? endDateTime;
-    if (d == null) return 'Unknown';
-    return '${monthName(d.month)} ${d.year}';
-  }
-
-  /// 9 (for sorting)
-  int get monthNumber {
-    final d = issueDateTime ?? endDateTime;
-    return d?.month ?? 0;
-  }
-
-  /// For chronological sorting
-  DateTime get sortDate =>
-      issueDateTime ?? endDateTime ?? DateTime(1900);
-
-  static String monthName(int m) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    if (m < 1 || m > 12) return 'Unknown';
-    return months[m - 1];
-  }
-
-  static List<String> get allMonths => const [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-}
-
-class HomeworkResponse {
-  final bool success;
-  final String? message;
-  final int? count;
-  final List<HomeworkModel>? data;
-  final HomeworkModel? homework;
-
-  HomeworkResponse({
-    required this.success,
-    this.message,
-    this.count,
-    this.data,
-    this.homework,
-  });
-
-  factory HomeworkResponse.fromJson(Map<String, dynamic> json) {
-    List<HomeworkModel>? homeworkList;
-    HomeworkModel? singleHomework;
-
-    if (json['data'] != null) {
-      if (json['data'] is List) {
-        homeworkList = (json['data'] as List)
-            .map((item) => HomeworkModel.fromJson(item))
-            .toList();
-      } else if (json['data'] is Map<String, dynamic>) {
-        singleHomework = HomeworkModel.fromJson(json['data']);
-      }
-    }
-
-    return HomeworkResponse(
-      success: json['success'] ?? false,
-      message: json['message']?.toString(),
-      count: json['count'],
-      data: homeworkList,
-      homework: singleHomework,
-    );
+  String getPriority() {
+    final d = getRemainingDays();
+    if (d <= 0) return 'High';
+    if (d <= 3) return 'Medium';
+    return 'Low';
   }
 }

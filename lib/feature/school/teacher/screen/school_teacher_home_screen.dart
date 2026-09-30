@@ -7,7 +7,7 @@ import 'package:untitled/feature/school/library/screen/school_library_screen.dar
 import 'package:untitled/feature/school/attendance/screen/class_attendance_screen.dart';
 import 'package:untitled/feature/school/attendance/screen/subject_attendance_screen.dart';
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
-import 'package:untitled/feature/school/homework/screen/teacher_home_work_screen.dart';
+import 'package:untitled/feature/school/homework/screen/teacher_assign_homework_screen.dart';
 import 'package:untitled/feature/school/settings/screen/school_setting_future_manage_screen.dart';
 import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../../ott/school/screen/ott_school_screen.dart';
@@ -273,17 +273,31 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
     required List<AcademicItem> items,
     required Widget Function(AcademicItem) builder,
   }) {
-    return Padding(
+    return Container(
       padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.indigo, width: 0.3)
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            spacing: 10,
+            children: [
+              Container(
+                height: 14,width: 3,
+                color: Colors.indigo,
+              ),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
@@ -367,7 +381,7 @@ class _SchoolTeacherHomeScreenState extends State<SchoolTeacherHomeScreen> {
                   _push(const StudentLeaveRequestScreen());
                   break;
                 case "Homework":
-                  _push(const TeacherHomeworkScreen());
+                  _push(const TeacherAssignHomeworkScreen());
                   break;
                 case "Report Card":
                   _push(const TeacherAssignReportScreen());

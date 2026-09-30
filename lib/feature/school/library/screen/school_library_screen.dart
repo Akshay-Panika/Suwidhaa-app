@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/library_controller.dart';
 import '../model/library_book_model.dart';
 import 'school_book_review.dart';           // ← NEW
@@ -13,6 +14,9 @@ class SchoolLibraryScreen extends StatefulWidget {
 }
 
 class _SchoolLibraryScreenState extends State<SchoolLibraryScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   final _searchCtrl = TextEditingController();
 
   final List<String> _classes = [
@@ -204,6 +208,7 @@ class _SchoolLibraryScreenState extends State<SchoolLibraryScreen> {
             );
           }),
           const SizedBox(width: 20),
+          if(authController.userType!='student')
           InkWell(
             onTap: _openAddBook,
             customBorder: const CircleBorder(),
@@ -216,6 +221,7 @@ class _SchoolLibraryScreenState extends State<SchoolLibraryScreen> {
               child: const Icon(Icons.add, color: Colors.white, size: 20),
             ),
           ),
+          if(authController.userType!='student')
           const SizedBox(width: 20),
         ],
       ),

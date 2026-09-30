@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/school_event_controller.dart';
 import '../model/school_event_model.dart';
 import 'school_event_form_screen.dart';
@@ -14,6 +15,10 @@ class SchoolEventDetailsScreen extends StatefulWidget {
 }
 
 class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
+
   final _ctrl = Get.find<SchoolEventController>();
   late SchoolEventModel _e;
 
@@ -124,16 +129,7 @@ class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
         title: const Text("Event Details",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
-          // IconButton(
-          //   onPressed: _togglePin,
-          //   icon: Icon(
-          //     _e.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-          //     color: _e.isPinned ? Colors.orange : Colors.white,
-          //   ),
-          // ),
-          // IconButton(onPressed: _edit, icon: const Icon(Icons.edit_rounded)),
-          // IconButton(onPressed: _delete, icon: const Icon(Icons.delete_outline_rounded)),
-
+          if(authController.userType!='student')
           InkWell(
             onTap: _togglePin,
             child: Container(
@@ -148,7 +144,9 @@ class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
               ),
             ),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
+          if(authController.userType!='student')
           InkWell(
             onTap: _edit,
             child:  Container(
@@ -159,7 +157,9 @@ class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
                 ),
                 child: Icon(Icons.edit_rounded, size: 20,)),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
+          if(authController.userType!='student')
           InkWell(
             onTap: _delete,
             child:  Container(
@@ -170,6 +170,7 @@ class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
                 ),
                 child: Icon(Icons.delete_outline_rounded, size: 20,)),
           ),
+          if(authController.userType!='student')
           SizedBox(width: 20,),
         ],
       ),
@@ -280,6 +281,7 @@ class _SchoolEventDetailsScreenState extends State<SchoolEventDetailsScreen> {
             ),
             const SizedBox(height: 30),
 
+            if(authController.userType!='student')
             Row(
               children: [
                 Expanded(

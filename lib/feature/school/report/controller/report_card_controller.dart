@@ -13,6 +13,8 @@ class ReportCardController extends GetxController {
   final isUpdating = false.obs;
   final reportCards = <ReportCardData>[].obs;
   final errorMessage = ''.obs;
+  final studentReportCards = <ReportCardData>[].obs;
+  final isLoadingStudent = false.obs;
 
   Future<void> loadReportCards(String adminId) async {
     if (adminId.trim().isEmpty) {
@@ -37,6 +39,32 @@ class ReportCardController extends GetxController {
     }
   }
 
+
+  /// Load report cards filtered by student_id
+  Future<void> loadReportCardsByStudent(String studentId) async {
+    if (studentId.trim().isEmpty) {
+      errorMessage.value = 'Student ID is empty';
+      return;
+    }
+    try {
+      isLoadingStudent.value = true;
+      errorMessage.value = '';
+      final response =
+      await _repository.getReportCardsByStudentId(studentId.trim());
+      if (response.status) {
+        studentReportCards.value = response.data;
+      } else {
+        studentReportCards.value = [];
+        errorMessage.value = response.message;
+      }
+    } catch (e) {
+      studentReportCards.value = [];
+      errorMessage.value = e.toString();
+      FlutterToast.error('Failed to load report cards: $e');
+    } finally {
+      isLoadingStudent.value = false;
+    }
+  }
   Future<bool> createReportCard(CreateReportCardRequest req) async {
     try {
       isSubmitting.value = true;

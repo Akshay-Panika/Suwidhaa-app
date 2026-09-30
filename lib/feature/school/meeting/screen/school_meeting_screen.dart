@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/meeting_controller.dart';
 import '../model/meeting_model.dart';
 import 'meeting_detail_screen.dart';
@@ -14,6 +15,7 @@ class SchoolMeetingScreen extends StatefulWidget {
 }
 
 class _SchoolMeetingScreenState extends State<SchoolMeetingScreen> {
+  final authController = Get.find<SchoolAuthController>();
   final MeetingController controller = Get.find<MeetingController>();
 
   String _classFilter = "All";
@@ -343,7 +345,7 @@ class _SchoolMeetingScreenState extends State<SchoolMeetingScreen> {
           ],
         );
       }),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: authController.userType=='student'?null:FloatingActionButton(
         onPressed: _openCreate,
         backgroundColor: Colors.indigo,
         elevation: 2,

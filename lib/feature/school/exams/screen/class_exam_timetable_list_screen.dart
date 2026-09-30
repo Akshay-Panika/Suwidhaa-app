@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../auth/controller/school_auth_controller.dart';
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/exams_controller.dart';
 import '../model/exams_table_model.dart';
@@ -60,6 +61,9 @@ class ClassExamTimetableListScreen extends StatefulWidget {
 }
 
 class _ClassExamTimetableListScreenState extends State<ClassExamTimetableListScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   // ==================== CONTROLLER ====================
   final ExamsController controller = Get.put(ExamsController());
   final TeacherController teacherController = Get.find<TeacherController>();
@@ -235,6 +239,7 @@ class _ClassExamTimetableListScreenState extends State<ClassExamTimetableListScr
           icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
         actions: [
+          if(authController.userType!='student')
           InkWell(
             onTap: _onCreateTapped,
             borderRadius: BorderRadius.circular(24),

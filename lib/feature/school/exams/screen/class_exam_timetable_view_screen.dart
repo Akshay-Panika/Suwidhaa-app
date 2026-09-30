@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/exams_controller.dart';
 import '../model/exams_table_model.dart';
 import 'class_exam_timetable_form_screen.dart';
@@ -17,8 +18,10 @@ class ClassExamTimetableViewScreen extends StatefulWidget {
       _ClassExamTimetableViewScreenState();
 }
 
-class _ClassExamTimetableViewScreenState
-    extends State<ClassExamTimetableViewScreen> {
+class _ClassExamTimetableViewScreenState extends State<ClassExamTimetableViewScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   final ExamsController controller = Get.find<ExamsController>();
   late ClassExamTimetable _timetable;
 
@@ -144,6 +147,7 @@ class _ClassExamTimetableViewScreenState
           icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
         actions: [
+          if(authController.userType!='student')
           InkWell(
             onTap: _editTimetable,
             borderRadius: BorderRadius.circular(24),
@@ -157,7 +161,9 @@ class _ClassExamTimetableViewScreenState
                   color: Colors.white, size: 20),
             ),
           ),
+          if(authController.userType!='student')
           const SizedBox(width:10),
+          if(authController.userType!='student')
           InkWell(
             onTap: _confirmDeleteTimetable,
             borderRadius: BorderRadius.circular(24),
@@ -171,6 +177,7 @@ class _ClassExamTimetableViewScreenState
                   color: Colors.white, size: 20),
             ),
           ),
+          if(authController.userType!='student')
           const SizedBox(width: 16),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/widget/flutter_toast.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/library_controller.dart';
 import '../model/library_book_model.dart';
 import 'school_library_form_screen.dart';
@@ -17,6 +18,8 @@ class SchoolBookReview extends StatefulWidget {
 }
 
 class _SchoolBookReviewState extends State<SchoolBookReview> {
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   LibraryController get c => Get.find<LibraryController>();
 
   LibraryBookModel? _book;
@@ -175,6 +178,7 @@ class _SchoolBookReviewState extends State<SchoolBookReview> {
         title: const Text("Book Details",
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
+          if(authController.userType!='student')
           if (_book != null) ...[
             InkWell(
               onTap: _onEdit,
@@ -403,6 +407,7 @@ class _SchoolBookReviewState extends State<SchoolBookReview> {
             ),
           ),
         ),
+        if(authController.userType!='student')
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 30),
           child: Row(

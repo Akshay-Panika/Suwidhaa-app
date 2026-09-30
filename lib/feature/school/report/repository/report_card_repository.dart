@@ -20,6 +20,20 @@ class ReportCardRepository {
     }
   }
 
+
+  /// GET /v1/school/report-cards/student-list/{student_id}/
+  Future<ReportCardResponse> getReportCardsByStudentId(String studentId) async {
+    try {
+      final url = '${ApiUrls.reportCardByStudentBase}$studentId/';
+      final response = await _dio.get(url);
+      return ReportCardResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Failed to load report cards');
+    } catch (e) {
+      throw Exception('Failed to load report cards: $e');
+    }
+  }
+
   /// POST /v1/school/report-cards/create/
   Future<Map<String, dynamic>> createReportCard(
       CreateReportCardRequest body,

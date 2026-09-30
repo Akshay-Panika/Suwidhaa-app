@@ -27,4 +27,26 @@ class StudentListRepository {
       throw Exception('Failed to load student list: $e');
     }
   }
+
+  // 👇 NEW METHOD: Get student list by school type
+  Future<StudentListResponse> getStudentListBySchoolType(String schoolType) async {
+    try {
+      final response = await _dio.get(
+        ApiUrls.studentListBySchoolType(schoolType),
+      );
+      return StudentListResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.data != null) {
+        try {
+          final errorData = e.response?.data as Map<String, dynamic>;
+          throw Exception(errorData['message'] ?? 'Failed to load student list');
+        } catch (_) {
+          throw Exception('Network error: ${e.message}');
+        }
+      }
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to load student list: $e');
+    }
+  }
 }

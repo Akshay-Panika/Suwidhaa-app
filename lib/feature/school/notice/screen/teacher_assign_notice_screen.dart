@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/notice_controller.dart';
 import 'teacher_assign_details_screen.dart';
 import 'teacher_assign_notice_form_screen.dart';
 
-class TeacherAssignNoticeScreen extends StatelessWidget {
+class TeacherAssignNoticeScreen extends StatefulWidget {
   const TeacherAssignNoticeScreen({super.key});
 
+  @override
+  State<TeacherAssignNoticeScreen> createState() => _TeacherAssignNoticeScreenState();
+}
+
+class _TeacherAssignNoticeScreenState extends State<TeacherAssignNoticeScreen> {
+
+  final authController = Get.find<SchoolAuthController>();
+  // if(authController.userType!='student')
   // ==================== COLORS / ICONS ====================
   Color _priorityColor(String p) {
     switch (p) {
@@ -102,6 +111,8 @@ class TeacherAssignNoticeScreen extends StatelessWidget {
 
   // ==================== APP BAR ====================
   PreferredSizeWidget _buildAppBar(NoticeController ctrl) {
+    final authController = Get.find<SchoolAuthController>();
+    // if(authController.userType!='student')
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.indigo,
@@ -115,6 +126,7 @@ class TeacherAssignNoticeScreen extends StatelessWidget {
         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
       ),
       actions: [
+        if(authController.userType!='student')
         InkWell(
           customBorder: const CircleBorder(),
           onTap: () async {
