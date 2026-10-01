@@ -12,12 +12,7 @@ import '../controller/report_card_controller.dart';
 import '../model/report_card_model.dart';
 
 // ==================== FILTER OPTIONS ====================
-class ReportFilters {
-  static const List<String> exams = [
-    'Unit Test 1', 'Unit Test 2', 'Unit Test 3', 'Unit Test 4',
-    'Half Yearly', 'Final Term', 'Mid Term', 'Quarterly', 'Other Test',
-  ];
-}
+// ReportFilters class REMOVED as requested
 
 const List<String> kSubjects = [
   "Mathematics", "Science", "English", "Social Studies", "Computer",
@@ -73,13 +68,21 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
   final reportController = Get.find<ReportCardController>();
 
   String _selectedClass = 'All Classes';
-  String _selectedExam = 'All Exams';
+  // Exam is now a free-text filter
+  final TextEditingController _examFilterController = TextEditingController();
   DateTime? _selectedDate;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadIfReady());
+    _examFilterController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _examFilterController.dispose();
+    super.dispose();
   }
 
   String? _resolveAdminId() {
@@ -120,9 +123,11 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
   }
 
   List<ReportCardData> get _filteredReports {
+    final examQuery = _examFilterController.text.trim().toLowerCase();
     return reportController.reportCards.where((r) {
       final classOk = _selectedClass == 'All Classes' || r.className == _selectedClass;
-      final examOk = _selectedExam == 'All Exams' || r.examName == _selectedExam;
+      final examOk = examQuery.isEmpty ||
+          r.examName.toLowerCase().contains(examQuery);
       final dateOk = _selectedDate == null || _matchesDate(r.createdAt, _selectedDate!);
       return classOk && examOk && dateOk;
     }).toList();
@@ -139,13 +144,13 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
 
   bool get _hasFilter =>
       _selectedClass != 'All Classes' ||
-          _selectedExam != 'All Exams' ||
+          _examFilterController.text.trim().isNotEmpty ||
           _selectedDate != null;
 
   void _resetFilters() {
     setState(() {
       _selectedClass = 'All Classes';
-      _selectedExam = 'All Exams';
+      _examFilterController.clear();
       _selectedDate = null;
     });
   }
@@ -170,7 +175,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // drag handle
                     Container(
                       width: 40,
                       height: 4,
@@ -180,7 +184,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // header
                     Row(
                       children: [
                         const Icon(Icons.calendar_month_rounded,
@@ -202,7 +205,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                     ),
                     const Divider(height: 1),
                     const SizedBox(height: 8),
-                    // calendar
                     SizedBox(
                       height: 320,
                       child: Theme(
@@ -224,7 +226,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // actions
                     Row(
                       children: [
                         Expanded(
@@ -343,12 +344,12 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
         actions: [
           InkWell(
               child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 0.3),
-              ),
-              child: const Icon(Icons.add, size: 20,)),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 0.3),
+                  ),
+                  child: const Icon(Icons.add, size: 20,)),
               onTap: _openForm),
           SizedBox(width: 20,)
         ],
@@ -422,14 +423,48 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Exam is now a text field
               Expanded(
-                child: _filterDropdown(
-                  'Exam',
-                  Icons.event_note_rounded,
-                  ['All Exams', ...ReportFilters.exams],
-                  _selectedExam,
-                  Colors.teal,
-                      (v) => setState(() => _selectedExam = v!),
+                child: Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.teal.withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_note_rounded,
+                          size: 16, color: Colors.teal),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: TextField(
+                          controller: _examFilterController,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.teal),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            hintText: 'Search exam...',
+                            hintStyle: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.teal),
+                          ),
+                        ),
+                      ),
+                      if (_examFilterController.text.isNotEmpty)
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _examFilterController.clear()),
+                          child: const Icon(Icons.close_rounded,
+                              size: 16, color: Colors.teal),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -640,7 +675,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
               child: hasProfile
                   ? null
                   : Center(
-                child: Icon(Icons.image)
+                  child: Icon(Icons.image)
               ),
             ),
             const SizedBox(width: 12),
@@ -1096,7 +1131,8 @@ class _TeacherAssignReportFormScreenState
   final reportController = Get.find<ReportCardController>();
 
   String? _selectedClass;
-  String? _selectedExam;
+  // Exam is now a free-text field
+  final TextEditingController _examController = TextEditingController();
   String? _selectedSubject;
 
   final TextEditingController _maxMarksController = TextEditingController();
@@ -1124,22 +1160,19 @@ class _TeacherAssignReportFormScreenState
 
   void _hydrateFromExisting(ReportCardData r) {
     _selectedClass = r.className;
-    _selectedExam = r.examName;
-    // Only preselect if it exists in our dropdown, else add
+    _examController.text = r.examName;
     _selectedSubject = _subjects.contains(r.subjectName)
         ? r.subjectName
-        : r.subjectName; // still set; dropdown allows null fallback
+        : r.subjectName;
     _maxMarksController.text = r.subjectMaxMarks.toString();
     _passMarksController.text = r.passingMaxMarks.toString();
 
-    // Find the student to attach the existing marks to
     final idx = studentController.studentList
         .indexWhere((s) => s.studentIdCard == r.studentId);
     if (idx >= 0) {
       _editStudent = studentController.studentList[idx];
       _editStudentIndex = idx;
     } else {
-      // Student not in loaded list — create a synthetic one so we can still edit
       _editStudent = null;
     }
 
@@ -1150,10 +1183,8 @@ class _TeacherAssignReportFormScreenState
       _remarkControllers[_editStudent!.id]!.text = r.remark;
       _grades[_editStudent!.id] = _calcGrade(r.studentMarks);
 
-      // Start at Marks step in edit mode (skip picker)
       _step = 2;
     } else {
-      // Fallback: still start at step 0 so user can pick a class/student
       _step = 0;
     }
   }
@@ -1168,6 +1199,7 @@ class _TeacherAssignReportFormScreenState
     }
     _maxMarksController.dispose();
     _passMarksController.dispose();
+    _examController.dispose();
     super.dispose();
   }
 
@@ -1275,9 +1307,9 @@ class _TeacherAssignReportFormScreenState
   void _next() {
     if (_step == 0) {
       if (_selectedClass == null ||
-          _selectedExam == null ||
+          _examController.text.trim().isEmpty ||
           _selectedSubject == null) {
-        FlutterToast.error("Please select Class, Exam and Subject");
+        FlutterToast.error("Please select Class, Subject and enter Exam name");
         return;
       }
       final maxText = _maxMarksController.text.trim();
@@ -1368,6 +1400,7 @@ class _TeacherAssignReportFormScreenState
   }
 
   void _showConfirm({required bool isEdit, required int count}) {
+    final examLabel = _examController.text.trim();
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -1377,8 +1410,8 @@ class _TeacherAssignReportFormScreenState
         title: Text(isEdit ? "Update Report Card?" : "Submit Report Cards?"),
         content: Text(
           isEdit
-              ? "Save changes to $_selectedSubject ($_selectedExam)?"
-              : "Submit for $count students in $_selectedSubject ($_selectedExam).",
+              ? "Save changes to $_selectedSubject ($examLabel)?"
+              : "Submit for $count students in $_selectedSubject ($examLabel).",
           style: const TextStyle(fontSize: 13),
         ),
         actions: [
@@ -1430,7 +1463,7 @@ class _TeacherAssignReportFormScreenState
           schoolType: schoolType,
           className: _selectedClass!,
           subjectName: _selectedSubject!,
-          examName: _selectedExam!,
+          examName: _examController.text.trim(),
           subjectMaxMarks: _maxMarks,
           passingMaxMarks: _passMarks,
           studentMarks: marks,
@@ -1476,7 +1509,9 @@ class _TeacherAssignReportFormScreenState
       schoolType: teacherController.schoolType,
       className: _selectedClass ?? widget.existing!.className,
       subjectName: _selectedSubject ?? widget.existing!.subjectName,
-      examName: _selectedExam ?? widget.existing!.examName,
+      examName: _examController.text.trim().isEmpty
+          ? widget.existing!.examName
+          : _examController.text.trim(),
       subjectMaxMarks: _maxMarks,
       passingMaxMarks: _passMarks,
       studentMarks: marks,
@@ -1494,8 +1529,8 @@ class _TeacherAssignReportFormScreenState
     if (!mounted) return;
 
     if (ok) {
-      Navigator.pop(context); // close bottom sheet
-      Navigator.pop(context); // close form
+      Navigator.pop(context);
+      Navigator.pop(context);
     }
   }
 
@@ -1529,7 +1564,7 @@ class _TeacherAssignReportFormScreenState
                     fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
-              "$count report card${count == 1 ? '' : 's'} submitted for $_selectedExam.",
+              "$count report card${count == 1 ? '' : 's'} submitted for ${_examController.text.trim()}.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
@@ -1727,7 +1762,7 @@ class _TeacherAssignReportFormScreenState
 
   Widget _buildStepContent() {
     if (widget.isEditMode) {
-      return _step1()..toString(); // still allow editing top fields
+      return _step1()..toString();
     }
     switch (_step) {
       case 0:
@@ -1748,7 +1783,7 @@ class _TeacherAssignReportFormScreenState
         children: [
           _infoCard(widget.isEditMode
               ? "Update details of this report card."
-              : "Select class, exam and subject. Enter Max Marks and Pass Marks for this exam."),
+              : "Select class, subject and enter exam name. Enter Max Marks and Pass Marks for this exam."),
           const SizedBox(height: 18),
           _label("Class"),
           const SizedBox(height: 8),
@@ -1768,12 +1803,38 @@ class _TeacherAssignReportFormScreenState
           const SizedBox(height: 16),
           _label("Exam / Term"),
           const SizedBox(height: 8),
-          _dropdown<String>(
-            value: _selectedExam,
-            hint: 'Select Exam',
-            icon: Icons.event_note_rounded,
-            items: ReportFilters.exams,
-            onChanged: (v) => setState(() => _selectedExam = v),
+          // Exam is now a text field (description/message box style)
+          TextField(
+            controller: _examController,
+            maxLines: 3,
+            minLines: 3,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: 'e.g. Unit Test 1, Half Yearly, Final Term...',
+              hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w400),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                const BorderSide(color: Colors.indigo, width: 1.4),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           _label("Subject"),
@@ -1858,7 +1919,6 @@ class _TeacherAssignReportFormScreenState
               ),
             ),
           ],
-          // In EDIT mode, show the mark card for the single student right here
           if (widget.isEditMode && _editStudent != null) ...[
             const SizedBox(height: 20),
             _label("Marks"),
@@ -1970,9 +2030,9 @@ class _TeacherAssignReportFormScreenState
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: sel ? Colors.indigo : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(10),
-                          image: DecorationImage(image: NetworkImage(s.studentProfile!))
+                            color: sel ? Colors.indigo : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(image: NetworkImage(s.studentProfile!))
                         ),
                         child: s.studentProfile!.isNotEmpty ?null :Center(
                           child: Text(
@@ -2048,7 +2108,7 @@ class _TeacherAssignReportFormScreenState
                     Text(_selectedSubject ?? '-',
                         style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w700)),
-                    Text("$_selectedExam • $_selectedClass",
+                    Text("${_examController.text.trim()} • $_selectedClass",
                         style: TextStyle(
                             fontSize: 11, color: Colors.grey[600])),
                   ],

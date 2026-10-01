@@ -6,6 +6,7 @@ import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:untitled/feature/school/library/screen/school_library_screen.dart';
 import 'package:untitled/feature/school/event/screen/school_event_screen.dart';
 import 'package:untitled/feature/school/homework/screen/teacher_assign_homework_screen.dart';
+import 'package:untitled/feature/school/result/screen/result_screen.dart';
 import '../../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../event/controller/school_event_controller.dart';
 import '../../event/widget/school_current_event_card.dart';
@@ -105,10 +106,16 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
       color: Colors.blueGrey,
     ),
     AcademicItem(
+      label: "Result",
+      icon: Icons.notes,
+      color: Colors.blueGrey,
+    ),
+    AcademicItem(
       label: "Transport",
       icon: Icons.directions_bus_rounded,
       color: Colors.blueGrey,
     ),
+
     AcademicItem(
       label: "Meetings",
       icon: Icons.groups_rounded,
@@ -307,6 +314,9 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
                   break;
                 case "Library":
                   _push(const SchoolLibraryScreen());
+                  break;
+                case "Result":
+                  _push(const ResultScreen());
                   break;
                 case "Transport":
                   widget.onNavigate?.call(2);
