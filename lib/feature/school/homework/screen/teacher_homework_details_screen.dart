@@ -1,33 +1,52 @@
+// lib/feature/school/homework/screen/teacher_homework_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../../core/utils/app_color.dart';
 import '../../../../core/widget/flutter_toast.dart';
+import '../../student/controller/student_list_controller.dart';
+import '../../student/model/student_list_model.dart';
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
 import 'teacher_assign_add_homework_screen.dart';
 
 class TeacherHomeworkDetailsScreen extends StatefulWidget {
   final int homeworkId;
-  const TeacherHomeworkDetailsScreen({super.key, required this.homeworkId,});
+  const TeacherHomeworkDetailsScreen({super.key, required this.homeworkId});
 
   @override
-  State<TeacherHomeworkDetailsScreen> createState() => _TeacherHomeworkDetailsScreenState();
+  State<TeacherHomeworkDetailsScreen> createState() =>
+      _TeacherHomeworkDetailsScreenState();
 }
 
-class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScreen> {
+class _TeacherHomeworkDetailsScreenState
+    extends State<TeacherHomeworkDetailsScreen> {
 
   final hwController = Get.find<HomeworkController>();
+  final studentListController = Get.find<StudentListController>();
+
   HomeworkModel? _homework;
   bool _loading = true;
+  final Set<String> _togglingCards = {};
 
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+    });
   }
 
   Future<void> _load() async {
+    // 1. Load homework
     final hw = await hwController.fetchHomeworkById(widget.homeworkId);
+
+    // 2. Ensure student list is available for name/photo lookup
+    if (hw != null && hw.schoolType != null && hw.schoolType!.isNotEmpty) {
+      // Load students for the same school type
+      await studentListController.loadStudentListBySchoolType(hw.schoolType!);
+    }
+
     if (!mounted) return;
     setState(() {
       _homework = hw;
@@ -35,12 +54,66 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
     });
   }
 
+  Future<void> _toggleStudentStatus(
+      HomeworkModel hw,
+      StudentHomeworkEntry entry,
+      ) async {
+    final cardKey = entry.studentIdcard;
+    final newValue = !entry.status;
+
+    // ✅ Show loading on this card
+    setState(() => _togglingCards.add(cardKey));
+
+    try {
+      final ok = await hwController.toggleStudentStatus(
+        homeworkId: hw.id!,
+        studentIdcard: entry.studentIdcard,
+        explicitStatus: newValue,
+      );
+
+      if (ok) {
+        // ✅ Update local entry
+        final idx = hw.studentIdsList.indexWhere(
+              (e) => e.studentIdcard == entry.studentIdcard,
+        );
+        if (idx >= 0) {
+          hw.studentIdsList[idx] = StudentHomeworkEntry(
+            studentIdcard: entry.studentIdcard,
+            status: newValue,
+          );
+        }
+
+        FlutterToast.success(
+          newValue ? 'Homework is done' : 'Homework is pending',
+        );
+      } else {
+        FlutterToast.error('Failed to update status');
+      }
+    } catch (e) {
+      FlutterToast.error('Error: $e');
+    } finally {
+      // ✅ Always remove loading
+      if (mounted) setState(() => _togglingCards.remove(cardKey));
+    }
+  }
+
+  // ── Match a homework entry's studentIdCard with loaded students ──
+  StudentListData? _findStudent(String idCard) {
+    for (final s in studentListController.studentList) {
+      if (s.studentIdCard == idCard) return s;
+    }
+    return null;
+  }
 
   Color _subjectColor(String? s) {
     if (s == null) return Colors.indigo;
     const colors = [
-      Colors.indigo, Colors.teal, Colors.deepOrange,
-      Colors.purple, Colors.blue, Colors.green,
+      Colors.indigo,
+      Colors.teal,
+      Colors.deepOrange,
+      Colors.purple,
+      Colors.blue,
+      Colors.green,
     ];
     return colors[s.hashCode.abs() % colors.length];
   }
@@ -68,8 +141,13 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
         ),
         actions: [
           IconButton(
-            onPressed: () async {
-              await Get.to(() => TeacherAssignAddHomeworkScreen(homework: _homework!),);
+            onPressed: hw == null
+                ? null
+                : () async {
+              await Get.to(
+                    () => TeacherAssignAddHomeworkScreen(homework: hw),
+              );
+              _load();
             },
             icon: Container(
               padding: const EdgeInsets.all(4),
@@ -81,7 +159,7 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
             ),
           ),
           IconButton(
-            onPressed: () => _confirmDelete(_homework!),
+            onPressed: hw == null ? null : () => _confirmDelete(hw),
             icon: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -91,7 +169,7 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
               child: const Icon(Icons.delete, color: Colors.white, size: 20),
             ),
           ),
-          SizedBox(width: 10,),
+          const SizedBox(width: 10),
         ],
       ),
       body: SafeArea(
@@ -152,6 +230,9 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
     );
   }
 
+  // ══════════════════════════════════════════════════════
+  // ✅ UPDATED: Students list with matched full data
+  // ══════════════════════════════════════════════════════
   Widget _buildStudentsList(HomeworkModel hw) {
     if (hw.studentIdsList.isEmpty) {
       return Container(
@@ -163,61 +244,183 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
         child: const Text('No students assigned'),
       );
     }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
-        children: hw.studentIdsList.map((s) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+        children: hw.studentIdsList.map((entry) {
+          final student = _findStudent(entry.studentIdcard);
+          final isToggling = _togglingCards.contains(entry.studentIdcard);
+
+          return Container(
+            margin: const EdgeInsets.only(top: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: entry.status
+                    ? Colors.green.shade200
+                    : Colors.grey[200]!,
+              ),
+              color: entry.status ? Colors.white : Colors.white,
+            ),
+            padding: const EdgeInsets.all(10),
             child: Row(
               children: [
+                // ── Avatar ──
                 CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey.shade100,
-                  child: Icon(Icons.image,color: Colors.grey.shade400,),
+                  radius: 22,
+                  backgroundColor: student != null
+                      ? Colors.indigo.withOpacity(0.1)
+                      : Colors.grey.shade100,
+                  backgroundImage: (student?.studentProfile != null &&
+                      student!.studentProfile!.isNotEmpty)
+                      ? NetworkImage(student.studentProfile!)
+                      : null,
+                  child: (student?.studentProfile == null ||
+                      student!.studentProfile!.isEmpty)
+                      ? Text(
+                    student != null && student.fullName.isNotEmpty
+                        ? student.fullName
+                        .substring(0, 1)
+                        .toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: student != null
+                          ? Colors.indigo
+                          : Colors.grey.shade500,
+                    ),
+                  )
+                      : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
+
+                // ── Name + ID + class ──
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Name:",
+                        student?.fullName ?? entry.studentIdcard,
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        s.studentIdcard,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          // ID chip
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.badge_rounded,
+                                  size: 10,
+                                  color: Colors.indigo,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  entry.studentIdcard,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.indigo,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (student != null &&
+                              student.studentClass.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.class_rounded,
+                                    size: 10,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    "Class ${student.studentClass.replaceAll('Class ', '')}",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.orange.shade800,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: (s.status ? Colors.green : Colors.orange)
-                        .withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
+
+                // ── Status label ──
+                Text(
+                  entry.status ? 'Done' : 'Pending',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: entry.status ? Colors.green : Colors.orange,
                   ),
-                  child: Text(
-                    s.status ? 'Done' : 'Pending',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: s.status ? Colors.green : Colors.orange,
+                ),
+                const SizedBox(width: 4),
+
+                // ── Toggle Switch ──
+                SizedBox(
+                  height: 28,
+                  child: isToggling
+                      ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.indigo,
+                      ),
                     ),
+                  )
+                      : Switch(
+                    value: entry.status,
+                    activeColor: Colors.green,
+                    activeTrackColor: Colors.green.withOpacity(0.4),
+                    inactiveThumbColor: Colors.orange,
+                    inactiveTrackColor:
+                    Colors.orange.withOpacity(0.3),
+                    materialTapTargetSize:
+                    MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (value) =>
+                        _toggleStudentStatus(hw, entry),
                   ),
                 ),
               ],
@@ -293,7 +496,6 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
       _buildDetailRow('🏛️ School Type', hw.schoolType!),
   ]);
 
-
   Widget _buildSectionTitle(String title) => Row(
     children: [
       Container(
@@ -307,7 +509,9 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
       const SizedBox(width: 8),
       Text(title,
           style: const TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3)),
     ],
   );
 
@@ -318,7 +522,8 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: Colors.grey[200]!),
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: children),
   );
 
   Widget _buildDetailRow(String l, String v) => Padding(
@@ -337,7 +542,6 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
       ],
     ),
   );
-
 
   Widget _buildImagePreview(String url) => ClipRRect(
     borderRadius: BorderRadius.circular(12),
@@ -405,12 +609,18 @@ class _TeacherHomeworkDetailsScreenState extends State<TeacherHomeworkDetailsScr
       builder: (dCtx) => AlertDialog(
         backgroundColor: Colors.white,
         title: const Text('Delete Homework'),
-        titleTextStyle: TextStyle(fontSize: 20,color: Colors.indigo,fontWeight: FontWeight.w500),
+        titleTextStyle: const TextStyle(
+            fontSize: 20,
+            color: Colors.indigo,
+            fontWeight: FontWeight.w500),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text('Are you sure you want to delete this homework?',style: TextStyle(fontSize: 16,color: Colors.grey.shade600),),
+            Text(
+              'Are you sure you want to delete this homework?',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 8),
             Text('Subject: ${hw.subjectName}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),

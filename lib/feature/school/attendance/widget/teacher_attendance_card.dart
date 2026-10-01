@@ -86,17 +86,25 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.indigo), // ← indigo
+                  strokeWidth: 2,
+                  color: Colors.indigo,
+                ),
               ),
             ),
           ),
         );
       }
 
-      // ── Compute stats ──
-      final records =
+      // ── Focused month ──
+      final focused = attendanceController.focusedDay.value;
+      final allRecords =
           attendanceController.attendanceData.value?.allRecords ??
               <AttendanceRecord>[];
+
+      final records = allRecords
+          .where((r) =>
+      r.date.year == focused.year && r.date.month == focused.month)
+          .toList();
 
       final attendableRecords = records.where((r) {
         return r.statusType != AttendanceStatusType.weekOff &&
@@ -120,14 +128,26 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
         AttendanceStatusType.leave,
       );
 
-      final totalAttendable = presentDays + absentDays + halfDays + leaveDays;
-      final attended = presentDays + (halfDays * 0.5);
+      // ══════════════════════════════════════════════════════
+      // ✅ NEW: total days in the focused month
+      // ══════════════════════════════════════════════════════
+      final int daysInMonth =
+          DateTime(focused.year, focused.month + 1, 0).day;
 
-      final double ratio = totalAttendable > 0
-          ? (attended / totalAttendable).clamp(0.0, 1.0)
+      // ✅ attended = present + (half × 0.5)
+      final double attended = presentDays + (halfDays * 0.5);
+
+      // ✅ ratio = attended / daysInMonth
+      final double ratio = daysInMonth > 0
+          ? (attended / daysInMonth).clamp(0.0, 1.0)
           : 0.0;
 
       final double percent = ratio * 100;
+
+      // 🐛 Debug (remove later)
+      print('📊 Card: month=${focused.year}-${focused.month} '
+          'days=$daysInMonth present=$presentDays half=$halfDays '
+          'attended=$attended ratio=$ratio');
 
       return AnimatedBuilder(
         animation: _animationController,
@@ -184,10 +204,9 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Colors.indigo.shade50, // ← blue → indigo
+                      color: Colors.indigo.shade50,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: Colors.indigo.shade100), // ← blue → indigo
+                      border: Border.all(color: Colors.indigo.shade100),
                     ),
                     child: Row(
                       children: [
@@ -200,11 +219,10 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                               CircularProgressIndicator(
                                 value: animatedValue,
                                 strokeWidth: 4,
-                                backgroundColor:
-                                Colors.indigo.shade100, // ← blue → indigo
+                                backgroundColor: Colors.indigo.shade100,
                                 valueColor:
                                 const AlwaysStoppedAnimation<Color>(
-                                  Colors.indigo, // ← blue → indigo
+                                  Colors.indigo,
                                 ),
                               ),
                               FittedBox(
@@ -214,7 +232,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.indigo, // ← blue → indigo
+                                    color: Colors.indigo,
                                   ),
                                 ),
                               ),
@@ -244,7 +262,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.indigo, // ← blue → indigo
+                                  color: Colors.indigo,
                                 ),
                               ),
                             ],

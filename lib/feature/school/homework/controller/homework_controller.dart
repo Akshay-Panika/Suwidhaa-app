@@ -19,6 +19,7 @@ class HomeworkController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      homeworkList.clear();
       final res = await _repo.getAllHomework();
       if (res.success) {
         homeworkList.assignAll(res.data);
@@ -33,10 +34,45 @@ class HomeworkController extends GetxController {
   }
 
 
+  // ══════════════════════════════════════════════════════
+  // TOGGLE STUDENT STATUS
+  // ══════════════════════════════════════════════════════
+  Future<bool> toggleStudentStatus({
+    required int homeworkId,
+    required String studentIdcard,
+    bool? explicitStatus,
+  }) async {
+    try {
+      final ok = await _repo.toggleStudentStatus(
+        homeworkId: homeworkId,
+        studentIdcard: studentIdcard,
+        explicitStatus: explicitStatus,
+      );
+
+      if (ok) {
+        // Refresh homework to get accurate state
+        final updated = await _repo.getHomeworkById(homeworkId);
+        if (updated != null) {
+          // Update in list if present
+          final idx = homeworkList.indexWhere((e) => e.id == homeworkId);
+          if (idx >= 0) {
+            homeworkList[idx] = updated;
+            homeworkList.refresh();
+          }
+        }
+      }
+      return ok;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    }
+  }
+
   Future<void> fetchHomeworkByTeacher(String teacherId) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      homeworkList.clear();
       final res = await _repo.getHomeworkByTeacher(teacherId);
       if (res.success) {
         homeworkList.assignAll(res.data);

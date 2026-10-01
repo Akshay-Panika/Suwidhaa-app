@@ -73,6 +73,31 @@ class HomeworkRepository {
     }
   }
 
+  // ══════════════════════════════════════════════════════
+  // TOGGLE / SET STUDENT STATUS
+  // POST /v1/school/homework/<id>/toggle-status/<student_idcard>/
+  // ══════════════════════════════════════════════════════
+  Future<bool> toggleStudentStatus({
+    required int homeworkId,
+    required String studentIdcard,
+    bool? explicitStatus, // null = toggle, else set explicit value
+  }) async {
+    try {
+      final body = explicitStatus == null
+          ? <String, dynamic>{}
+          : {"status": explicitStatus};
+
+      final res = await _dio.post(
+        'v1/school/homework/$homeworkId/toggle-status/$studentIdcard/',
+        data: body,
+      );
+
+      return res.data['success'] == true;
+    } on DioException catch (e) {
+      final msg = e.response?.data?['message'] ?? e.message;
+      throw Exception('Toggle failed: $msg');
+    }
+  }
   Future<HomeworkModel> createHomework({
     required String schoolType,
     required String className,

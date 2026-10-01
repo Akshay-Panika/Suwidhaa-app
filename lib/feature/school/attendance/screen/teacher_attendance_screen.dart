@@ -493,30 +493,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             outsideBuilder: (context, date, _) {
               return _buildDayCell(date, map, isOutside: true);
             },
-            todayBuilder: (context, date, _) {
-              final record = _findRecord(map, date);
-              if (record != null) {
-                return _buildDayCell(date, map);
-              }
-              return Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: _primaryLight,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _primary, width: 1.2),
-                ),
-                child: Center(
-                  child: Text(
-                    '${date.day}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _primary,
-                    ),
-                  ),
-                ),
-              );
-            },
+            todayBuilder: (context, date, _) => _buildDayCell(date, map),
           ),
         ),
       );
@@ -540,7 +517,13 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
       Map<DateTime, AttendanceRecord> map, {
         bool isOutside = false,
       }) {
-    final record = _findRecord(map, date);
+    final focused = attendanceController.focusedDay.value;
+
+    // ✅ Only show records from focused month
+    final isInFocusedMonth =
+        date.year == focused.year && date.month == focused.month;
+
+    final record = isInFocusedMonth ? _findRecord(map, date) : null;
     final isToday = isSameDay(date, DateTime.now());
 
     Color? backgroundColor;
