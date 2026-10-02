@@ -136,11 +136,11 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
             
               // 🔹 3. Grid layout
               return GridView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.symmetric(horizontal: 12),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
                   childAspectRatio: 0.8,
                 ),
                 itemCount: list.length,

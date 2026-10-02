@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:readmore/readmore.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -297,7 +298,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
               child: Container(
                 margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: Colors.grey.shade700,
                   borderRadius: BorderRadius.circular(12),
                   image: (_videoController == null && !_isVideoLoading)
                       ? DecorationImage(
@@ -317,7 +318,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
               flex: 2,
               child: Container(
                 margin: const EdgeInsets.all(10),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.grey[900],
                   borderRadius: BorderRadius.circular(12),
@@ -330,14 +331,37 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                         content.title,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      ReadMoreText(
+                        content.description!,
+                        trimLines: 3,
+                        colorClickableText: Colors.blue,
+                        trimMode: TrimMode.Line,
+                        trimCollapsedText: 'Read more',
+                        trimExpandedText: ' Show less',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
+                        moreStyle: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        lessStyle: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 4,
+                        runSpacing: 4,
                         children: [
                           _chip(Icons.star, content.rating, Colors.amber),
                           if (content.duration != null &&
@@ -356,61 +380,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                               content.contentType.toUpperCase(), Colors.white),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      if (content.description != null &&
-                          content.description!.isNotEmpty) ...[
-                        Row(
-                          spacing: 10,
-                          children: [
-                            Container(color: Colors.red, height: 14, width: 3),
-                            const Text(
-                              'Overview',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          content.description!,
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-                      Row(
-                        spacing: 10,
-                        children: [
-                          Container(color: Colors.red, height: 14, width: 3),
-                          const Text(
-                            'Details',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _detailRow('Content Type', content.contentType),
-                      if (content.language != null &&
-                          content.language!.isNotEmpty)
-                        _detailRow('Language', content.language!),
-                      if (content.duration != null &&
-                          content.duration!.isNotEmpty)
-                        _detailRow('Duration', content.duration!),
-                      if (content.releaseDate != null &&
-                          content.releaseDate!.isNotEmpty)
-                        _detailRow('Release Date', content.releaseDate!),
-                      _detailRow('Rating', content.rating),
-
                       /// Gridview show kro
                       const SizedBox(height: 12),
                       Row(
@@ -418,16 +387,16 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                         children: [
                           Container(color: Colors.red, height: 14, width: 3),
                           const Text(
-                            'Next Suggestion',
+                            'Similar Content',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      // const SizedBox(height: 12),
                       SuggestionContentCard(contentType: widget.contentType, ),
                       SizedBox(height: 100,)
                     ],

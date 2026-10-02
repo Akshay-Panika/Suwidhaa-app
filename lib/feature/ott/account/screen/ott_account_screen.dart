@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import '../../../auth/controller/auth_controller.dart';
+import '../../peyment/screen/ott_plain_screen.dart';
 import '../widget/my_watchlist_content_card.dart';
 
 class OttAccountScreen extends StatefulWidget {
@@ -142,9 +143,14 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                                 )
                               ],
                             ),
-                            const CircleAvatar(
-                              backgroundColor: Colors.amber,
-                              child: Text("Get", style: TextStyle(color: Colors.white)),
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => OttPlainScreen(),));
+                              },
+                              child: const CircleAvatar(
+                                backgroundColor: Colors.amber,
+                                child: Text("Get", style: TextStyle(color: Colors.white)),
+                              ),
                             )
                           ],
                         ),

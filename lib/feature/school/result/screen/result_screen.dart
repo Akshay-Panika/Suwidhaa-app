@@ -253,7 +253,6 @@ class _ResultScreenState extends State<ResultScreen> {
           Navigator.pop(context);
         }, icon: Icon(Icons.arrow_back_ios)),
         actions: [
-
           const SizedBox(width: 4),
         ],
       ),

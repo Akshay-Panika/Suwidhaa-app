@@ -325,8 +325,8 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
         scrollDirection:Axis.horizontal,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
           childAspectRatio: 1.2,
         ),
         itemCount: trendingContents.length,
@@ -418,8 +418,8 @@ class _OttHomeScreenState extends State<OttHomeScreen> {
         // physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
           childAspectRatio: 0.6,
         ),
         itemCount: recommendedContents.length,

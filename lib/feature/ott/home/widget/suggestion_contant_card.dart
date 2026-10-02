@@ -51,8 +51,8 @@ class _SuggestionContentCardState extends State<SuggestionContentCard> {
         padding: EdgeInsets.zero,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
           childAspectRatio: 0.8,
         ),
         itemCount: suggestions.length,
@@ -65,17 +65,17 @@ class _SuggestionContentCardState extends State<SuggestionContentCard> {
 
   Widget _buildMovieCard(dynamic content) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlayDashboardScreen(
-              contentId: content.categoryId,
-              contentType: content.contentType,
-            ),
-          ),
-        );
-      },
+      // onTap: () {
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) => PlayDashboardScreen(
+      //         contentId: content.categoryId,
+      //         contentType: content.contentType,
+      //       ),
+      //     ),
+      //   );
+      // },
       child: Stack(
         children: [
           Container(
