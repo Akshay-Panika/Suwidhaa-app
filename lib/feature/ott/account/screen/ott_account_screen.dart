@@ -159,13 +159,14 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                   ],
                 ),
               ),
+              SizedBox(height: 4,),
               Row(
                 spacing: 10,
                 children: [
                   Container(color: Colors.red, height: 14, width: 3),
                   const Text(
                     'My Watchlist',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

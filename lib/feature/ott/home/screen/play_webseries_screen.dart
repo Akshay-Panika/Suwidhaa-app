@@ -9,8 +9,10 @@ import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import '../../../../router/app_routes.dart';
 import '../../controller/webseries_controller.dart';
 import '../../model/webseries_model.dart';
+import '../widget/suggestion_contant_card.dart';
 
 class PlayWebSeriesScreen extends StatefulWidget {
   final int contentId;
@@ -48,9 +50,13 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
   // 🔹 Prevent double auto-advance
   bool _advancing = false;
 
+  // 🔹 Currently playing webseries id (for WATCHING badge)
+  int? _currentlyPlayingId;
+
   @override
   void initState() {
     super.initState();
+    _currentlyPlayingId = widget.contentId;
     controller.fetchWebseries();
   }
 
@@ -68,7 +74,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
   }
 
   // =========================================================
-  // VIDEO HELPERS (unchanged)
+  // VIDEO HELPERS
   // =========================================================
 
   void _onVideoTick() {
@@ -296,14 +302,24 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
       return;
     }
 
-    setState(() => _currentEpisode = episode);
-    _initVideo(episode.videoUrl);
+    // 🔹 1. TURANT stop purani video (mute + pause + dispose)
+    _videoController?.setVolume(0);
+    _videoController?.pause();
+    _videoController?.removeListener(_onVideoTick);
+    _videoController?.dispose();
+    _videoController = null;
+    _hideControlsTimer?.cancel();
 
-    // if (showToast) {
-    //   FlutterToast.success(
-    //     'Now playing: S${_seasonNumberOf(episode)}E${episode.episodeNumber}',
-    //   );
-    // }
+    // 🔹 2. Update state
+    setState(() {
+      _currentEpisode = episode;
+      _isVideoLoading = true;
+      _hasVideoError = false;
+      _showControls = true;
+    });
+
+    // 🔹 3. Load new video
+    _initVideo(episode.videoUrl);
   }
 
   int _seasonNumberOf(Episode ep) {
@@ -339,7 +355,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _buildAppBar(),
+      appBar: AppBar(toolbarHeight: 0,backgroundColor: Colors.black,),
+      // appBar: _buildAppBar(),
       body: Obx(() {
         if (controller.isLoading.value && controller.webseriesList.isEmpty) {
           return const Center(
@@ -368,154 +385,146 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
           });
         }
 
-        return Column(
-          children: [
-            // ✅ CHANGED: Player area — Movie-style card with rounded corners
-            Expanded(
-              flex: 1,
-              child: Container(
-                margin: const EdgeInsets.all(10),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 🎬 Player area
+              Container(
+                height: 280,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade900,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _buildPlayerArea(),
-                ),
-              ),
-            ),
-
-            // 📺 Now Playing bar
-            _buildNowPlayingBar(webseries),
-
-            // 📜 Playlist
-            Expanded(
-              flex: 2,
-              child: RefreshIndicator(
-                onRefresh: controller.refresh,
-                child: ListView(
-                  padding: const EdgeInsets.only(bottom: 24),
+                child: Stack(
                   children: [
-                    if (webseries.description.isNotEmpty)
-                      // Padding(
-                      //   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      //   child: Text(
-                      //     webseries.description,
-                      //     style: const TextStyle(
-                      //       color: Colors.white70,
-                      //       fontSize: 13,
-                      //       height: 1.5,
-                      //     ),
-                      //   ),
-                      // ),
-
-                    Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: ReadMoreText(
-                      webseries.description,
-                      trimLines: 3,
-                      colorClickableText: Colors.blue,
-                      trimMode: TrimMode.Line,
-                      trimCollapsedText: 'Read more',
-                      trimExpandedText: ' Show less',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        height: 1.5,
-                      ),
-                      moreStyle: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      lessStyle: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                    const SizedBox(height: 12),
-
-                    if (webseries.seasons.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(
-                          child: Text(
-                            'No seasons available',
-                            style: TextStyle(color: Colors.white54),
+                    _buildPlayerArea(),
+                    IconButton(
+                      onPressed: () => Get.offAllNamed(AppRoutes.ottDashboard),
+                      icon: Container(
+                          padding: EdgeInsets.all(4),
+                          margin: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white)
                           ),
-                        ),
-                      )
-                    else
-                      ...webseries.seasons.map(
-                            (season) => _buildSeasonSection(season, webseries),
-                      ),
+                          child: const Icon(Icons.arrow_back_ios, color: Colors.white,size: 20,)),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // 📺 Now playing bar
+              _buildNowPlayingBar(webseries),
+
+              // 📜 Seasons + episodes
+              ...webseries.seasons.map(
+                    (season) => _buildSeasonSection(season, webseries),
+              ),
+
+              // 🎯 Similar content header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                child: Row(
+                  children: [
+                    Container(color: Colors.red, height: 14, width: 3),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'More Web Series',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 🎯 Similar content grid
+              _buildSimilarContent(),
+
+              const SizedBox(height: 60),
+            ],
+          ),
         );
       }),
     );
   }
 
-  // =========================================================
-  // UI WIDGETS
-  // =========================================================
+  /// 🎯 Similar content — uses SuggestionContentCard
+  Widget _buildSimilarContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: SuggestionContentCard(
+        contentId: _currentlyPlayingId ?? widget.contentId,
+        contentType: widget.contentType,
+        onItemTap: (id, categoryId, contentType) {
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          debugPrint('🎬 SIMILAR TAP');
+          debugPrint('   id          : $id');
+          debugPrint('   categoryId  : $categoryId');
+          debugPrint('   contentType : $contentType');
+          debugPrint('   currentType : ${widget.contentType}');
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.black,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-      ),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(8),
+          // 🔹 Only handle same contentType
+          if (contentType != widget.contentType) {
+            FlutterToast.error('Different content type, cannot play here');
+            return;
+          }
+
+          // 🔹 Update current id (for WATCHING badge)
+          setState(() {
+            _currentlyPlayingId = categoryId;
+          });
+
+          // 🔹 Navigate to that webseries
+          Get.to(
+                () => PlayWebSeriesScreen(
+              contentId: categoryId,
+              contentType: contentType,
             ),
-            child: Text(
-              widget.contentType.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          if (_currentEpisode != null)
-            Expanded(
-              child: Text(
-                _currentEpisode!.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  /// 🎬 Player area — same as before, but inside rounded card
+  // PreferredSizeWidget _buildAppBar() {
+  //   return AppBar(
+  //     backgroundColor: Colors.black,
+  //     elevation: 0,
+  //     leading: IconButton(
+  //       onPressed: () => Navigator.pop(context),
+  //       icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+  //     ),
+  //     title: Row(
+  //       children: [
+  //         if (_currentEpisode != null)
+  //           Expanded(
+  //             child: Text(
+  //               _currentEpisode!.title,
+  //               maxLines: 1,
+  //               overflow: TextOverflow.ellipsis,
+  //               style: const TextStyle(
+  //                 color: Colors.white,
+  //                 fontSize: 15,
+  //                 fontWeight: FontWeight.w600,
+  //               ),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  /// 🎬 Player area
   Widget _buildPlayerArea() {
     if (_hasVideoError) {
       return Stack(
-        alignment: Alignment.center,
+        alignment: Alignment.topCenter,
         children: [
           Container(color: Colors.grey.shade900),
           Column(
@@ -568,8 +577,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
 
     return Stack(
       fit: StackFit.expand,
+      alignment: Alignment.topCenter,
       children: [
-        // ✅ CHANGED: Thumbnail via DecorationImage (Movie-style)
         if (thumb != null && thumb.isNotEmpty)
           DecoratedBox(
             decoration: BoxDecoration(
@@ -629,7 +638,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     );
   }
 
-  /// 🎥 Video with custom controls (unchanged)
+  /// 🎥 Video with custom controls
   Widget _buildVideoWithControls({required bool isFullScreen}) {
     final value = _videoController!.value;
     final isBuffering = value.isBuffering;
@@ -821,69 +830,124 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     );
   }
 
-  /// 📺 Now Playing bar (unchanged)
+  /// 📺 Now Playing bar
   Widget _buildNowPlayingBar(Webseries ws) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12,),
       color: Colors.black,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Container(width: 3, height: 32, color: Colors.red),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _currentEpisode == null
-                      ? ws.title
-                      : 'S${_seasonNumberOf(_currentEpisode!)} · '
-                      'E${_currentEpisode!.episodeNumber}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
+          Row(
+            children: [
+              Container(width: 3, height: 32, color: Colors.red),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _currentEpisode == null
+                          ? ws.title
+                          : 'S${_seasonNumberOf(_currentEpisode!)} · '
+                          'E${_currentEpisode!.episodeNumber}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _currentEpisode?.title ?? 'Select an episode to play',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _currentEpisode?.title ?? 'Select an episode to play',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (_currentEpisode != null)
-            Builder(builder: (_) {
-              final all = _allEpisodes(ws);
-              final idx =
-              all.indexWhere((e) => e.id == _currentEpisode!.id);
-              final hasNext = idx != -1 && idx < all.length - 1;
-              if (!hasNext) return const SizedBox.shrink();
-              return IconButton(
-                tooltip: 'Next episode',
-                onPressed: _playNextEpisode,
-                icon: const Icon(
-                  Icons.skip_next,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              );
-            }),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              _chip(Icons.star, ws.rating, Colors.amber),
+              if (ws.duration != null && ws.duration!.isNotEmpty)
+                _chip(Icons.access_time, ws.duration!, Colors.white),
+              if (ws.language != null && ws.language!.isNotEmpty)
+                _chip(Icons.language, ws.language!.toUpperCase(), Colors.white),
+              if (ws.releaseDate != null && ws.releaseDate!.isNotEmpty)
+                _chip(Icons.calendar_today, ws.releaseDate!, Colors.white),
+              _chip(Icons.category, ws.contentType.toUpperCase(), Colors.white),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+          if (ws.description.isNotEmpty)
+            ReadMoreText(
+              ws.description,
+              trimLines: 2,
+              colorClickableText: Colors.blue,
+              trimMode: TrimMode.Line,
+              trimCollapsedText: 'Read more',
+              trimExpandedText: ' Show less',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.5,
+              ),
+              moreStyle: const TextStyle(
+                color: Colors.blue,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              lessStyle: const TextStyle(
+                color: Colors.blue,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         ],
       ),
     );
   }
 
-  /// 📜 Season section (unchanged)
+  Widget _chip(IconData icon, String label, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: iconColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 📜 Season section
   Widget _buildSeasonSection(Season season, Webseries ws) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -900,7 +964,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                   season.title ?? 'Season ${season.seasonNumber}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -908,21 +972,31 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                 Text(
                   '(${season.episodes.length} episodes)',
                   style: const TextStyle(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          ...season.episodes.map((ep) => _buildEpisodeTile(ep, season, ws)),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: season.episodes.length,
+              itemBuilder: (context, index) {
+                final ep = season.episodes[index];
+                return _buildEpisodeTile(ep, season, ws);
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// 🎞️ Episode tile with VIDEO THUMBNAIL (unchanged)
+  /// 🎞️ Episode tile
   Widget _buildEpisodeTile(Episode episode, Season season, Webseries ws) {
     final isCurrent = _currentEpisode?.id == episode.id;
 
@@ -932,8 +1006,9 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     return InkWell(
       onTap: () => _playEpisode(episode),
       child: AnimatedContainer(
+        width: 160,
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.only(left: 16),
         decoration: BoxDecoration(
           color: isCurrent
               ? Colors.grey.withOpacity(0.10)
@@ -944,185 +1019,140 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
             width: isCurrent ? 0.6 : 0.8,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🖼️ VIDEO THUMBNAIL (16:9)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 120,
-                  height: 68,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (thumb != null && thumb.isNotEmpty)
-                        Image.network(
-                          thumb,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey[900],
-                            child: const Icon(
-                              Icons.movie_outlined,
-                              color: Colors.white30,
-                              size: 28,
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          color: Colors.grey[900],
-                          child: const Icon(
-                            Icons.movie_outlined,
-                            color: Colors.white30,
-                            size: 28,
-                          ),
-                        ),
-
-                      Container(
-                        color: isCurrent
-                            ? Colors.red.withOpacity(0.20)
-                            : Colors.black.withOpacity(0.35),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 120,
+            height: 68,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (thumb != null && thumb.isNotEmpty)
+                  Image.network(
+                    thumb,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[900],
+                      child: const Icon(
+                        Icons.movie_outlined,
+                        color: Colors.white30,
+                        size: 28,
                       ),
+                    ),
+                  )
+                else
+                  Container(
+                    color: Colors.grey[900],
+                    child: const Icon(
+                      Icons.movie_outlined,
+                      color: Colors.white30,
+                      size: 28,
+                    ),
+                  ),
 
-                      Center(
-                        child: Icon(
-                          isCurrent
-                              ? Icons.play_circle_fill
-                              : Icons.play_circle_outline,
-                          color: Colors.white,
-                          size: 30,
-                        ),
+                Container(
+                  color: isCurrent
+                      ? Colors.red.withOpacity(0.20)
+                      : Colors.black.withOpacity(0.35),
+                ),
+
+                Center(
+                  child: Icon(
+                    isCurrent
+                        ? Icons.play_circle_fill
+                        : Icons.play_circle_outline,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+
+                Positioned(
+                  top: 4,
+                  left: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? Colors.red : Colors.black87,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'E${episode.episodeNumber}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ),
+                ),
 
-                      Positioned(
-                        top: 4,
-                        left: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isCurrent ? Colors.red : Colors.black87,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'E${episode.episodeNumber}',
+                if (episode.duration.isNotEmpty)
+                  Positioned(
+                    bottom: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.timelapse,
+                              color: Colors.white, size: 10),
+                          const SizedBox(width: 4),
+                          Text(
+                            episode.duration,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (isCurrent)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.equalizer,
+                              color: Colors.white, size: 10),
+                          SizedBox(width: 2),
+                          Text(
+                            'NOW',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
+                        ],
                       ),
-
-                      if (episode.duration.isNotEmpty)
-                        Positioned(
-                          bottom: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.8),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              episode.duration,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      if (isCurrent)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.equalizer,
-                                    color: Colors.white, size: 10),
-                                SizedBox(width: 2),
-                                Text(
-                                  'NOW',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'S${season.seasonNumber}E${episode.episodeNumber}',
-                      style: TextStyle(
-                        color: isCurrent ? Colors.red : Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      episode.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isCurrent ? Colors.red : Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (episode.description != null &&
-                        episode.description!.isNotEmpty)
-                      Text(
-                        episode.description!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 11,
-                          height: 1.3,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

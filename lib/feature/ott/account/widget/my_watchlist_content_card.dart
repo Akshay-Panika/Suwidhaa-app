@@ -41,8 +41,8 @@ class MyWatchlistContentCard extends StatelessWidget {
         padding: EdgeInsets.zero,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
           childAspectRatio: 0.8,
         ),
         itemCount: suggestions.length,

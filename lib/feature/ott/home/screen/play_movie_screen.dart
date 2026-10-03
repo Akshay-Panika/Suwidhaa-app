@@ -7,7 +7,9 @@ import 'package:readmore/readmore.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../../../../router/app_routes.dart';
 import '../../controller/ott_controller.dart';
+import '../../model/ott_model.dart';
 import '../widget/suggestion_contant_card.dart';
 
 class PlayMovieScreen extends StatefulWidget {
@@ -27,7 +29,8 @@ class PlayMovieScreen extends StatefulWidget {
 class _PlayMovieScreenState extends State<PlayMovieScreen> {
   final OttController controller = Get.find<OttController>();
 
-  // 🔹 Session-level cache: videoId -> resolved stream URL (avoids re-fetching manifest)
+  int? _currentlyPlayingId;
+
   static final Map<String, String> _streamUrlCache = {};
 
   VideoPlayerController? _videoController;
@@ -43,10 +46,124 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   @override
   void initState() {
     super.initState();
+    _currentlyPlayingId = widget.contentId;
     controller.fetchContentDetail(
       id: widget.contentId,
       contentType: widget.contentType,
     );
+  }
+
+
+  void _onSuggestionTap(int id, int categoryId, String contentType) {
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('📥 SUGGESTION TAP');
+    debugPrint('   id          : $id');
+    debugPrint('   categoryId  : $categoryId');
+    debugPrint('   contentType : $contentType');
+    debugPrint('   currentType : ${widget.contentType}');
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // 🔹 Step 1: only handle if same contentType
+    if (contentType != widget.contentType) {
+      debugPrint('⚠️ contentType mismatch → ignoring');
+      FlutterToast.error('Different content type, cannot play here');
+      return;
+    }
+
+    // 🔹 Step 2: try to find matching item in OttController.contents
+    final matched = controller.contents.firstWhereOrNull(
+          (c) =>
+      c.id == id ||
+          c.categoryId == categoryId,
+    );
+
+    if (matched != null) {
+      debugPrint('✅ MATCHED in OttController.contents → playing: ${matched.title}');
+      _playMatchedContent(matched);
+      return;
+    }
+
+    // 🔹 Step 3: not found → fetch detail by tapped ids
+    debugPrint('🔄 No match → fetching detail by id=$categoryId');
+    _fetchAndPlayByDetail(
+      id: categoryId,
+      contentType: contentType,
+    );
+  }
+  /// 🔹 Play a content object we already have from OttController.contents
+  void _playMatchedContent(OttModel matched) {
+
+    setState(() {
+      _currentlyPlayingId = matched.categoryId;   // ⚠️ use categoryId or id
+    });
+    // 🔹 Instantly show title / thumbnail so UI reacts right away
+    controller.selectedContent.value = matched;
+    controller.isDetailLoading.value = false;
+
+    // 🔹 Reset any previous video state
+    _videoController?.removeListener(_onVideoTick);
+    _videoController?.pause();
+    _videoController?.dispose();
+    _videoController = null;
+    _isVideoLoading = false;
+    _hasVideoError = false;
+    _showControls = true;
+
+    // 🔹 If the list item already has a videoUrl → play immediately
+    final url = matched.videoUrl;
+    if (url != null && url.isNotEmpty) {
+      debugPrint('▶️ Playing from list videoUrl: $url');
+      _initVideo(url);
+      return;
+    }
+
+    // 🔹 Otherwise → fetch detail from API to get videoUrl
+    debugPrint('🔄 List item has no videoUrl → fetching detail for id=${matched.categoryId}');
+    _fetchAndPlayByDetail(
+      id: matched.categoryId,      // ⚠️ use categoryId (movie/cartoon/sport id)
+      contentType: matched.contentType,
+    );
+  }
+
+  Future<void> _fetchAndPlayByDetail({
+    required int id,
+    required String contentType,
+  }) async {
+    setState(() {
+      _currentlyPlayingId = id;   // 🔹 update
+    });
+    // 🔹 Reset video state first
+    _videoController?.removeListener(_onVideoTick);
+    _videoController?.pause();
+    _videoController?.dispose();
+    _videoController = null;
+    _isVideoLoading = false;
+    _hasVideoError = false;
+    _showControls = true;
+
+    await controller.fetchContentDetail(
+      id: id,
+      contentType: contentType,
+    );
+
+    final fetched = controller.selectedContent.value;
+    if (fetched == null) {
+      debugPrint('❌ Detail fetch returned null');
+      FlutterToast.error('Failed to load selected content');
+      return;
+    }
+
+    debugPrint('📦 Fetched detail: ${fetched.title}');
+    debugPrint('   videoUrl: ${fetched.videoUrl}');
+
+    final url = fetched.videoUrl;
+    if (url == null || url.isEmpty) {
+      debugPrint('❌ Detail API also returned empty videoUrl');
+      FlutterToast.error('No video URL available for this content');
+      return;
+    }
+
+    _initVideo(url);
   }
 
   @override
@@ -263,150 +380,175 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       return _buildFullScreenPlayer();
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _buildAppBar(),
-      body: Obx(() {
-        if (controller.isDetailLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.red),
-          );
-        }
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Get.offAllNamed(AppRoutes.ottDashboard);
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(toolbarHeight: 0,backgroundColor: Colors.black,),
+        body: Obx(() {
+          if (controller.isDetailLoading.value) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.red),
+            );
+          }
 
-        final content = controller.selectedContent.value;
+          final content = controller.selectedContent.value;
 
-        if (content == null) {
-          return const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, color: Colors.grey, size: 60),
-                SizedBox(height: 12),
-                Text(
-                  'Failed to load content',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ],
-            ),
-          );
-        }
+          if (content == null) {
+            return const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.grey, size: 60),
+                  SizedBox(height: 12),
+                  Text(
+                    'Failed to load content',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ],
+              ),
+            );
+          }
 
-        return Column(
-          children: [
-            Expanded(
-              flex: 1,
-              child: Container(
-                margin: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade700,
-                  borderRadius: BorderRadius.circular(12),
-                  image: (_videoController == null && !_isVideoLoading)
-                      ? DecorationImage(
-                    image: NetworkImage(content.thumbnailHorizontal),
-                    fit: BoxFit.cover,
-                    onError: (_, __) {},
-                  )
-                      : null,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: _buildPlayerArea(content),
+          return Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade700,
+                        borderRadius: BorderRadius.circular(12),
+                        image: (_videoController == null && !_isVideoLoading)
+                            ? DecorationImage(
+                          image: NetworkImage(content.thumbnailHorizontal),
+                          fit: BoxFit.cover,
+                          onError: (_, __) {},
+                        ) : null,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildPlayerArea(content),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.offAllNamed(AppRoutes.ottDashboard),
+                      icon: Container(
+                        padding: EdgeInsets.all(4),
+                        margin: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white)
+                          ),
+                          child: const Icon(Icons.arrow_back_ios, color: Colors.white,size: 20,)),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Container(
-                margin: const EdgeInsets.all(10),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        content.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      ReadMoreText(
-                        content.description!,
-                        trimLines: 3,
-                        colorClickableText: Colors.blue,
-                        trimMode: TrimMode.Line,
-                        trimCollapsedText: 'Read more',
-                        trimExpandedText: ' Show less',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                        moreStyle: const TextStyle(
-                          color: Colors.blue,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        lessStyle: const TextStyle(
-                          color: Colors.blue,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          _chip(Icons.star, content.rating, Colors.amber),
-                          if (content.duration != null &&
-                              content.duration!.isNotEmpty)
-                            _chip(Icons.access_time, content.duration!,
-                                Colors.white),
-                          if (content.language != null &&
-                              content.language!.isNotEmpty)
-                            _chip(Icons.language,
-                                content.language!.toUpperCase(), Colors.white),
-                          if (content.releaseDate != null &&
-                              content.releaseDate!.isNotEmpty)
-                            _chip(Icons.calendar_today,
-                                content.releaseDate!, Colors.white),
-                          _chip(Icons.category,
-                              content.contentType.toUpperCase(), Colors.white),
-                        ],
-                      ),
-                      /// Gridview show kro
-                      const SizedBox(height: 12),
-                      Row(
-                        spacing: 10,
-                        children: [
-                          Container(color: Colors.red, height: 14, width: 3),
-                          const Text(
-                            'Similar Content',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  margin: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          content.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                      // const SizedBox(height: 12),
-                      SuggestionContentCard(contentType: widget.contentType, ),
-                      SizedBox(height: 100,)
-                    ],
+                        ),
+                        if (content.description != null && content.description!.trim().isNotEmpty)
+                          ReadMoreText(
+                          content.description!,
+                          trimLines: 3,
+                          colorClickableText: Colors.blue,
+                          trimMode: TrimMode.Line,
+                          trimCollapsedText: 'Read more',
+                          trimExpandedText: ' Show less',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                          moreStyle: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          lessStyle: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            _chip(Icons.star, content.rating, Colors.amber),
+                            if (content.duration != null &&
+                                content.duration!.isNotEmpty)
+                              _chip(Icons.access_time, content.duration!,
+                                  Colors.white),
+                            if (content.language != null &&
+                                content.language!.isNotEmpty)
+                              _chip(Icons.language,
+                                  content.language!.toUpperCase(), Colors.white),
+                            if (content.releaseDate != null &&
+                                content.releaseDate!.isNotEmpty)
+                              _chip(Icons.calendar_today,
+                                  content.releaseDate!, Colors.white),
+                            _chip(Icons.category,
+                                content.contentType.toUpperCase(), Colors.white),
+                          ],
+                        ),
+                        /// Gridview show kro
+                        const SizedBox(height: 20),
+                        Row(
+                          spacing: 10,
+                          children: [
+                            Container(color: Colors.red, height: 14, width: 3),
+                            const Text(
+                              'Similar Content',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SuggestionContentCard(
+                          contentId: _currentlyPlayingId ?? widget.contentId,
+                          contentType: widget.contentType,
+                          onItemTap: _onSuggestionTap,   // 🔹 full flow handled here
+                        ),
+                        SizedBox(height: 100,)
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      }),
+            ],
+          );
+        }),
+      ),
     );
   }
 
@@ -707,75 +849,16 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: iconColor),
+          Icon(icon, size: 12, color: iconColor),
           const SizedBox(width: 5),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(color: Colors.grey[500], fontSize: 13),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.black,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-      ),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child:  Text(
-              '${widget.contentType}',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
         ],
       ),
     );

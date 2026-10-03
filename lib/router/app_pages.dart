@@ -5,6 +5,7 @@ import 'package:untitled/feature/school/dashboard/screen/school_student_dashboar
 import '../feature/auth/screen/auth_screen.dart';
 import '../feature/auth/screen/intro_screen.dart';
 import '../feature/location/screen/location_permission_screen.dart';
+import '../feature/ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../feature/school/auth/screen/school_auth_screen.dart';
 import '../feature/school/dashboard/screen/school_teacher_dashboard_screen.dart';
 import '../feature/school/student/screen/student_screen.dart';
@@ -51,6 +52,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.studentList,
       page: () => const StudentListScreen(),
+      transition: Transition.fade,
+    ),
+    GetPage(
+      name: AppRoutes.ottDashboard,
+      page: () => const OttDashboardScreen(),
       transition: Transition.fade,
     ),
   ];
