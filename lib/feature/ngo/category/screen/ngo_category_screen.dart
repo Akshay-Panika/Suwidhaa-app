@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'donation_details_screen.dart';
+import '../../services/screen/donation_details_screen.dart';
 
-class DonationAllCategoryScreen extends StatefulWidget {
+class NGOCategoryScreen extends StatefulWidget {
   final String? initialCategory;
 
-  const DonationAllCategoryScreen({super.key, this.initialCategory});
+  const NGOCategoryScreen({super.key, this.initialCategory});
 
   @override
-  State<DonationAllCategoryScreen> createState() => _DonationAllCategoryScreenState();
+  State<NGOCategoryScreen> createState() => _NGOCategoryScreenState();
 }
 
-class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
+class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
   String _selectedCategory = "All";
 
   // Using the same categories from NgoHomeScreen
@@ -22,6 +22,7 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
     {"name": "Animal Welfare", "icon": Icons.pets, "color": Colors.orange},
     {"name": "Women Empowerment", "icon": Icons.woman, "color": Colors.purple},
     {"name": "Child Care", "icon": Icons.child_care, "color": Colors.pink},
+    {"name": "Elderly Care", "icon": Icons.elderly, "color": Colors.brown}, // ✅ added
   ];
 
   // Static NGO data with proper structure
@@ -158,13 +159,27 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
       "imageUrl": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400",
       "icon": Icons.female,
     },
+    // ✅ Added Elderly Care donation (matches new category)
+    {
+      "name": "Elderly Support",
+      "category": "Elderly Care",
+      "rating": 4.5,
+      "color": Colors.brown,
+      "raised": 4000,
+      "target": 7000,
+      "description": "Providing care and support for elderly people",
+      "imageUrl": "https://images.unsplash.com/photo-1447005497901-b3e9ee359928?w=400",
+      "icon": Icons.elderly,
+    },
   ];
 
   List<Map<String, dynamic>> get _filteredDonations {
     if (_selectedCategory == "All") {
       return _allDonations;
     }
-    return _allDonations.where((donation) => donation["category"] == _selectedCategory).toList();
+    return _allDonations
+        .where((donation) => donation["category"] == _selectedCategory)
+        .toList();
   }
 
   @override
@@ -184,26 +199,6 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          _selectedCategory == "All" ? "Categories" : _selectedCategory,
-        ),
-        titleTextStyle: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 20
-        ),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-
-            },
-          ),
-        ],
-      ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
@@ -220,7 +215,10 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                   final isSelected = _selectedCategory == category["name"];
                   final categoryCount = category["name"] == "All"
                       ? _allDonations.length
-                      : _allDonations.where((donation) => donation["category"] == category["name"]).length;
+                      : _allDonations
+                      .where((donation) =>
+                  donation["category"] == category["name"])
+                      .length;
 
                   return InkWell(
                     onTap: () {
@@ -234,7 +232,8 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                           width: double.infinity,
                           child: Card(
                             elevation: 0.3,
-                            color: isSelected ? category["color"] : Colors.white,
+                            color:
+                            isSelected ? category["color"] : Colors.white,
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Column(
@@ -246,15 +245,21 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                                     child: Icon(
                                       category["icon"],
                                       size: 20,
-                                      color: isSelected ? Colors.white : category["color"],
+                                      color: isSelected
+                                          ? Colors.white
+                                          : category["color"],
                                     ),
                                   ),
                                   Text(
                                     category["name"],
                                     style: TextStyle(
                                       fontSize: 13,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.white : Colors.black87,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.black87,
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
@@ -266,11 +271,15 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                           ),
                         ),
                         Positioned(
-                          top: 5,left: 5,
+                          top: 5,
+                          left: 5,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey.shade200,
+                              color: isSelected
+                                  ? Colors.white.withOpacity(0.2)
+                                  : Colors.grey.shade200,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -278,7 +287,9 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.white : Colors.grey.shade600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ),
@@ -323,8 +334,9 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                 ),
               )
                   : GridView.builder(
-                 padding: EdgeInsets.zero,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                padding: EdgeInsets.zero,
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 1,
                   childAspectRatio: 1.1,
                   crossAxisSpacing: 8,
@@ -415,7 +427,8 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
 
                   // Category badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: donation["color"].withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -475,16 +488,18 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // ✅ Changed $ to ₹
                           Text(
-                            "\$${donation["raised"]}",
+                            "₹${donation["raised"]}",
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.green,
                             ),
                           ),
+                          // ✅ Changed $ to ₹
                           Text(
-                            "/ \$${donation["target"]}",
+                            "/ ₹${donation["target"]}",
                             style: const TextStyle(
                               fontSize: 10,
                               color: Colors.grey,
@@ -516,9 +531,7 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
               elevation: 0,
               color: Colors.white,
               child: InkWell(
-                onTap: () {
-
-                },
+                onTap: () {},
                 child: const Icon(Icons.bookmark_border),
               ),
             ),
@@ -528,4 +541,3 @@ class _DonationAllCategoryScreenState extends State<DonationAllCategoryScreen> {
     );
   }
 }
-

@@ -230,32 +230,7 @@ class _AddRoomTiffinCenterScreenState
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: CollegeColors.primary,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(icon: Icon(Icons.bed_rounded), text: 'Room'),
-            Tab(icon: Icon(Icons.restaurant_rounded), text: 'Tiffin'),
-          ],
-        ),
-      ),
+
       body: TabBarView(
         controller: _tabController,
         children: [

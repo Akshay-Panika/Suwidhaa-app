@@ -21,6 +21,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   int _selectedIndex = 0;
+  bool _showAddScreen = false;
 
   late final List<Map<String, dynamic>> _screens = [
     {
@@ -53,6 +54,14 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
 
   /// Handle back navigation logic
   Future<void> _handleBack() async {
+
+    if (_showAddScreen) {
+      setState(() {
+        _showAddScreen = false;
+      });
+      return;
+    }
+
     if (_selectedIndex != 0) {
       setState(() {
         _selectedIndex = 0;
@@ -133,6 +142,12 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
     );
   }
 
+  String _getAppBarTitle() {
+    if (_showAddScreen) return 'Add Room / Tiffin';
+    final title = _screens[_selectedIndex]['title'] as String;
+    return title == 'Home' ? 'Colleges' : title;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -143,6 +158,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
       },
       child: Scaffold(
         key: _scaffoldKey,
+
         appBar: AppBar(
           title: Row(
             spacing: 12,
@@ -152,9 +168,7 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _screens[_selectedIndex]['title'] == 'Home'
-                        ? 'Colleges'
-                        : _screens[_selectedIndex]['title'],
+                    _getAppBarTitle(),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -186,105 +200,109 @@ class _CollegeDashboardScreenState extends State<CollegeDashboardScreen> {
             ),
           ],
         ),
-        body: _screens[_selectedIndex]['screen'],
+        body:  _showAddScreen
+            ? const AddRoomTiffinCenterScreen()
+            : _screens[_selectedIndex]['screen'],
         bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
+          color: Colors.white,
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ...List.generate(_screens.length, (index) {
-                    final screen = _screens[index];
-                    final isSelected = _selectedIndex == index;
-                    return Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedIndex = index;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                screen['icon'],
-                                color: isSelected
-                                    ? CollegeColors.primary
-                                    : Colors.grey.shade400,
-                                size: 26,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                screen['title'],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: isSelected
-                                      ? CollegeColors.primary
-                                      : Colors.grey.shade400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
                       ),
-                    );
-                  }),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    child: GestureDetector(
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                            const AddRoomTiffinCenterScreen(),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: List.generate(_screens.length, (index) {
+                        final screen = _screens[index];
+                        final isSelected = _selectedIndex == index && !_showAddScreen;
+                        return Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedIndex = index;
+                                _showAddScreen = false;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    screen['icon'],
+                                    color: isSelected
+                                        ? CollegeColors.primary
+                                        : Colors.grey.shade400,
+                                    size: 26,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    screen['title'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                      color: isSelected
+                                          ? CollegeColors.primary
+                                          : Colors.grey.shade400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
-                        setState(() {
-                          _selectedIndex = 0;
-                        });
-                      },
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: CollegeColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: CollegeColors.primary.withOpacity(0.4),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 30,
-                        ),
+                      }),
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  child: GestureDetector(
+                    onTap: ()  {
+                      setState(() {
+                        _showAddScreen = true;
+                      });
+                    },
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: CollegeColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: CollegeColors.primary.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 30,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

@@ -11,7 +11,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
   final List<Map<String, dynamic>> _history = [
     {
       "title": "Education Fund",
-      "amount": "\$500",
+      "amount": "₹500",           // ✅ changed
       "date": "15 Feb 2024",
       "status": "Completed",
       "type": "Donation",
@@ -20,7 +20,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "Medical Camp",
-      "amount": "\$250",
+      "amount": "₹250",           // ✅ changed
       "date": "14 Feb 2024",
       "status": "Completed",
       "type": "Donation",
@@ -29,7 +29,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "Bank Withdrawal",
-      "amount": "\$1000",
+      "amount": "₹1000",          // ✅ changed
       "date": "13 Feb 2024",
       "status": "Pending",
       "type": "Withdrawal",
@@ -38,7 +38,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "Tree Plantation",
-      "amount": "\$150",
+      "amount": "₹150",           // ✅ changed
       "date": "12 Feb 2024",
       "status": "Completed",
       "type": "Donation",
@@ -47,7 +47,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "Animal Shelter",
-      "amount": "\$300",
+      "amount": "₹300",           // ✅ changed
       "date": "10 Feb 2024",
       "status": "Completed",
       "type": "Donation",
@@ -56,7 +56,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "Women Empowerment",
-      "amount": "\$750",
+      "amount": "₹750",           // ✅ changed
       "date": "08 Feb 2024",
       "status": "Completed",
       "type": "Donation",
@@ -65,7 +65,7 @@ class _NgoHistoryScreenState extends State<NgoHistoryScreen> {
     },
     {
       "title": "PayPal Withdrawal",
-      "amount": "\$500",
+      "amount": "₹500",           // ✅ changed
       "date": "06 Feb 2024",
       "status": "Failed",
       "type": "Withdrawal",

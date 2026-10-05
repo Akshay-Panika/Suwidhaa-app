@@ -8,7 +8,7 @@ import '../../../core/utils/app_color.dart';
 import '../../college/dashboard/screen/college_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/screen/it_services_dashboard_screen.dart';
-import '../../ngo/screen/ngo_dashboard_screen.dart';
+import '../../ngo/dashboard/screen/ngo_dashboard_screen.dart';
 import '../../ott/auth/screen/ott_splash_screen.dart';
 import '../../ott/dashboard/screen/ott_dashboard_screen.dart';
 import '../../school/auth/controller/school_auth_controller.dart';
@@ -131,8 +131,8 @@ class _ModuleCardState extends State<ModuleCard> {
   @override
   Widget build(BuildContext context) {
     return  Container(
-      // height: 320,
-      height: 200,
+      height: 320,
+      // height: 200,
       child: Column(
         spacing: 12,
         children: [
@@ -165,32 +165,32 @@ class _ModuleCardState extends State<ModuleCard> {
             ),
           ),
           // Bottom row - Same as your original
-          // Expanded(
-          //   flex: 1,
-          //   child: Row(
-          //     spacing: 6,
-          //     children: [
-          //       // Left box
-          //       Expanded(
-          //         child: _buildModuleBox(primaryServices[0]),
-          //       ),
-          //       // Right side - 2 stacked boxes
-          //       Expanded(
-          //         child: Row(
-          //           spacing: 6,
-          //           children: [
-          //             Expanded(
-          //               child: _buildModuleBox(primaryServices[1]),
-          //             ),
-          //             Expanded(
-          //               child: _buildModuleBox(primaryServices[4]),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
+            Expanded(
+            flex: 1,
+            child: Row(
+              spacing: 6,
+              children: [
+                // Left box
+                Expanded(
+                  child: _buildModuleBox(primaryServices[0]),
+                ),
+                // Right side - 2 stacked boxes
+                Expanded(
+                  child: Row(
+                    spacing: 6,
+                    children: [
+                      Expanded(
+                        child: _buildModuleBox(primaryServices[1]),
+                      ),
+                      Expanded(
+                        child: _buildModuleBox(primaryServices[4]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
