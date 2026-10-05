@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-import '../../../../router/app_routes.dart'; // 👈 adjust path if needed
+import '../../../../router/app_routes.dart';
 import '../../category/screen/ngo_category_screen.dart';
 import '../../screen/donation_dialog.dart';
 import '../../history/screen/ngo_history_screen.dart';
@@ -27,7 +27,7 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
     BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
     BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Category'),
     BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-    BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+    BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Account'),
   ];
 
   @override
@@ -161,21 +161,36 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
         await _handleBack();
       },
       child: Scaffold(
-        key: _scaffoldKey, // 👈 important for bottom sheet
+        key: _scaffoldKey,
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.teal,
-          title: const Text("NGO"),
-          titleTextStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 20),
-          leading: InkWell(
-              onTap: () => Navigator.pop(context),
-              child: const Icon(Icons.dashboard, color: Colors.white)),
+          titleSpacing: 10,
+          leadingWidth: 70,
+          title:  Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("NGO",style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 20),),
+              Text("Provided by Suwidhaa",style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14),),
+            ],
+          ),
+          leading:  Container(
+            padding: EdgeInsets.all(10),
+            margin: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white,width: 0.3)
+              ),
+              child: Icon(Icons.volunteer_activism, color: Colors.white,size: 25,)),
           actions: [
             IconButton(
-              icon: const Icon(Icons.volunteer_activism, color: Colors.white),
+              icon: const Icon(Icons.paid , color: Colors.white),
               onPressed: () => _showDonationDialog(context),
             ),
           ],
@@ -186,9 +201,9 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
           onTap: _onItemTapped,
           items: _bottomNavItems,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.teal,
-          unselectedItemColor: Colors.grey.shade600,
-          backgroundColor: Colors.white,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          backgroundColor: Colors.teal,
           elevation: 8,
           selectedLabelStyle:
           const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),

@@ -547,46 +547,64 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
         slivers: [
           // ── Banner Slider ──
           SliverToBoxAdapter(
-            child: Column(
-              children: [
-                CarouselSlider(
-                  controller: _carouselController,
-                  items:
-                  _banners.map((b) => _buildBannerCard(b)).toList(),
-                  options: CarouselOptions(
-                    height: 180,
-                    viewportFraction: 1,
-                    autoPlay: true,
-                    autoPlayInterval: const Duration(seconds: 4),
-                    autoPlayAnimationDuration:
-                    const Duration(milliseconds: 800),
-                    autoPlayCurve: Curves.fastOutSlowIn,
-                    enableInfiniteScroll: true,
-                    onPageChanged: (index, reason) {
-                      setState(() => _currentBannerIndex = index);
-                    },
+            child: SizedBox(
+               height: 200,
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      Expanded(child: Container(color: Colors.teal,)),
+                      Expanded(child: Container(color: Colors.white70,)),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _banners.length,
-                        (index) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentBannerIndex == index ? 24 : 8,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        color: _currentBannerIndex == index
-                            ? primaryColor
-                            : Colors.grey.shade300,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: CarouselSlider(
+                            controller: _carouselController,
+                            items:
+                            _banners.map((b) => _buildBannerCard(b)).toList(),
+                            options: CarouselOptions(
+                              height: 180,
+                              viewportFraction: 1,
+                              autoPlay: true,
+                              autoPlayInterval: const Duration(seconds: 4),
+                              autoPlayAnimationDuration:
+                              const Duration(milliseconds: 800),
+                              autoPlayCurve: Curves.fastOutSlowIn,
+                              enableInfiniteScroll: true,
+                              onPageChanged: (index, reason) {
+                                setState(() => _currentBannerIndex = index);
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _banners.length,
+                                (index) => Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: _currentBannerIndex == index ? 24 : 8,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                color: _currentBannerIndex == index
+                                    ? primaryColor
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -1030,55 +1048,33 @@ class _StickySearchBoxDelegate extends SliverPersistentHeaderDelegate {
   _StickySearchBoxDelegate({required this.onSearchTap});
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Container(
+        width: double.infinity,
+        height: maxExtent,
+        padding: const EdgeInsets.symmetric(horizontal: 16,),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          border: Border.all(color: Colors.teal,width: 0.3),
+          borderRadius: BorderRadius.circular(12)
+        ),
         child: InkWell(
           onTap: onSearchTap,
-          child: Card(
-            elevation: 1,
-            color: Colors.white,
-            child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.search, color: Colors.grey[600], size: 22),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Search here...",
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      "⌘K",
-                      style: TextStyle(
-                        color: Colors.teal,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+          child: Row(
+            children: [
+              Icon(Icons.search, color: Colors.grey[600], size: 22),
+              const SizedBox(width: 12),
+              Text(
+                "Search here...",
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
