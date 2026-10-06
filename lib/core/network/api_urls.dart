@@ -153,4 +153,13 @@ class ApiUrls {
   static const String examTimetableList   = 'v1/school/exam-timetables/list/';
   static String examTimetableDetail(int id) => 'v1/school/exam-timetables/$id/';
 
+  // ==================== NGO BANNER ====================
+  static const String ngoBannerCreate = 'v1/ngo/banner/create/';
+  static const String ngoBannerList   = 'v1/ngo/banner/list/';
+
+  static const String ngoCategoryList   = 'v1/ngo/category/list/';
+
+  static const String ngoServiceList   = 'v1/ngo/service/list/';
+  static const String ngoServiceDetail = 'v1/ngo/service/';
+
 }

@@ -1,12 +1,16 @@
-import 'package:carousel_slider_plus/carousel_controller.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+
+import '../controller/ngo_service_controller.dart';
+import '../model/ngo_service_model.dart';
 
 class DonationDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic>? donationData;
+  /// ✅ Only serviceId needed now — data comes from API
+  final int serviceId;
 
-  const DonationDetailsScreen({super.key, this.donationData});
+  const DonationDetailsScreen({super.key, required this.serviceId});
 
   @override
   State<DonationDetailsScreen> createState() => _DonationDetailsScreenState();
@@ -14,7 +18,6 @@ class DonationDetailsScreen extends StatefulWidget {
 
 class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     with TickerProviderStateMixin {
-
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentImageIndex = 0;
 
@@ -27,47 +30,16 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
 
-  Map<String, dynamic> get _donationData {
-    final data = widget.donationData ?? {};
-    return {
-      "name": data["name"] ?? "Education For All",
-      "raised": data["raised"] ?? 7500,
-      "target": data["target"] ?? 10000,
-      "imageUrl": data["imageUrl"] ??
-          "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400",
-      "description": data["description"] ??
-          "We work to provide quality education to underprivileged children. Our mission is to ensure every child has access to education and the opportunity to build a better future.",
-      "category": data["category"] ?? "Education",
-      "rating": data["rating"] ?? 4.5,
-      "location": data["location"] ?? "India",
-      "beneficiaries": data["beneficiaries"] ?? 500,
-      "founded": data["founded"] ?? "2015",
-      "gallery": data["gallery"] ??
-          [
-            "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400",
-            "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400",
-            "https://images.unsplash.com/photo-1588072432836-e10032774350?w=400",
-          ],
-      "team": data["team"] ?? [],
-      "impact": data["impact"] ?? [],
-      "timeline": data["timeline"] ?? [],
+  final NgoServiceController _serviceController = Get.find<NgoServiceController>();
 
-      "bannerImages": data["bannerImages"] ??
-          [
-            data["imageUrl"] ??
-                "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400",
-            "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800",
-            "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800",
-            "https://images.unsplash.com/photo-1588072432836-e10032774350?w=800",
-            "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800",
-          ],
-    };
-  }
+  // Reactive state
+  NgoServiceData? _service;
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    // ✅ Now 3 tabs instead of 4
     _tabController = TabController(length: 3, vsync: this);
     _animationController = AnimationController(
       vsync: this,
@@ -77,6 +49,24 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+
+    _loadService();
+  }
+
+  Future<void> _loadService() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    final result = await _serviceController.fetchServiceById(widget.serviceId);
+    if (!mounted) return;
+    setState(() {
+      _service = result;
+      _isLoading = false;
+      if (result == null) {
+        _error = _serviceController.detailErrorMessage.value;
+      }
+    });
   }
 
   @override
@@ -87,10 +77,110 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // HELPERS — map API data to existing UI logic
+  // ═══════════════════════════════════════════════════════════════
+  int get _raised => _service?.progress.totalAmount ?? 0;
+  int get _target => _service?.progress.targetAmount ?? 0;
+  int get _donor => _service?.progress.donor ?? 0;
+  double get _progressRatio =>
+      _target == 0 ? 0.0 : (_raised / _target).clamp(0.0, 1.0);
+
+  List<String> get _bannerImages =>
+      _service?.images.isNotEmpty == true ? _service!.images : [];
+
+  List<String> get _galleryImages =>
+      _service?.images.isNotEmpty == true ? _service!.images : [];
+
+  List<int> get _chooseAmounts => _service?.chooseAmount ?? [];
+
+  List<NgoKeyItem> get _keyItems => _service?.keys ?? [];
+
+  // ═══════════════════════════════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    final progress =
-    (_donationData["raised"] / _donationData["target"]).clamp(0.0, 1.0);
+    // ── Loading ──
+    if (_isLoading) {
+      return  Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, size: 20),
+          ),
+          title: Text(
+            'Service',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        body: Center(child: CircularProgressIndicator(color: primaryColor)),
+      );
+    }
+
+    // ── Error ──
+    if (_service == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, size: 20),
+          ),
+          title: Text(
+            'Service',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 12),
+                Text(
+                  _error ?? "Service not found",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadService,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Retry"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final s = _service!;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -102,9 +192,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, size: 20),
         ),
-        // ✅ AppBar title uses donation name
         title: Text(
-          _donationData["name"] ?? "Donation",
+          s.name,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -117,7 +206,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverToBoxAdapter(
-            child: SizedBox(height: 220, child: _buildHeaderImage(progress)),
+            child: SizedBox(height: 220, child: _buildHeaderImage()),
           ),
           SliverPersistentHeader(
             pinned: true,
@@ -134,7 +223,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                 tabs: const [
                   Tab(text: "About"),
                   Tab(text: "Gallery"),
-                  Tab(text: "Team"),
+                  Tab(text: "Details"),
                 ],
               ),
               color: Colors.white,
@@ -148,7 +237,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             children: [
               _buildAboutTab(),
               _buildGalleryTab(),
-              _buildTeamTab(),
+              _buildDetailsTab(),
             ],
           ),
         ),
@@ -157,22 +246,23 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-// ═══════════════════════════════════════════════════════════════
-// HEADER IMAGE — Carousel with swipe + indicator
-// ═══════════════════════════════════════════════════════════════
-  Widget _buildHeaderImage(double progress) {
-    final List<String> images =
-    ((_donationData["bannerImages"] as List?) ?? [])
-        .map((e) => e.toString())
-        .toList();
+  // ═══════════════════════════════════════════════════════════════
+  // HEADER IMAGE
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildHeaderImage() {
+    final images = _bannerImages;
 
     if (images.isEmpty) {
-      images.add(_donationData["imageUrl"] as String);
+      return Container(
+        color: primaryColor.withOpacity(0.1),
+        child: const Center(
+          child: Icon(Icons.image, size: 64, color: primaryColor),
+        ),
+      );
     }
 
     return Stack(
       children: [
-        // ── Carousel ────────────────────────────────────────────
         CarouselSlider.builder(
           controller: _carouselController,
           itemCount: images.length,
@@ -184,7 +274,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             autoPlayAnimationDuration: const Duration(milliseconds: 700),
             autoPlayCurve: Curves.easeInOut,
             enableInfiniteScroll: images.length > 1,
-            enlargeCenterPage: false,
             onPageChanged: (index, reason) {
               setState(() => _currentImageIndex = index);
             },
@@ -209,7 +298,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     return Container(
                       color: primaryColor.withOpacity(0.08),
                       child: const Center(
-                        child: CircularProgressIndicator(color: primaryColor),
+                        child:
+                        CircularProgressIndicator(color: primaryColor),
                       ),
                     );
                   },
@@ -219,36 +309,38 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           },
         ),
 
-        // ── Category badge (top-left, above carousel) ───────────
-        Positioned(
-          top: 12,
-          left: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.category_outlined,
-                    size: 12, color: primaryColor),
-                const SizedBox(width: 4),
-                Text(
-                  _donationData["category"] ?? "General",
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: primaryColor,
+        // Category badge
+        if (_service?.categoryName != null)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.category_outlined,
+                      size: 12, color: primaryColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    _service!.categoryName!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
 
-        // ── Selection logic: page counter chip (top-right) ──────
+        // Page counter
         Positioned(
           top: 12,
           right: 12,
@@ -269,58 +361,54 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           ),
         ),
 
-        // ── Selection logic: dot indicators (bottom) ────────────
-        Positioned(
-          bottom: 12,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(images.length, (index) {
-              final selected = index == _currentImageIndex;
-              return GestureDetector(
-                onTap: () => _carouselController.animateToPage(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: selected ? 22 : 8,
-                  height: 8,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(4),
+        // Dot indicators
+        if (images.length > 1)
+          Positioned(
+            bottom: 12,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(images.length, (index) {
+                final selected = index == _currentImageIndex;
+                return GestureDetector(
+                  onTap: () => _carouselController.animateToPage(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: selected ? 22 : 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
-        ),
       ],
     );
   }
 
-
   // ═══════════════════════════════════════════════════════════════
-  // TAB 1: ABOUT  (Progress data merged here)
+  // TAB 1: ABOUT
   // ═══════════════════════════════════════════════════════════════
   Widget _buildAboutTab() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
       children: [
-        // ✅ Progress card moved here (first in About tab)
         _buildProgressCard(),
         const SizedBox(height: 12),
-        _buildImpactSection(),
-        const SizedBox(height: 12),
+        if (_keyItems.isNotEmpty) ...[
+          _buildKeysSection(),
+          const SizedBox(height: 12),
+        ],
         _buildAmountSection(),
         const SizedBox(height: 12),
-        _buildLocationSection(),
-        const SizedBox(height: 12),
-        _buildTimelineSection(),
-        const SizedBox(height: 12),
-        const SizedBox(height: 12),
-        _buildAboutSection(),
+        if ((_service?.description ?? '').isNotEmpty) _buildAboutSection(),
       ],
     );
   }
@@ -329,7 +417,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   // TAB 2: GALLERY
   // ═══════════════════════════════════════════════════════════════
   Widget _buildGalleryTab() {
-    final gallery = (_donationData["gallery"] as List?) ?? [];
+    final gallery = _galleryImages;
     if (gallery.isEmpty) {
       return const Center(child: Text("No photos"));
     }
@@ -364,39 +452,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: primaryColor.withOpacity(0.08),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.image_outlined,
-                              color: primaryColor.withOpacity(0.5),
-                              size: 32),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Image ${index + 1}",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: primaryColor.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: const Icon(Icons.image_outlined,
+                          color: primaryColor, size: 32),
                     ),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: primaryColor.withOpacity(0.06),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: primaryColor,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
                   ),
                   Positioned(
                     bottom: 6,
@@ -428,12 +486,12 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // TAB 3: TEAM
+  // TAB 3: DETAILS (replaces Team tab — shows keys info)
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildTeamTab() {
-    final team = (_donationData["team"] as List?) ?? [];
-    if (team.isEmpty) {
-      return const Center(child: Text("No team members"));
+  Widget _buildDetailsTab() {
+    final items = _keyItems;
+    if (items.isEmpty) {
+      return const Center(child: Text("No additional details"));
     }
 
     return ListView(
@@ -444,35 +502,39 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _sectionHeader(
-                icon: Icons.groups_outlined,
-                title: "Meet the Team",
+                icon: Icons.info_outline,
+                title: "Service Details",
                 trailing: Text(
-                  "${team.length} members",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
+                  "${items.length} items",
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
               ),
               const SizedBox(height: 16),
-              ...team.map((member) => Padding(
+              ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Icon from URL (fallback to default)
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: primaryColor.withOpacity(0.3),
-                          width: 2,
-                        ),
-                        image: DecorationImage(
-                          image: NetworkImage(member["image"] ?? ""),
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: item.icon.startsWith('http')
+                            ? Image.network(
+                          item.icon,
                           fit: BoxFit.cover,
-                          onError: (_, __) {},
-                        ),
+                          errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.star,
+                              color: primaryColor, size: 20),
+                        )
+                            : const Icon(Icons.star,
+                            color: primaryColor, size: 20),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -481,7 +543,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            member["name"] ?? "",
+                            item.key,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -489,7 +551,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            member["role"] ?? "",
+                            item.value,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -498,8 +560,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                         ],
                       ),
                     ),
-                    Icon(Icons.verified,
-                        color: primaryColor.withOpacity(0.6), size: 18),
                   ],
                 ),
               )),
@@ -511,11 +571,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // PROGRESS CARD (now used in About tab)
+  // PROGRESS CARD
   // ═══════════════════════════════════════════════════════════════
   Widget _buildProgressCard() {
-    final progress =
-    (_donationData["raised"] / _donationData["target"]).clamp(0.0, 1.0);
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,14 +582,13 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             icon: Icons.trending_up,
             title: "Donation Progress",
             trailing: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                "${(progress * 100).toStringAsFixed(0)}%",
+                "${(_progressRatio * 100).toStringAsFixed(0)}%",
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -548,11 +605,11 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("Raised",
-                      style: TextStyle(
-                          color: Colors.grey[600], fontSize: 11)),
+                      style:
+                      TextStyle(color: Colors.grey[600], fontSize: 11)),
                   const SizedBox(height: 2),
                   Text(
-                    "$currencySymbol${_donationData["raised"]}",
+                    "$currencySymbol$_raised",
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -565,11 +622,11 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text("Target",
-                      style: TextStyle(
-                          color: Colors.grey[600], fontSize: 11)),
+                      style:
+                      TextStyle(color: Colors.grey[600], fontSize: 11)),
                   const SizedBox(height: 2),
                   Text(
-                    "$currencySymbol${_donationData["target"]}",
+                    "$currencySymbol$_target",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -584,7 +641,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: progress,
+              value: _progressRatio,
               backgroundColor: Colors.grey.shade200,
               color: primaryColor,
               minHeight: 10,
@@ -596,11 +653,11 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
               Icon(Icons.people_outline, size: 14, color: Colors.grey[600]),
               const SizedBox(width: 4),
               Text(
-                "${(_donationData["raised"] ~/ 25)} donors",
+                "$_donor donors",
                 style: TextStyle(fontSize: 11, color: Colors.grey[600]),
               ),
               const Spacer(),
-              ..._buildMilestoneDots(progress),
+              ..._buildMilestoneDots(_progressRatio),
             ],
           ),
         ],
@@ -639,38 +696,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ABOUT SECTION
+  // KEYS SECTION
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildAboutSection() {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(
-            icon: Icons.info_outline,
-            title: "About this NGO",
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _donationData["description"],
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.6,
-              color: Colors.grey.shade800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // IMPACT
-  // ═══════════════════════════════════════════════════════════════
-  Widget _buildImpactSection() {
-    final impact = (_donationData["impact"] as List?) ?? [];
-    if (impact.isEmpty) return const SizedBox.shrink();
-
+  Widget _buildKeysSection() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,9 +718,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
             ),
-            itemCount: impact.length,
+            itemCount: _keyItems.length,
             itemBuilder: (context, index) {
-              final item = impact[index];
+              final item = _keyItems[index];
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -707,22 +735,20 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      _iconFromName(item["icon"] ?? "star"),
-                      color: primaryColor,
-                      size: 22,
-                    ),
+                    const Icon(Icons.star, color: primaryColor, size: 22),
                     const SizedBox(height: 6),
                     Text(
-                      item["value"] ?? "0",
+                      item.value,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: primaryColor,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      item["label"] ?? "",
+                      item.key,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey[700],
@@ -741,211 +767,26 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // LOCATION
+  // ABOUT SECTION
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildLocationSection() {
+  Widget _buildAboutSection() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader(
-            icon: Icons.location_on_outlined,
-            title: "Where Your Donation Goes",
+            icon: Icons.info_outline,
+            title: "About this Service",
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.place,
-                    color: primaryColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Operating Location",
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _donationData["location"] ?? "India",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _infoChip(
-                  icon: Icons.people_alt_outlined,
-                  label:
-                  "${_donationData["beneficiaries"] ?? 0}+ Beneficiaries",
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _infoChip(
-                  icon: Icons.calendar_today_outlined,
-                  label: "Founded ${_donationData["founded"] ?? "—"}",
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoChip({required IconData icon, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: primaryColor),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: primaryColor,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            _service!.description ?? '',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: Colors.grey.shade800,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // TIMELINE
-  // ═══════════════════════════════════════════════════════════════
-  Widget _buildTimelineSection() {
-    final timeline = (_donationData["timeline"] as List?) ?? [];
-    if (timeline.isEmpty) return const SizedBox.shrink();
-
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(
-            icon: Icons.timeline,
-            title: "Campaign Timeline",
-          ),
-          const SizedBox(height: 14),
-          ...List.generate(timeline.length, (index) {
-            final item = timeline[index];
-            final isLast = index == timeline.length - 1;
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: primaryColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: primaryColor.withOpacity(0.25),
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                      if (!isLast)
-                        Expanded(
-                          child: Container(
-                            width: 2,
-                            color: primaryColor.withOpacity(0.2),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                item["date"] ?? "",
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryColor,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (isLast)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    "UPCOMING",
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item["title"] ?? "",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item["desc"] ?? "",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[700],
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
         ],
       ),
     );
@@ -964,18 +805,22 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             title: "Choose Amount",
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildAmountChip("$currencySymbol 10", "10"),
-              _buildAmountChip("$currencySymbol 25", "25"),
-              _buildAmountChip("$currencySymbol 50", "50"),
-              _buildAmountChip("$currencySymbol 100", "100"),
-              _buildAmountChip("$currencySymbol 250", "250"),
-              _buildAmountChip("$currencySymbol 500", "500"),
-            ],
-          ),
+          if (_chooseAmounts.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _chooseAmounts
+                  .map((amt) => _buildAmountChip(
+                "$currencySymbol $amt",
+                amt.toString(),
+              ))
+                  .toList(),
+            )
+          else
+            Text(
+              "No preset amounts",
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
           const SizedBox(height: 14),
           Container(
             decoration: BoxDecoration(
@@ -999,7 +844,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     ),
                   ),
                 ),
-                prefixIconConstraints: const BoxConstraints(minWidth: 0),
+                prefixIconConstraints:
+                const BoxConstraints(minWidth: 0),
                 contentPadding:
                 const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                 suffixIcon: _customAmountController.text.isNotEmpty
@@ -1087,7 +933,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                         margin: EdgeInsets.all(12),
                       ),
                     );
-                    // ✅ Switch to About tab (index 0) where amounts live
                     _tabController.animateTo(0);
                     return;
                   }
@@ -1204,37 +1049,16 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  IconData _iconFromName(String name) {
-    switch (name) {
-      case "school":
-        return Icons.school;
-      case "book":
-        return Icons.menu_book;
-      case "family":
-        return Icons.family_restroom;
-      case "star":
-        return Icons.star;
-      case "people":
-        return Icons.people;
-      case "favorite":
-        return Icons.favorite;
-      case "nature":
-        return Icons.nature;
-      default:
-        return Icons.star;
-    }
-  }
-
   // ═══════════════════════════════════════════════════════════════
   // GALLERY VIEWER
   // ═══════════════════════════════════════════════════════════════
-  void _openFullScreenGallery(List<dynamic> images, int initialIndex) {
+  void _openFullScreenGallery(List<String> images, int initialIndex) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
         pageBuilder: (_, __, ___) => _FullScreenGallery(
-          images: images.cast<String>(),
+          images: images,
           initialIndex: initialIndex,
           accentColor: primaryColor,
         ),
@@ -1269,7 +1093,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              _donationData["name"],
+              _service!.name,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1330,14 +1154,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             Text(
               "Your donation of $currencySymbol$amount will make a difference!",
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Together, we can ${_donationData["description"].split('.').first.toLowerCase()}.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style:
+              const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1363,7 +1181,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FULL-SCREEN GALLERY VIEWER
+// FULL-SCREEN GALLERY VIEWER (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 class _FullScreenGallery extends StatefulWidget {
   final List<String> images;
@@ -1421,15 +1239,6 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                         color: Colors.white38,
                         size: 80,
                       ),
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        );
-                      },
                     ),
                   ),
                 );
@@ -1463,61 +1272,6 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
                     ),
                   ),
                 ],
-              ),
-            ),
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: SizedBox(
-                height: 64,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: widget.images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final isSelected = index == _currentIndex;
-                    return GestureDetector(
-                      onTap: () {
-                        _pageController.animateToPage(
-                          index,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
-                        );
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? widget.accentColor
-                                : Colors.white24,
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: Image.network(
-                            widget.images[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: Colors.white10,
-                              child: const Icon(
-                                Icons.broken_image,
-                                color: Colors.white38,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           ],
@@ -1555,7 +1309,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(color: color, child: tabBar);
   }
 
