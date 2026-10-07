@@ -11,7 +11,9 @@ import '../feature/college/controller/tiffin_controller.dart';
 import '../feature/location/controller/location_controller.dart';
 import '../feature/ngo/home/controller/ngo_banner_controller.dart';
 import '../feature/ngo/home/controller/ngo_category_controller.dart';
+import '../feature/ngo/services/controller/ngo_history_controller.dart';
 import '../feature/ngo/services/controller/ngo_service_controller.dart';
+import '../feature/ngo/services/controller/ngo_staff_controller.dart';
 import '../feature/ott/controller/ott_banner_controller.dart';
 import '../feature/ott/controller/ott_content_controller.dart';
 import '../feature/ott/controller/ott_controller.dart';
@@ -73,5 +75,7 @@ class AppBindings implements Bindings {
     Get.lazyPut<NgoBannerController>(() => NgoBannerController(), fenix: true);
     Get.lazyPut<NgoCategoryController>(() => NgoCategoryController(), fenix: true);
     Get.lazyPut<NgoServiceController>(() => NgoServiceController(), fenix: true);
+    Get.lazyPut<NgoStaffController>(() => NgoStaffController(), fenix: true);
+    Get.lazyPut<NgoHistoryController>(() => NgoHistoryController(), fenix: true);
   }
 }

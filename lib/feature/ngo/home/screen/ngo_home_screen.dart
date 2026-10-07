@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../services/screen/donation_details_screen.dart';
 import '../controller/ngo_category_controller.dart';
 import '../model/ngo_category_model.dart';
@@ -59,24 +60,40 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
           // ── Categories ──
           SliverToBoxAdapter(
             child: Obx(() {
+              // ── Loading (Shimmer) ──
               if (controller.isLoading.value && controller.categories.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+                return const _CategoryShimmerGrid();
               }
 
+              // ── Empty ──
               if (controller.categories.isEmpty) {
                 return const Center(child: Text('No categories found'));
               }
+
+              // ── Loaded ──
               return Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Categories",
-                      style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Categories",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            widget.onNavigate?.call(1, category: null);
+                          },
+                          child: const Text(
+                            "View All",
+                            style: TextStyle(color: Colors.teal),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -92,11 +109,11 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                         return _buildCategoryCard(category);
                       },
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               );
-            }
-            ),
+            }),
           ),
 
           // ── Open Donations ──
@@ -198,4 +215,104 @@ class _StickySearchBoxDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
       false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CATEGORY SHIMMER GRID
+// ═══════════════════════════════════════════════════════════════
+class _CategoryShimmerGrid extends StatelessWidget {
+  const _CategoryShimmerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Shimmer.fromColors(
+                baseColor: Colors.grey.shade200,
+                highlightColor: Colors.grey.shade50,
+                child: Container(
+                  width: 100,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Shimmer.fromColors(
+                baseColor: Colors.grey.shade200,
+                highlightColor: Colors.grey.shade50,
+                child: Container(
+                  width: 60,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Grid of shimmer tiles
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade200,
+            highlightColor: Colors.grey.shade50,
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                childAspectRatio: 1,
+              ),
+              itemCount: 8, // 2 rows × 4 columns
+              itemBuilder: (context, index) => _buildShimmerTile(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerTile() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Square image skeleton
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+
+        // Name skeleton
+        Container(
+          width: 40,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(height: 2),
+      ],
+    );
+  }
 }

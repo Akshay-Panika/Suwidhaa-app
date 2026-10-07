@@ -1,4 +1,3 @@
-
 class NgoServiceModel {
   final bool success;
   final String message;
@@ -50,8 +49,8 @@ class NgoServiceData {
 
   factory NgoServiceData.fromJson(Map<String, dynamic> json) {
     return NgoServiceData(
-      id: json['id'] ?? 0,
-      category: json['category'],
+      id: _asInt(json['id']),
+      category: json['category'] != null ? _asInt(json['category']) : null,
       categoryName: json['category_name'],
       name: json['name'] ?? '',
       description: json['description'],
@@ -60,14 +59,14 @@ class NgoServiceData {
           .toList() ??
           [],
       progress: NgoProgress.fromJson(
-        json['progress'] ?? {},
+        (json['progress'] as Map<String, dynamic>?) ?? {},
       ),
       keys: (json['keys'] as List<dynamic>?)
           ?.map((e) => NgoKeyItem.fromJson(e))
           .toList() ??
           [],
       chooseAmount: (json['choose_amount'] as List<dynamic>?)
-          ?.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0)
+          ?.map((e) => _asInt(e))
           .toList() ??
           [],
       createdAt: json['created_at'] ?? '',
@@ -78,7 +77,7 @@ class NgoServiceData {
 
 class NgoProgress {
   final int targetAmount;
-  final int totalAmount;
+  final double totalAmount; // ✅ FIX: changed from int to double
   final int donor;
 
   NgoProgress({
@@ -89,9 +88,9 @@ class NgoProgress {
 
   factory NgoProgress.fromJson(Map<String, dynamic> json) {
     return NgoProgress(
-      targetAmount: json['target_amount'] ?? 0,
-      totalAmount: json['total_amount'] ?? 0,
-      donor: json['donor'] ?? 0,
+      targetAmount: _asInt(json['target_amount']),
+      totalAmount: _asDouble(json['total_amount']), // ✅ safe parse
+      donor: _asInt(json['donor']),
     );
   }
 
@@ -119,4 +118,23 @@ class NgoKeyItem {
       value: json['value'] ?? '',
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAFE NUMERIC PARSERS
+// Handles int, double, String, and null from JSON
+// ═══════════════════════════════════════════════════════════════
+
+int _asInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  return int.tryParse(value.toString()) ?? 0;
+}
+
+double _asDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  return double.tryParse(value.toString()) ?? 0.0;
 }

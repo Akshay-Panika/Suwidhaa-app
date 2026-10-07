@@ -2,12 +2,15 @@ import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-
+import '../../../../core/widget/flutter_toast.dart';
+import '../../../auth/controller/auth_controller.dart';
+import '../controller/ngo_history_controller.dart';
 import '../controller/ngo_service_controller.dart';
+import '../controller/ngo_staff_controller.dart';
 import '../model/ngo_service_model.dart';
+import '../model/ngo_staff_model.dart';
 
 class DonationDetailsScreen extends StatefulWidget {
-  /// ✅ Only serviceId needed now — data comes from API
   final int serviceId;
 
   const DonationDetailsScreen({super.key, required this.serviceId});
@@ -18,7 +21,13 @@ class DonationDetailsScreen extends StatefulWidget {
 
 class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     with TickerProviderStateMixin {
-  final CarouselSliderController _carouselController = CarouselSliderController();
+  final AuthController authController = Get.find<AuthController>();
+  late final donorId = authController.getUserId;
+  late final donorName = authController.getUserName;
+  late final donorPhone = authController.getUserPhone;
+
+  final CarouselSliderController _carouselController =
+  CarouselSliderController();
   int _currentImageIndex = 0;
 
   static const Color primaryColor = Colors.teal;
@@ -30,7 +39,11 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
 
-  final NgoServiceController _serviceController = Get.find<NgoServiceController>();
+  final NgoServiceController _serviceController =
+  Get.find<NgoServiceController>();
+  final NgoStaffController _staffController = Get.find<NgoStaffController>();
+  final NgoHistoryController _historyController =
+  Get.find<NgoHistoryController>();
 
   // Reactive state
   NgoServiceData? _service;
@@ -51,6 +64,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     _animationController.forward();
 
     _loadService();
+    _loadStaff();
   }
 
   Future<void> _loadService() async {
@@ -69,6 +83,14 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     });
   }
 
+  Future<void> _loadStaff() async {
+    try {
+      if (_staffController.staffList.isEmpty) {
+        await _staffController.getNgoStaffList();
+      }
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -78,9 +100,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // HELPERS — map API data to existing UI logic
+  // HELPERS
   // ═══════════════════════════════════════════════════════════════
-  int get _raised => _service?.progress.totalAmount ?? 0;
+  double get _raised => _service?.progress.totalAmount ?? 0;
   int get _target => _service?.progress.targetAmount ?? 0;
   int get _donor => _service?.progress.donor ?? 0;
   double get _progressRatio =>
@@ -101,9 +123,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   // ═══════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // ── Loading ──
     if (_isLoading) {
-      return  Scaffold(
+      return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: primaryColor,
@@ -113,22 +134,19 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, size: 20),
           ),
-          title: Text(
+          title: const Text(
             'Service',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         body: Center(child: CircularProgressIndicator(color: primaryColor)),
       );
     }
 
-    // ── Error ──
     if (_service == null) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -140,15 +158,13 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, size: 20),
           ),
-          title: Text(
+          title: const Text(
             'Service',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: Colors.white,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         body: Center(
@@ -223,7 +239,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                 tabs: const [
                   Tab(text: "About"),
                   Tab(text: "Gallery"),
-                  Tab(text: "Details"),
+                  Tab(text: "Staff"),
                 ],
               ),
               color: Colors.white,
@@ -237,7 +253,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             children: [
               _buildAboutTab(),
               _buildGalleryTab(),
-              _buildDetailsTab(),
+              _buildStaffTab(),
             ],
           ),
         ),
@@ -298,8 +314,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     return Container(
                       color: primaryColor.withOpacity(0.08),
                       child: const Center(
-                        child:
-                        CircularProgressIndicator(color: primaryColor),
+                        child: CircularProgressIndicator(color: primaryColor),
                       ),
                     );
                   },
@@ -309,14 +324,12 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           },
         ),
 
-        // Category badge
         if (_service?.categoryName != null)
           Positioned(
             top: 12,
             left: 12,
             child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(20),
@@ -340,7 +353,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             ),
           ),
 
-        // Page counter
         Positioned(
           top: 12,
           right: 12,
@@ -361,7 +373,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           ),
         ),
 
-        // Dot indicators
         if (images.length > 1)
           Positioned(
             bottom: 12,
@@ -486,87 +497,218 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // TAB 3: DETAILS (replaces Team tab — shows keys info)
+  // TAB 3: STAFF
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildDetailsTab() {
-    final items = _keyItems;
-    if (items.isEmpty) {
-      return const Center(child: Text("No additional details"));
-    }
+  Widget _buildStaffTab() {
+    return Obx(() {
+      if (_staffController.isLoading.value &&
+          _staffController.staffList.isEmpty) {
+        return const Center(
+          child: CircularProgressIndicator(color: primaryColor),
+        );
+      }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
-      children: [
-        _card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      final staff = _staffController.staffList;
+
+      if (staff.isEmpty) {
+        return RefreshIndicator(
+          color: primaryColor,
+          onRefresh: _staffController.refreshStaffList,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(12, 60, 12, 100),
             children: [
-              _sectionHeader(
-                icon: Icons.info_outline,
-                title: "Service Details",
-                trailing: Text(
-                  "${items.length} items",
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              Icon(Icons.groups_outlined,
+                  size: 72, color: primaryColor.withOpacity(0.5)),
+              const SizedBox(height: 12),
+              const Center(
+                child: Text(
+                  "No staff members found",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+              const SizedBox(height: 6),
+              Center(
+                child: Text(
+                  "Pull down to refresh",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return RefreshIndicator(
+        color: primaryColor,
+        onRefresh: _staffController.refreshStaffList,
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+          itemCount: staff.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _card(
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon from URL (fallback to default)
                     Container(
-                      width: 40,
-                      height: 40,
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: item.icon.startsWith('http')
-                            ? Image.network(
-                          item.icon,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.star,
-                              color: primaryColor, size: 20),
-                        )
-                            : const Icon(Icons.star,
-                            color: primaryColor, size: 20),
+                      child: const Icon(Icons.groups,
+                          color: primaryColor, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Our Team",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.key,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.value,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "${staff.length} members",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              )),
-            ],
-          ),
+              );
+            }
+
+            final member = staff[index - 1];
+            return _buildStaffCard(member);
+          },
         ),
-      ],
+      );
+    });
+  }
+
+  Widget _buildStaffCard(NgoStaffModel member) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.2),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: primaryColor.withOpacity(0.4),
+                width: 2,
+              ),
+            ),
+            child: ClipOval(
+              child: member.image.isNotEmpty
+                  ? Image.network(
+                member.image,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _avatarFallback(member.name),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    color: primaryColor.withOpacity(0.08),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+                  : _avatarFallback(member.name),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    member.roleDisplay,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _avatarFallback(String name) {
+    final initials = name.trim().isEmpty
+        ? '?'
+        : name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0]).join();
+    return Container(
+      color: primaryColor.withOpacity(0.15),
+      alignment: Alignment.center,
+      child: Text(
+        initials.toUpperCase(),
+        style: const TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+      ),
     );
   }
 
@@ -609,7 +751,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                       TextStyle(color: Colors.grey[600], fontSize: 11)),
                   const SizedBox(height: 2),
                   Text(
-                    "$currencySymbol$_raised",
+                    "$currencySymbol${_raised.toStringAsFixed(0)}",
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -666,18 +808,28 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   List<Widget> _buildMilestoneDots(double progress) {
-    return [25, 50, 75, 100].map((pct) {
+    final List<int> milestones = _getMilestones();
+
+    return milestones.map((pct) {
       final reached = progress >= (pct / 100);
+      final isFull = pct == 100;
+
       return Padding(
         padding: const EdgeInsets.only(left: 6),
         child: Column(
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: reached ? (isFull ? 10 : 9) : 8,
+              height: reached ? (isFull ? 10 : 9) : 8,
               decoration: BoxDecoration(
                 color: reached ? primaryColor : Colors.grey.shade300,
                 shape: BoxShape.circle,
+                border: reached
+                    ? Border.all(
+                  color: primaryColor.withOpacity(0.3),
+                  width: 2,
+                )
+                    : null,
               ),
             ),
             const SizedBox(height: 2),
@@ -693,6 +845,20 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
         ),
       );
     }).toList();
+  }
+
+  List<int> _getMilestones() {
+    if (_target <= 0) return const [25, 50, 75, 100];
+
+    if (_target <= 1000) {
+      return const [10, 30, 50, 75, 100];
+    } else if (_target <= 10000) {
+      return const [25, 50, 75, 100];
+    } else if (_target <= 100000) {
+      return const [25, 50, 75, 100];
+    } else {
+      return const [25, 50, 75, 100];
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -714,7 +880,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             padding: EdgeInsets.zero,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 1.6,
+              childAspectRatio: 2.4,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
             ),
@@ -731,30 +897,34 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     width: 0.8,
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
-                    const Icon(Icons.star, color: primaryColor, size: 22),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.value,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: primaryColor,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      item.key,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[700],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    const Icon(Icons.star, color: primaryColor, size: 35),
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          item.value,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          item.key,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[700],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -873,7 +1043,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // STICKY DONATE BAR
+  // STICKY DONATE BAR (with loading state on the button)
   // ═══════════════════════════════════════════════════════════════
   Widget _buildStickyDonateBar() {
     return Container(
@@ -917,52 +1087,62 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             ),
             const SizedBox(width: 30),
             Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  String amount = "";
-                  if (_selectedAmount != null) {
-                    amount = _selectedAmount!;
-                  } else if (_customAmountController.text.isNotEmpty) {
-                    amount = _customAmountController.text;
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please select or enter an amount'),
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.all(12),
-                      ),
-                    );
-                    _tabController.animateTo(0);
-                    return;
-                  }
-                  _showDonationDialog(context, amount);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 4,
-                  shadowColor: primaryColor.withOpacity(0.4),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.volunteer_activism, size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      "Donate Now",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Obx(() {
+                final isBusy = _historyController.isDonating.value;
+                return ElevatedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () {
+                    String amount = "";
+                    if (_selectedAmount != null) {
+                      amount = _selectedAmount!;
+                    } else if (_customAmountController.text.isNotEmpty) {
+                      amount = _customAmountController.text;
+                    } else {
+                      FlutterToast.error(
+                          "Please select or enter an amount");
+                      _tabController.animateTo(0);
+                      return;
+                    }
+                    _showDonationDialog(context, amount);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor:
+                    primaryColor.withOpacity(0.6),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
-                ),
-              ),
+                    elevation: 4,
+                    shadowColor: primaryColor.withOpacity(0.4),
+                  ),
+                  child: isBusy
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.volunteer_activism, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        "Donate Now",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
           ],
         ),
@@ -1067,15 +1247,15 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // DIALOGS
+  // DIALOGS — with real API call
   // ═══════════════════════════════════════════════════════════════
   void _showDonationDialog(BuildContext context, String amount) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.volunteer_activism, color: primaryColor),
@@ -1104,14 +1284,39 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child:
-            const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showSuccessDialog(context, amount);
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+
+              // 🔥 Call the real API
+              final success = await _historyController.donate(
+                serviceId: widget.serviceId,
+                amount: double.tryParse(amount) ?? 0,
+                donorName: donorName,
+                donorContact: donorPhone,
+              );
+
+              if (!mounted) return;
+
+              if (success) {
+                // Refresh service so progress updates
+                await _loadService();
+
+                if (!mounted) return;
+
+                // Reset selection
+                setState(() {
+                  _selectedAmount = null;
+                  _customAmountController.clear();
+                });
+
+                // Show success
+                _showSuccessDialog(context, amount);
+              }
+              // On error, the controller already showed a toast
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
@@ -1131,9 +1336,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("🎉 Thank You!"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1161,10 +1366,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
         ),
         actions: [
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(dialogCtx),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
               foregroundColor: Colors.white,
@@ -1181,7 +1383,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// FULL-SCREEN GALLERY VIEWER (unchanged)
+// FULL-SCREEN GALLERY VIEWER
 // ═══════════════════════════════════════════════════════════════════
 class _FullScreenGallery extends StatefulWidget {
   final List<String> images;

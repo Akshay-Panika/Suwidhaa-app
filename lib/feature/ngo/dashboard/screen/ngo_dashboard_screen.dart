@@ -6,7 +6,6 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import '../../../../router/app_routes.dart';
 import '../../category/screen/ngo_category_screen.dart';
 import '../../screen/donation_dialog.dart';
-import '../../history/screen/ngo_history_screen.dart';
 import '../../home/screen/ngo_home_screen.dart';
 import '../../account/screen/ngo_profile_screen.dart';
 
@@ -23,25 +22,17 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
   int _selectedIndex = 0;
   String? _selectedCategoryFromHome;
 
-  final List<BottomNavigationBarItem> _bottomNavItems = const [
-    BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-    BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Category'),
-    BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-    BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Account'),
+  // ✅ 3 tabs only
+  static const List<Map<String, dynamic>> _navItems = [
+    {"icon": Icons.home_rounded, "label": "Home"},
+    {"icon": Icons.grid_view_rounded, "label": "Category"},
+    {"icon": Icons.person_rounded, "label": "Account"},
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _showDonationDialog(context);
-    // });
-  }
-
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index == _selectedIndex) return;
+    HapticFeedback.selectionClick();
+    setState(() => _selectedIndex = index);
   }
 
   void _onNavigateFromHome(int index, {String? category}) {
@@ -59,18 +50,14 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
     );
   }
 
-  // ✅ Back handling
   Future<void> _handleBack() async {
     if (_selectedIndex != 0) {
-      setState(() {
-        _selectedIndex = 0;
-      });
+      setState(() => _selectedIndex = 0);
       return;
     }
     _showExitBottomSheet();
   }
 
-  // ✅ Exit confirmation bottom sheet
   void _showExitBottomSheet() {
     _scaffoldKey.currentState?.showBottomSheet(
           (context) => Container(
@@ -123,7 +110,6 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
-                      // ✅ Exit app or navigate to login/dashboard route
                       Get.offAllNamed(AppRoutes.dashboard);
                     },
                     child: const Text(
@@ -150,7 +136,6 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
         key: ValueKey(_selectedCategoryFromHome),
         initialCategory: _selectedCategoryFromHome,
       ),
-      const NgoHistoryScreen(),
       const NgoProfileScreen(),
     ];
 
@@ -167,50 +152,169 @@ class _NgoDashboardScreenState extends State<NgoDashboardScreen> {
           backgroundColor: Colors.teal,
           titleSpacing: 10,
           leadingWidth: 70,
-          title:  Column(
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("NGO",style: TextStyle(
+            children: const [
+              Text(
+                "NGO",
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
-                  fontSize: 20),),
-              Text("Provided by Suwidhaa",style: TextStyle(
+                  fontSize: 20,
+                ),
+              ),
+              Text(
+                "Provided by Suwidhaa",
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
-                  fontSize: 14),),
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
-          leading:  Container(
-            padding: EdgeInsets.all(10),
-            margin: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white,width: 0.3)
-              ),
-              child: Icon(Icons.volunteer_activism, color: Colors.white,size: 25,)),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 0.3),
+            ),
+            child: const Icon(
+              Icons.volunteer_activism,
+              color: Colors.white,
+              size: 25,
+            ),
+          ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.paid , color: Colors.white),
+              icon: const Icon(Icons.paid, color: Colors.white),
               onPressed: () => _showDonationDialog(context),
             ),
           ],
         ),
-        body: _screens[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: _bottomNavItems,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
-          backgroundColor: Colors.teal,
-          elevation: 8,
-          selectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          unselectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
-          showUnselectedLabels: true,
-          iconSize: 24,
+
+        // ✅ Page transition animation between tabs
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey(_selectedIndex),
+            child: _screens[_selectedIndex],
+          ),
+        ),
+
+          bottomNavigationBar: _FloatingPillNav(
+            selectedIndex: _selectedIndex,
+            items: _navItems,
+            onTap: _onItemTapped,
+          ),
+      ),
+    );
+  }
+}
+
+class _FloatingPillNav extends StatelessWidget {
+  final int selectedIndex;
+  final List<Map<String, dynamic>> items;
+  final ValueChanged<int> onTap;
+
+  const _FloatingPillNav({
+    required this.selectedIndex,
+    required this.items,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.teal.withOpacity(0.18),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final selected = index == selectedIndex;
+              final item = items[index];
+
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: selected
+                          ? LinearGradient(
+                        colors: [
+                          Colors.teal.shade400,
+                          Colors.teal.shade700,
+                        ],
+                      )
+                          : null,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          item["icon"] as IconData,
+                          color: selected ? Colors.white : Colors.teal,
+                          size: 24,
+                        ),
+                        // Expand label only when selected
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeOutCubic,
+                          child: selected
+                              ? Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Text(
+                              item["label"] as String,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );

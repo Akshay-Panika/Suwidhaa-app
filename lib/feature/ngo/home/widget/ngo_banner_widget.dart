@@ -63,8 +63,25 @@ class NgoBannerWidget extends StatelessWidget {
                       banner.bannerImage,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 50),
+                      gaplessPlayback: true,                  // ✅ keeps old frame until new loads
+                      frameBuilder: (context, child, frame, wasSync) {
+                        if (wasSync || frame != null) return child;
+                        return  Shimmer.fromColors(
+                          baseColor: Colors.white,
+                          highlightColor: Colors.grey.shade200,
+                          child: Container(
+                            margin: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12)
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.teal.withOpacity(0.08),
+                        child: const Icon(Icons.broken_image, size: 50, color: Colors.teal),
+                      ),
                     ),
                   );
                 }).toList(),
@@ -74,6 +91,7 @@ class NgoBannerWidget extends StatelessWidget {
                   autoPlay: true,
                   autoPlayInterval: const Duration(seconds: 4),
                   enableInfiniteScroll: true,
+                  pauseAutoPlayOnTouch: false,
                 ),
               ),
             )

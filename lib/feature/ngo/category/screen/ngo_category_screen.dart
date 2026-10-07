@@ -27,9 +27,7 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
     _selectedCategoryName = widget.initialCategory;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // FILTER SERVICES BY SELECTED CATEGORY
-  // ═══════════════════════════════════════════════════════════════
+
   List<NgoServiceData> get _filteredServices {
     if (_selectedCategoryName == null || _selectedCategoryName == "All") {
       return serviceController.services;
@@ -123,7 +121,7 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
             children: [
               // ── LEFT: Category List ──
               Container(
-                width: 110,
+                width: 90,
                 color: Colors.white,
                 child: ListView.builder(
                   itemCount: categoryController.categories.length + 1,
@@ -210,9 +208,7 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // CATEGORY TILE
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildCategoryTile({
     required String name,
     String? image,
@@ -229,55 +225,55 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
       },
       child: Stack(
         children: [
-          SizedBox(
+          Container(
             width: double.infinity,
-            child: Card(
-              elevation: 0.3,
-              color: isSelected ? color : Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  spacing: 10,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    image != null && image.isNotEmpty
-                        ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        image,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            icon,
-                            size: 20,
-                            color: isSelected ? Colors.white : color,
-                          );
-                        },
-                      ),
-                    )
-                        : Icon(
-                      icon,
-                      size: 35,
-                      color: isSelected ? Colors.white : color,
-                    ),
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.white : Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+            margin: EdgeInsets.only(bottom: 10,right: 10),
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: isSelected ? color : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isSelected ? color : Colors.teal, width: 0.3)
+            ),
+            child: Column(
+              spacing: 10,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                image != null && image.isNotEmpty
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    image,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        icon,
+                        size: 20,
+                        color: isSelected ? Colors.white : color,
+                      );
+                    },
+                  ),
+                )
+                    : Icon(
+                  icon,
+                  size: 35,
+                  color: isSelected ? Colors.white : color,
                 ),
-              ),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                    isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? Colors.white : Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -288,8 +284,8 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
               const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withOpacity(0.2)
-                    : Colors.grey.shade200,
+                    ? Colors.white
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -297,7 +293,7 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? Colors.black : Colors.black,
                 ),
               ),
             ),

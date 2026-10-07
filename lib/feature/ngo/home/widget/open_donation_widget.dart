@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart'; // ✅ shimmer import
 import '../../services/controller/ngo_service_controller.dart';
 import '../../services/model/ngo_service_model.dart';
 import '../../services/screen/donation_details_screen.dart';
@@ -41,18 +42,18 @@ class OpenDonationWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(headline,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            headline,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           SizedBox(
             height: 400,
             child: Obx(() {
-              // ── Loading ──
-              if (controller.isLoading.value && controller.services.isEmpty) {
-                return const Center(
-                  child: CircularProgressIndicator(color: primaryColor),
-                );
+              // ── Loading (Shimmer) ──
+              if (controller.isLoading.value &&
+                  controller.services.isEmpty) {
+                return _buildShimmerGrid();
               }
 
               // ── Empty ──
@@ -100,9 +101,152 @@ class OpenDonationWidget extends StatelessWidget {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // SHIMMER GRID — same shape as the real card grid
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildShimmerGrid() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade200,
+      highlightColor: Colors.grey.shade50,
+      child: GridView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        itemCount: 4, // placeholder count
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate:
+        const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.7,
+        ),
+        itemBuilder: (context, index) => _buildShimmerCard(),
+      ),
+    );
+  }
+
+  Widget _buildShimmerCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Image placeholder ──
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Content placeholders ──
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title bar
+                Container(
+                  width: 90,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Category bar
+                Container(
+                  width: 60,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Progress bar
+                Container(
+                  width: double.infinity,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Amount row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Container(
+                      width: 40,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Bottom row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Container(
+                      width: 40,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // SERVICE CARD (uses NgoServiceData from API)
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildDonationCard(BuildContext context,NgoServiceData service) {
+  Widget _buildDonationCard(BuildContext context, NgoServiceData service) {
     final raised = service.progress.totalAmount;
     final target = service.progress.targetAmount;
     final donor = service.progress.donor;
@@ -157,6 +301,7 @@ class OpenDonationWidget extends StatelessWidget {
                       primaryImage,
                       fit: BoxFit.cover,
                       width: double.infinity,
+                      gaplessPlayback: true, // ✅ smooth image swap
                       errorBuilder: (_, __, ___) => Container(
                         color: color.withOpacity(0.1),
                         child: Icon(
@@ -212,7 +357,7 @@ class OpenDonationWidget extends StatelessWidget {
                       ),
                     ),
 
-                  // Donor count badge (top-right, replaces rating)
+                  // Donor count badge (top-right)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -295,7 +440,7 @@ class OpenDonationWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "₹$raised",
+                        "₹${raised.toStringAsFixed(0)}",
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
