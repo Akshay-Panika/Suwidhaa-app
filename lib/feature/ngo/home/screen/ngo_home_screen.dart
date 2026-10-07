@@ -3,6 +3,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../search/screen/ngo_search_screen.dart';
 import '../../services/screen/donation_details_screen.dart';
 import '../controller/ngo_category_controller.dart';
 import '../model/ngo_category_model.dart';
@@ -43,14 +44,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        Scaffold(
-                          appBar: AppBar(
-                            title: const Text('Search'),
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                          ),
-                          body: const Center(child: Text('Search Screen')),
-                        ),
+                    NgoSearchScreen(),
                   ),
                 );
               },
@@ -71,8 +65,13 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
               }
 
               // ── Loaded ──
-              return Padding(
+              return Container(
+                decoration: BoxDecoration(
+                  border: Border.all(width: 0.3,color: Colors.teal),
+                  borderRadius: BorderRadius.circular(12)
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
+                margin: const EdgeInsets.only(left: 10,right: 10,bottom: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

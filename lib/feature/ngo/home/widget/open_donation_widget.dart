@@ -290,103 +290,46 @@ class OpenDonationWidget extends StatelessWidget {
           children: [
             // ── Image + Badges ──
             Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(14),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
+                child: primaryImage != null
+                    ? Image.network(
+                  primaryImage,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  gaplessPlayback: true, // ✅ smooth image swap
+                  errorBuilder: (_, __, ___) => Container(
+                    color: color.withOpacity(0.1),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: color,
+                      size: 40,
                     ),
-                    child: primaryImage != null
-                        ? Image.network(
-                      primaryImage,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      gaplessPlayback: true, // ✅ smooth image swap
-                      errorBuilder: (_, __, ___) => Container(
-                        color: color.withOpacity(0.1),
-                        child: Icon(
-                          Icons.image_not_supported,
+                  ),
+                  loadingBuilder:
+                      (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: color.withOpacity(0.06),
+                      child: Center(
+                        child: CircularProgressIndicator(
                           color: color,
-                          size: 40,
+                          strokeWidth: 2,
                         ),
                       ),
-                      loadingBuilder:
-                          (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: color.withOpacity(0.06),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: color,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                        : Container(
-                      color: color.withOpacity(0.1),
-                      child: Icon(
-                        Icons.volunteer_activism,
-                        color: color,
-                        size: 40,
-                      ),
-                    ),
+                    );
+                  },
+                )
+                    : Container(
+                  color: color.withOpacity(0.1),
+                  child: Icon(
+                    Icons.volunteer_activism,
+                    color: color,
+                    size: 40,
                   ),
-
-                  // Category badge (top-left)
-                  if (service.categoryName != null)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          service.categoryName!,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Donor count badge (top-right)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.people,
-                              color: Colors.white, size: 11),
-                          const SizedBox(width: 2),
-                          Text(
-                            "$donor",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
@@ -396,35 +339,37 @@ class OpenDonationWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    service.name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  if (service.categoryName != null)
-                    Row(
-                      children: [
-                        Icon(Icons.category_outlined,
-                            size: 11, color: Colors.grey[600]),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            service.categoryName!,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        service.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          service.categoryName!,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: color,
                           ),
                         ),
-                      ],
-                    ),
+                      )
+                    ],
+                  ),
+
                   const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
