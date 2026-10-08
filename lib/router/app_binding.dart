@@ -8,6 +8,9 @@ import '../feature/college/controller/college_booking_controller.dart';
 import '../feature/college/controller/college_controller.dart';
 import '../feature/college/controller/room_controller.dart';
 import '../feature/college/controller/tiffin_controller.dart';
+import '../feature/it_service/home/controller/it_service_banner_controller.dart';
+import '../feature/it_service/home/controller/it_service_category_controller.dart';
+import '../feature/it_service/service/controller/it_service_controller.dart';
 import '../feature/location/controller/location_controller.dart';
 import '../feature/ngo/home/controller/ngo_banner_controller.dart';
 import '../feature/ngo/home/controller/ngo_category_controller.dart';
@@ -77,5 +80,8 @@ class AppBindings implements Bindings {
     Get.lazyPut<NgoServiceController>(() => NgoServiceController(), fenix: true);
     Get.lazyPut<NgoStaffController>(() => NgoStaffController(), fenix: true);
     Get.lazyPut<NgoHistoryController>(() => NgoHistoryController(), fenix: true);
+    Get.lazyPut<ItServiceBannerController>(() => ItServiceBannerController(), fenix: true);
+    Get.lazyPut<ItServiceCategoryController>(() => ItServiceCategoryController(), fenix: true);
+    Get.lazyPut<ItServiceController>(() => ItServiceController(), fenix: true);
   }
 }

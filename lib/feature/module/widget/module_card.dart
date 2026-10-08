@@ -7,7 +7,7 @@ import 'package:untitled/core/widget/flutter_toast.dart';
 import '../../../core/utils/app_color.dart';
 import '../../college/dashboard/screen/college_dashboard_screen.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
-import '../../it_service/screen/it_services_dashboard_screen.dart';
+import '../../it_service/dashboard/screen/it_service_dashboard_screen.dart';
 import '../../ngo/dashboard/screen/ngo_dashboard_screen.dart';
 import '../../ott/auth/screen/ott_splash_screen.dart';
 import '../../ott/dashboard/screen/ott_dashboard_screen.dart';
@@ -89,7 +89,7 @@ class _ModuleCardState extends State<ModuleCard> {
       'subtitle': 'Tech Support',
       'icon': Icons.build_circle_rounded,
       'color': AppColors.itServices,
-      'targetScreen': const ItServicesDashboardScreen(),
+      'targetScreen': const ItServiceDashboardScreen(),
       'gradient': [AppColors.itServices, AppColors.itServices.withOpacity(0.3)],
     },
     {

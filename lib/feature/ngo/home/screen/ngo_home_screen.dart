@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../../router/app_routes.dart';
 import '../../search/screen/ngo_search_screen.dart';
 import '../../services/screen/donation_details_screen.dart';
 import '../controller/ngo_category_controller.dart';
@@ -40,13 +42,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
             pinned: true,
             delegate: _StickySearchBoxDelegate(
               onSearchTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                    NgoSearchScreen(),
-                  ),
-                );
+                Get.toNamed(AppRoutes.ngoSearch);
               },
             ),
           ),

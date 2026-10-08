@@ -174,4 +174,13 @@ class ApiUrls {
       'v1/ngo/history/donor/$donorId/';
   static String ngoHistoryDetail(int id) => 'v1/ngo/history/$id/';
 
+  static const String itServiceBannerList = 'v1/it_service/banner/list/';
+  static const String itServiceCategoryList = 'v1/it_service/category/list/';
+
+  // ==================== IT SERVICE (PROJECTS) ====================
+  static const String itServiceList = 'v1/it_service/service/list/';
+  static String itServiceDetail(int id) => 'v1/it_service/service/$id/';
+  static String itServiceListByCategory(int categoryId) =>
+      'v1/it_service/service/list/?category=$categoryId';
+
 }

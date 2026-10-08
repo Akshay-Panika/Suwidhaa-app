@@ -1,15 +1,15 @@
-// lib/screens/dashboard/it_service_order_screen.dart
+// lib/screens/dashboard/it_service_order_widget.dart
 import 'package:flutter/material.dart';
-import '../../../core/utils/app_color.dart';
+import '../../../../core/utils/app_color.dart';
 
-class ItServiceOrderScreen extends StatefulWidget {
-  const ItServiceOrderScreen({super.key});
+class ItServiceOrderWidget extends StatefulWidget {
+  const ItServiceOrderWidget({super.key});
 
   @override
-  State<ItServiceOrderScreen> createState() => _ItServiceOrderScreenState();
+  State<ItServiceOrderWidget> createState() => _ItServiceOrderWidgetState();
 }
 
-class _ItServiceOrderScreenState extends State<ItServiceOrderScreen> {
+class _ItServiceOrderWidgetState extends State<ItServiceOrderWidget> {
   String _selectedFilter = 'All';
   int _selectedIndex = 0;
 
@@ -140,114 +140,91 @@ class _ItServiceOrderScreenState extends State<ItServiceOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        surfaceTintColor: AppColors.white,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'My Projects',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            color: AppColors.textMain,
-          ),
-        ),
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: AppColors.textMain),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: AppColors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _filterOptions.length,
-                itemBuilder: (context, index) {
-                  final filter = _filterOptions[index];
-                  final isSelected = _selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(
-                        filter,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isSelected ? AppColors.white : AppColors.textMain,
-                        ),
-                      ),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedFilter = filter;
-                        });
-                      },
-                      backgroundColor: AppColors.background,
-                      selectedColor: AppColors.itServices,
-                      checkmarkColor: AppColors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          Expanded(
-            child: _filteredOrders.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.inbox_rounded,
-                    size: 64,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No projects found',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try changing the filter',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _filteredOrders.length,
+    return Column(
+      children: [
+        Container(
+          color: AppColors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _filterOptions.length,
               itemBuilder: (context, index) {
-                final order = _filteredOrders[index];
-                return _buildOrderCard(order);
+                final filter = _filterOptions[index];
+                final isSelected = _selectedFilter == filter;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(
+                      filter,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected ? AppColors.white : AppColors.textMain,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                    },
+                    backgroundColor: AppColors.background,
+                    selectedColor: AppColors.itServices,
+                    checkmarkColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                );
               },
             ),
           ),
-        ],
-      ),
+        ),
+        _filteredOrders.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inbox_rounded,
+                size: 64,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No projects found',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try changing the filter',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        )
+            : ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          itemCount: _filteredOrders.length,
+          itemBuilder: (context, index) {
+            final order = _filteredOrders[index];
+            return _buildOrderCard(order);
+          },
+        ),
+      ],
     );
   }
 

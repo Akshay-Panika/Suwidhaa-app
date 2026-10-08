@@ -10,6 +10,5 @@ class AppRoutes {
   static const String teacherDashboard = '/teacher-dashboard';
   static const String studentList = '/student-list';
   static const String ottDashboard = '/ott-dashboard';
-
-
+  static const String ngoSearch = '/ngo-search';
 }

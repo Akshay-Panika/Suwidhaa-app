@@ -46,9 +46,6 @@ class _NgoSearchScreenState extends State<NgoSearchScreen> {
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // FILTER LOGIC — matches name, category, description
-  // ═══════════════════════════════════════════════════════════════
   List<NgoServiceData> get _results {
     if (_query.isEmpty) return [];
 
@@ -63,9 +60,7 @@ class _NgoSearchScreenState extends State<NgoSearchScreen> {
     }).toList();
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // CATEGORY COLOR MAP
-  // ═══════════════════════════════════════════════════════════════
+
   Color _colorForCategory(String? name) {
     final lower = (name ?? '').toLowerCase();
     if (lower.contains("education")) return Colors.blue;
@@ -336,9 +331,7 @@ class _NgoSearchScreenState extends State<NgoSearchScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // EMPTY STATES
-  // ═══════════════════════════════════════════════════════════════
+
   Widget _buildEmptyPrompt() {
     return Center(
       child: Padding(

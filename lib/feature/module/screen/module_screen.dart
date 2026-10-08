@@ -9,7 +9,7 @@ import '../../auth/controller/auth_controller.dart';
 import '../widget/module_banner_card.dart';
 import '../widget/module_card.dart';
 import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
-import '../../it_service/screen/it_services_dashboard_screen.dart';
+import '../../it_service/dashboard/screen/it_service_dashboard_screen.dart';
 
 
 class ModuleScreen extends StatefulWidget {
@@ -49,7 +49,7 @@ class _ModuleScreenState extends State<ModuleScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        'targetScreen': const ItServicesDashboardScreen(),
+        'targetScreen': const ItServiceDashboardScreen(),
       },
       {
         'headline': '🎓 ADMISSION OPEN 2026',
