@@ -178,9 +178,37 @@ class ApiUrls {
   static const String itServiceCategoryList = 'v1/it_service/category/list/';
 
   // ==================== IT SERVICE (PROJECTS) ====================
-  static const String itServiceList = 'v1/it_service/service/list/';
-  static String itServiceDetail(int id) => 'v1/it_service/service/$id/';
-  static String itServiceListByCategory(int categoryId) =>
-      'v1/it_service/service/list/?category=$categoryId';
+  // ==================== IT SERVICE (PROJECTS) ====================
+  /// 🆕 POST — create booking
+  static const String itServiceBookingCreate =
+      'v1/it_service/booking/create/';
+
+  /// LIST — user_id required for `is_booked` flag
+  static String itServiceList(int userId) {
+    return 'v1/it_service/service/list/?user_id=$userId';
+  }
+
+  /// LIST by category — user_id required for `is_booked` flag
+  static String itServiceListByCategory(int categoryId, int userId) {
+    return 'v1/it_service/service/list/?category=$categoryId&user_id=$userId';
+  }
+
+  /// DETAIL — user_id required for `is_booked` flag
+  static String itServiceDetail(int id, int userId) {
+    return 'v1/it_service/service/$id/?user_id=$userId';
+  }
+
+  static String itServiceBookedList(int userId, {String? status}) {
+    final base = 'v1/it_service/service/booked/list/?user_id=$userId';
+    if (status != null && status.isNotEmpty) {
+      return '$base&status=$status';
+    }
+    return base;
+  }
+
+  /// 🆕 DELETE — unbook (hard delete) a booking
+  static String itServiceBookingDelete(int bookingId) {
+    return 'v1/it_service/booking/$bookingId/';
+  }
 
 }

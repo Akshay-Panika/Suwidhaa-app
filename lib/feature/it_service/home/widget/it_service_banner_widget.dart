@@ -14,7 +14,8 @@ class ItServiceBannerWidget extends StatefulWidget {
 }
 
 class _ItServiceBannerWidgetState extends State<ItServiceBannerWidget> {
-  final CarouselSliderController _carouselController = CarouselSliderController();
+  final CarouselSliderController _carouselController =
+  CarouselSliderController();
   int _currentBannerIndex = 0;
 
   @override
@@ -23,7 +24,7 @@ class _ItServiceBannerWidgetState extends State<ItServiceBannerWidget> {
     Get.find<ItServiceBannerController>();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 0,horizontal: 10),
       child: Obx(() {
         // ---------- LOADING ----------
         if (controller.isLoading.value && controller.banners.isEmpty) {
@@ -33,7 +34,7 @@ class _ItServiceBannerWidgetState extends State<ItServiceBannerWidget> {
               baseColor: Colors.grey.shade300,
               highlightColor: Colors.grey.shade100,
               child: Container(
-                height: 200,
+                height: 160,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -46,94 +47,86 @@ class _ItServiceBannerWidgetState extends State<ItServiceBannerWidget> {
 
         // ---------- EMPTY ----------
         if (controller.banners.isEmpty) {
-          return Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppColors.itServices.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.image_not_supported,
-                size: 50,
-                color: Colors.grey,
-              ),
-            ),
-          );
+          return SizedBox.shrink();
         }
 
         // ---------- DATA ----------
-        return Stack(
+        return Column(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: CarouselSlider(
-                controller: _carouselController,
-                options: CarouselOptions(
-                  height: 200,
-                  viewportFraction: 1.0,
-                  enableInfiniteScroll: true,
-                  autoPlay: true,
-                  autoPlayInterval: const Duration(seconds: 4),
-                  autoPlayAnimationDuration:
-                  const Duration(milliseconds: 800),
-                  pauseAutoPlayOnTouch: true,
-                  onPageChanged: (index, reason) {
-                    setState(() => _currentBannerIndex = index);
-                  },
-                ),
-                items: controller.banners.map((banner) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.network(
-                      banner.bannerImage,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      gaplessPlayback: true,
-                      frameBuilder: (context, child, frame, wasSync) {
-                        if (wasSync || frame != null) return child;
-                        return Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300,
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(color: Colors.white),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.itServices.withOpacity(0.08),
-                        child: const Icon(
-                          Icons.broken_image,
-                          size: 50,
-                          color: AppColors.itServices,
+            CarouselSlider(
+              controller: _carouselController,
+              options: CarouselOptions(
+                height: 160,
+                viewportFraction: 0.75,
+                padEnds: false,
+                enlargeCenterPage: false,
+                enableInfiniteScroll: true,
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 4),
+                autoPlayAnimationDuration:
+                const Duration(milliseconds: 800),
+                pauseAutoPlayOnTouch: true,
+                onPageChanged: (index, reason) {
+                  setState(() => _currentBannerIndex = index);
+                },
+              ),
+              items: controller.banners.map((banner) {
+                return Builder(
+                  builder: (context) {
+                    return Padding(
+                      // 👇 har banner ke around horizontal gap
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          banner.bannerImage,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          gaplessPlayback: true,
+                          frameBuilder: (context, child, frame, wasSync) {
+                            if (wasSync || frame != null) return child;
+                            return Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300,
+                              highlightColor: Colors.grey.shade100,
+                              child: Container(color: Colors.white),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.itServices.withOpacity(0.08),
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: AppColors.itServices,
+                                ),
+                              ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                    );
+                  },
+                );
+              }).toList(),
             ),
 
+            const SizedBox(height: 10),
+
             // ---------- DOT INDICATORS ----------
-            Positioned(
-              bottom: 14,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: controller.banners.asMap().entries.map((entry) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: _currentBannerIndex == entry.key ? 28 : 8,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
-                      color: _currentBannerIndex == entry.key
-                          ? AppColors.white
-                          : AppColors.white.withOpacity(0.4),
-                    ),
-                  );
-                }).toList(),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: controller.banners.asMap().entries.map((entry) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: _currentBannerIndex == entry.key ? 28 : 8,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: _currentBannerIndex == entry.key
+                        ? AppColors.itServices
+                        : AppColors.itServices.withOpacity(0.3),
+                  ),
+                );
+              }).toList(),
             ),
           ],
         );

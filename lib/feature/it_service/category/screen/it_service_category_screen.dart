@@ -100,7 +100,7 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         surfaceTintColor: AppColors.itServices,
@@ -138,7 +138,6 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
               color: AppColors.white,
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: sideCats.length,
                 itemBuilder: (context, index) {
                   final category = sideCats[index];
@@ -150,7 +149,7 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 8),
+                          vertical: 8, horizontal: 8),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.itServices.withOpacity(0.08)
@@ -168,8 +167,8 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
+                            width: double.infinity,
+                            height: 60,
                             decoration: BoxDecoration(
                               gradient: isSelected
                                   ? LinearGradient(colors: [
@@ -181,33 +180,20 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                               color: isSelected
                                   ? null
                                   : category['color'].withOpacity(0.12),
-                              shape: BoxShape.circle,
-                              boxShadow: isSelected
-                                  ? [
-                                BoxShadow(
-                                  color: AppColors.itServices
-                                      .withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                                  : null,
                             ),
                             child: category['image'] != null
-                                ? ClipOval(
-                              child: Image.network(
-                                category['image'],
-                                fit: BoxFit.cover,
-                                width: 44,
-                                height: 44,
-                                gaplessPlayback: true,
-                                errorBuilder: (_, __, ___) => Icon(
-                                  category['icon'],
-                                  color: isSelected
-                                      ? AppColors.white
-                                      : category['color'],
-                                  size: 22,
-                                ),
+                                ? Image.network(
+                              category['image'],
+                              fit: BoxFit.cover,
+                              width: 44,
+                              height: 44,
+                              gaplessPlayback: true,
+                              errorBuilder: (_, __, ___) => Icon(
+                                category['icon'],
+                                color: isSelected
+                                    ? AppColors.white
+                                    : category['color'],
+                                size: 22,
                               ),
                             )
                                 : Icon(
@@ -215,14 +201,14 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                               color: isSelected
                                   ? AppColors.white
                                   : category['color'],
-                              size: 22,
+                              size: 30,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 10),
                           Text(
                             category['name'],
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
@@ -322,7 +308,7 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                           gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 1,
-                            childAspectRatio: 1.3,
+                            childAspectRatio: 1.6,
                             crossAxisSpacing: 10,
                             mainAxisSpacing: 10,
                           ),
@@ -347,35 +333,39 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
   Widget _buildServiceCard(ItServiceData service) {
     final categoryName = service.category?.name ?? '';
     final categoryImage = service.category?.image ?? '';
+    final isBooked = service.isBooked; // 🆕 from API
 
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ItServiceDetailsScreen(service: service),
+            builder: (context) => ItServiceDetailsScreen(
+              serviceId: service.id,
+            ),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+                  top: Radius.circular(10),
                 ),
                 child: Stack(
                   children: [
@@ -393,6 +383,7 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                         ),
                       ),
                     ),
+                    // Category chip — top-left
                     Positioned(
                       top: 8,
                       left: 8,
@@ -431,64 +422,79 @@ class _ItServiceCategoryScreenState extends State<ItServiceCategoryScreen> {
                         ),
                       ),
                     ),
-                    Positioned(
-                      bottom: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.favorite_border_rounded,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.all(6),
+              child: Row(
                 children: [
-                  Text(
-                    service.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMain,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '₹${service.price}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.itServices,
-                        ),
-                      ),
-                      if (service.oldPrice.isNotEmpty)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '₹${service.oldPrice}',
+                          service.title,
                           style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textSecondary,
-                            decoration: TextDecoration.lineThrough,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textMain,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              '₹${service.price}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.itServices,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            if (service.oldPrice.isNotEmpty)
+                              Text(
+                                '₹${service.oldPrice}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                  // 🆕 Booked icon — bottom-right, only if booked
+                  // if (isBooked)
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color:isBooked?  Colors.green : AppColors.itServices, width: 0.6),
+                      ),
+                      child:  Row(
+                        children: [
+                          Icon(Icons.bookmark,
+                              size: 12, color:isBooked?  Colors.green :AppColors.itServices),
+                          SizedBox(width: 4),
+                          Text(
+                            isBooked? "Booked":"Book Now",
+                            style: TextStyle(
+                              color: isBooked?  Colors.green : AppColors.itServices,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

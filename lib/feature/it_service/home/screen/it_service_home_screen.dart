@@ -110,7 +110,41 @@ class ItServiceHomeScreenState extends State<ItServiceHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---------- Banner ----------
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  height: 100,
+                  color: AppColors.itServices,
+                  padding: EdgeInsets.only(top: 50),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      )
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 12,vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400,width: 0.6),
+                    color:  Colors.white,
+                    borderRadius: BorderRadius.circular(16)
+                  ),
+                  child: Row(
+                    spacing: 10,
+                    children: [
+                      Icon(Icons.search),
+                      Text("Search for 'Service'")
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const ItServiceBannerWidget(),
             const SizedBox(height: 16),
 
@@ -182,17 +216,23 @@ class ItServiceHomeScreenState extends State<ItServiceHomeScreen> {
               final list = _serviceCtrl.services.take(6).toList();
 
               return SizedBox(
-                height: 220,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                height: 400,
+                child: GridView.builder(
+                  // shrinkWrap: true,
                   itemCount: list.length,
+                 padding: EdgeInsets.symmetric(horizontal: 12),
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6
+                  ),
                   itemBuilder: (context, index) {
                     return _buildHomeServiceCard(list[index]);
-                  },
-                ),
+                  },),
               );
             }),
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -205,24 +245,25 @@ class ItServiceHomeScreenState extends State<ItServiceHomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ItServiceDetailsScreen(service: service),
+            builder: (context) => ItServiceDetailsScreen(
+                serviceId: service.id,
+            ),
           ),
         );
       },
       child: Container(
-        width: 170,
-        margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
               color: AppColors.shadow,
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -248,27 +289,45 @@ class ItServiceHomeScreenState extends State<ItServiceHomeScreen> {
                         ),
                       ),
                     ),
-                    if (service.category != null)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.itServices,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            service.category!.name,
-                            style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+                     if (service.category != null)
+                     Positioned(
+                         top: 8,
+                         left: 8,
+                         child: Container(
+                           padding: const EdgeInsets.symmetric(
+                               horizontal: 8, vertical: 3),
+                           decoration: BoxDecoration(
+                             color: AppColors.itServices,
+                             borderRadius: BorderRadius.circular(6),
+                           ),
+                           child: Row(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               if (service.category!.image.isNotEmpty)
+                                 ClipOval(
+                                   child: Image.network(
+                                     service.category!.image,
+                                     width: 14,
+                                     height: 14,
+                                     fit: BoxFit.cover,
+                                     errorBuilder: (_, __, ___) =>
+                                     const SizedBox.shrink(),
+                                   ),
+                                 ),
+                               if (service.category!.name.isNotEmpty)
+                                 const SizedBox(width: 4),
+                               Text(
+                                 service.category!.name,
+                                 style: const TextStyle(
+                                   color: AppColors.white,
+                                   fontSize: 9,
+                                   fontWeight: FontWeight.bold,
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                       ),
                   ],
                 ),
               ),
@@ -276,42 +335,71 @@ class ItServiceHomeScreenState extends State<ItServiceHomeScreen> {
 
             // ---------- Info ----------
             Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.all(6),
+              child: Row(
                 children: [
-                  Text(
-                    service.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMain,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '₹${service.price}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.itServices,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      if (service.oldPrice.isNotEmpty)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '₹${service.oldPrice}',
+                          service.title,
                           style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textMain,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              '₹${service.price}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.itServices,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            if (service.oldPrice.isNotEmpty)
+                              Text(
+                                '₹${service.oldPrice}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color:service.isBooked?  Colors.green : AppColors.itServices, width: 0.6),
+                    ),
+                    child:  Row(
+                      children: [
+                        Icon(Icons.bookmark,
+                            size: 12, color: service.isBooked?  Colors.green :AppColors.itServices),
+                        SizedBox(width: 4),
+                        Text(
+                          service.isBooked? "Booked":"Book Now",
+                          style: TextStyle(
+                            color: service.isBooked?  Colors.green :AppColors.itServices,
                             fontSize: 10,
-                            color: AppColors.textSecondary,
-                            decoration: TextDecoration.lineThrough,
+                            fontWeight: FontWeight.w500
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

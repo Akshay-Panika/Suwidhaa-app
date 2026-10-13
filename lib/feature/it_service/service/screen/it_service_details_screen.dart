@@ -1,641 +1,224 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:untitled/core/widget/flutter_toast.dart';
 
 import '../../../../core/utils/app_color.dart';
+import '../controller/it_service_controller.dart';
 import '../model/it_service_model.dart';
 
 class ItServiceDetailsScreen extends StatefulWidget {
-  final ItServiceData service;
+  final int serviceId;
 
   const ItServiceDetailsScreen({
     super.key,
-    required this.service,
+    required this.serviceId,
   });
 
   @override
-  State<ItServiceDetailsScreen> createState() =>
-      _ItServiceDetailsScreenState();
+  State<ItServiceDetailsScreen> createState() => _ItServiceDetailsScreenState();
 }
 
-class _ItServiceDetailsScreenState extends State<ItServiceDetailsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _messageController = TextEditingController();
-  String _selectedBudget = '₹50,000 - ₹1,00,000';
-  String _selectedTimeline = '1-2 weeks';
+class _ItServiceDetailsScreenState extends State<ItServiceDetailsScreen> {
+  final _scrollController = ScrollController();
+
+  bool _isFavorite = false;
   bool _isLoading = false;
+  bool _isFetching = true;
+  String? _fetchError;
 
-  final List<String> _budgetOptions = [
-    '₹50,000 - ₹1,00,000',
-    '₹1,00,000 - ₹2,50,000',
-    '₹2,50,000 - ₹5,00,000',
-    '₹5,00,000 - ₹10,00,000',
-    '₹10,00,000+',
-  ];
-
-  final List<String> _timelineOptions = [
-    '1-2 weeks',
-    '2-4 weeks',
-    '1-2 months',
-    '2-3 months',
-    '3-6 months',
-  ];
+  ItServiceData? _service;
 
   final List<Map<String, dynamic>> _projectFeatures = [
-    {'icon': Icons.code_rounded, 'label': 'Custom Development', 'color': AppColors.itServices},
-    {'icon': Icons.verified, 'label': 'Quality Assurance', 'color': AppColors.success},
-    {'icon': Icons.timeline, 'label': 'Timely Delivery', 'color': AppColors.primary},
-    {'icon': Icons.support_agent, 'label': '24/7 Support', 'color': AppColors.school},
-    {'icon': Icons.source, 'label': 'Source Code Included', 'color': AppColors.ott},
-    {'icon': Icons.security, 'label': 'Data Security', 'color': AppColors.ngo},
-    {'icon': Icons.sync, 'label': 'Regular Updates', 'color': AppColors.accent},
-    {'icon': Icons.people, 'label': 'Dedicated Team', 'color': AppColors.ecommerce},
+    {
+      'icon': Icons.code_rounded,
+      'label': 'Custom Development',
+      'color': AppColors.itServices
+    },
+    {
+      'icon': Icons.verified_rounded,
+      'label': 'Quality Assurance',
+      'color': AppColors.success
+    },
+    {
+      'icon': Icons.timeline_rounded,
+      'label': 'Timely Delivery',
+      'color': AppColors.primary
+    },
+    {
+      'icon': Icons.support_agent_rounded,
+      'label': '24/7 Support',
+      'color': AppColors.school
+    },
+    {
+      'icon': Icons.source_rounded,
+      'label': 'Source Code',
+      'color': AppColors.ott
+    },
+    {
+      'icon': Icons.security_rounded,
+      'label': 'Data Security',
+      'color': AppColors.ngo
+    },
+    {
+      'icon': Icons.sync_rounded,
+      'label': 'Regular Updates',
+      'color': AppColors.accent
+    },
+    {
+      'icon': Icons.people_rounded,
+      'label': 'Dedicated Team',
+      'color': AppColors.ecommerce
+    },
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _fetchService();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _messageController.dispose();
-    super.dispose();
-  }
+  Future<void> _fetchService() async {
+    setState(() {
+      _isFetching = true;
+      _fetchError = null;
+    });
 
-  void _submitEnquiry() {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    try {
+      final ctrl = Get.find<ItServiceController>();
+      final fresh = await ctrl.getServiceById(widget.serviceId);
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-            Text('✅ Enquiry sent successfully! We\'ll contact you soon.'),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 3),
-          ),
-        );
-        _nameController.clear();
-        _emailController.clear();
-        _phoneController.clear();
-        _messageController.clear();
+      if (!mounted) return;
+
+      if (fresh == null) {
+        setState(() {
+          _isFetching = false;
+          _fetchError = 'Service not found';
+        });
+        return;
+      }
+
+      setState(() {
+        _service = fresh;
+        _isFetching = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isFetching = false;
+        _fetchError = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final service = widget.service;
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.itServices,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          service.title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textMain,
-          ),
-        ),
-        flexibleSpace: Container(color: AppColors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textMain, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border_rounded,
-                color: AppColors.textMain, size: 22),
-            onPressed: () {},
-          ),
-          SizedBox(width: 10,)
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50),
-          child: Container(
-            color: AppColors.white,
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: AppColors.itServices,
-              indicatorWeight: 3,
-              labelColor: AppColors.itServices,
-              unselectedLabelColor: AppColors.textSecondary,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-              tabs: const [
-                Tab(text: '📋 Overview'),
-                Tab(text: '✨ Features'),
-                Tab(text: '📩 Enquire'),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOverviewTab(service),
-          _buildFeaturesTab(),
-          _buildEnquireTab(),
-        ],
-      ),
-    );
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  // ====== TAB 1: OVERVIEW ======
-  Widget _buildOverviewTab(ItServiceData service) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Hero image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              service.image,
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 200,
-                color: AppColors.background,
-                child: const Icon(
-                  Icons.image_not_supported_rounded,
-                  size: 60,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+  // ===== SEND ENQUIRY HANDLER =====
+  Future<void> _onSendEnquiryPressed() async {
+    FocusScope.of(context).unfocus();
 
-          // Title
-          Text(
-            service.title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
-            ),
-          ),
-          const SizedBox(height: 6),
+    final service = _service;
+    if (service == null) return;
 
-          // Category chip
-          if (service.category != null)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.itServices.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (service.category!.image.isNotEmpty)
-                    ClipOval(
-                      child: Image.network(
-                        service.category!.image,
-                        width: 16,
-                        height: 16,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                        const SizedBox.shrink(),
-                      ),
-                    ),
-                  if (service.category!.image.isNotEmpty)
-                    const SizedBox(width: 6),
-                  Text(
-                    service.category!.name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.itServices,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 12),
+    setState(() => _isLoading = true);
 
-          // Price card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Project Price',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '₹${service.price}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.itServices,
-                      ),
-                    ),
-                    if (service.oldPrice.isNotEmpty)
-                      Text(
-                        '₹${service.oldPrice}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+    final ctrl = Get.find<ItServiceController>();
+    final ok = await ctrl.createBooking(service.id);
 
-          // Description
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  service.description.isEmpty
-                      ? 'No description available.'
-                      : service.description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-          // Tech stack
-          if (service.techStack.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Technology Stack',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: service.techStack.map((tech) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.itServices.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.itServices.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.circle,
-                                size: 6, color: AppColors.itServices),
-                            const SizedBox(width: 6),
-                            Text(
-                              tech,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.itServices,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
+    if (ok) {
+      // ✅ Flip the local flag so the UI reflects "Booked"
+      setState(() {
+        _service = _service?.copyWith(isBooked: true);
+      });
+      _showEnquirySuccessDialog();
+    } else {
+      // ❌ Show error
+      final msg = ctrl.errorMessage.value.isEmpty
+          ? 'Failed to create booking'
+          : ctrl.errorMessage.value;
+      FlutterToast.error(msg);
+    }
   }
 
-  // ====== TAB 2: FEATURES ======
-  Widget _buildFeaturesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '✨ Key Features',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Everything included in this project',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 1,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: _projectFeatures.length,
-              itemBuilder: (context, index) {
-                final feature = _projectFeatures[index];
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: feature['color'].withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: feature['color'].withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Icon(feature['icon'],
-                          size: 28, color: feature['color']),
-                      const SizedBox(height: 6),
-                      Text(
-                        feature['label'],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: feature['color'],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  // ====== TAB 3: ENQUIRE ======
-  Widget _buildEnquireTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  // ===== ENQUIRY SUCCESS DIALOG =====
+  void _showEnquirySuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Form(
-          key: _formKey,
+        insetPadding: const EdgeInsets.all(24),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.send_rounded, color: AppColors.itServices),
-                  SizedBox(width: 10),
-                  Text(
-                    'Get a Quote',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 20),
 
-              TextFormField(
-                controller: _nameController,
-                decoration: _inputDecoration('Full Name *',
-                    'Enter your full name', Icons.person_outline_rounded),
-                validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please enter your name' : null,
+              const Text(
+                'Enquiry Sent!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                  letterSpacing: -0.3,
+                ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              TextFormField(
-                controller: _emailController,
-                decoration: _inputDecoration('Email Address *',
-                    'Enter your email', Icons.email_outlined),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!v.contains('@')) return 'Please enter a valid email';
-                  return null;
-                },
+              const Text(
+                'Thank you! Our team will contact you within 24 hours.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
               ),
-              const SizedBox(height: 14),
-
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: _inputDecoration('Phone Number *',
-                    'Enter your phone', Icons.phone_outlined),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Please enter your phone';
-                  }
-                  if (v.length < 10) return 'Enter a valid phone';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-
-              DropdownButtonFormField<String>(
-                value: _selectedBudget,
-                decoration: _inputDecoration('Budget Range', 'Select',
-                    Icons.currency_rupee_rounded),
-                items: _budgetOptions
-                    .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedBudget = v!),
-              ),
-              const SizedBox(height: 14),
-
-              DropdownButtonFormField<String>(
-                value: _selectedTimeline,
-                decoration: _inputDecoration('Project Timeline', 'Select',
-                    Icons.timer_outlined),
-                items: _timelineOptions
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedTimeline = v!),
-              ),
-              const SizedBox(height: 14),
-
-              TextFormField(
-                controller: _messageController,
-                maxLines: 3,
-                decoration: _inputDecoration(
-                    'Message *',
-                    'Tell us about your project...',
-                    Icons.message_outlined),
-                validator: (v) =>
-                (v == null || v.isEmpty) ? 'Please enter message' : null,
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitEnquiry,
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.itServices,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
+                  child: const Text(
+                    'Great!',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
                     ),
-                  )
-                      : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.send_rounded,
-                          color: AppColors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        'Send Enquiry',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -646,20 +229,620 @@ class _ItServiceDetailsScreenState extends State<ItServiceDetailsScreen>
     );
   }
 
-  InputDecoration _inputDecoration(
-      String label, String hint, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.itServices),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+  @override
+  Widget build(BuildContext context) {
+    // ===== LOADING STATE =====
+    if (_isFetching) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: AppColors.itServices,
+          title: const Text(
+            'Loading...',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+            ),
+          ),
+          leading: _buildCircleIconButton(
+            color: Colors.white,
+            icon: Icons.arrow_back_ios_new_rounded,
+            onTap: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.itServices),
+        ),
+      );
+    }
+
+    // ===== ERROR STATE =====
+    if (_fetchError != null || _service == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: AppColors.itServices,
+          title: const Text(
+            'Error',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+            ),
+          ),
+          leading: _buildCircleIconButton(
+            color: Colors.white,
+            icon: Icons.arrow_back_ios_new_rounded,
+            onTap: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 64,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _fetchError ?? 'Something went wrong',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _fetchService,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.itServices,
+                    foregroundColor: AppColors.white,
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final service = _service!;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      bottomNavigationBar: _buildBottomBar(),
+      appBar: AppBar(
+        backgroundColor: AppColors.itServices,
+        title: Text(
+          service.title
+              .replaceAll(RegExp(r'["""\u201C\u201D]'), '')
+              .trim(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.white,
+            letterSpacing: -0.2,
+          ),
+        ),
+        leading: _buildCircleIconButton(
+          color: Colors.white,
+          icon: Icons.arrow_back_ios_new_rounded,
+          onTap: () => Navigator.pop(context),
+        ),
       ),
-      filled: true,
-      fillColor: AppColors.background,
-      contentPadding:
-      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ===== HERO IMAGE =====
+            SizedBox(
+              height: 200,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    service.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppColors.background,
+                      child: const Icon(
+                        Icons.image_not_supported_rounded,
+                        size: 60,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: const [0.0, 0.5, 1.0],
+                        colors: [
+                          Colors.black.withOpacity(0.35),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.55),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (service.category != null)
+                    Positioned(
+                      left: 16,
+                      bottom: 20,
+                      child: _buildHeroChip(
+                        service.category!.name,
+                        service.category!.image,
+                      ),
+                    ),
+                  // 🆕 Booked ribbon — top-right
+                  if (service.isBooked)
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Booked',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ===== MAIN CONTENT =====
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service.title
+                        .replaceAll(RegExp(r'["""\u201C\u201D]'), '')
+                        .trim(),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textMain,
+                      height: 1.25,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '₹${service.price}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.itServices,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      if (service.oldPrice.isNotEmpty) ...[
+                        const SizedBox(width: 10),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '₹${service.oldPrice}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: AppColors.textSecondary,
+                              decoration: TextDecoration.lineThrough,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        _quickStat(
+                            Icons.timer_outlined, 'Timeline', '1-2 wks'),
+                        _divider(),
+                        _quickStat(Icons.star_rounded, 'Rating', '4.9'),
+                        _divider(),
+                        _quickStat(
+                            Icons.verified_rounded, 'Projects', '250+'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  _sectionTitle('About this service',
+                      icon: Icons.description_outlined),
+                  const SizedBox(height: 12),
+                  Text(
+                    service.description.isEmpty
+                        ? 'No description available.'
+                        : service.description,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      color: AppColors.textSecondary,
+                      height: 1.7,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  if (service.techStack.isNotEmpty) ...[
+                    _sectionTitle('Technology Stack',
+                        icon: Icons.memory_rounded),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: service.techStack.map((tech) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.itServices.withOpacity(0.15),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.itServices,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                tech,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMain,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+
+                  _sectionTitle('What\'s included',
+                      icon: Icons.auto_awesome),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Everything you get with this project',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 2.6,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: _projectFeatures.length,
+                    itemBuilder: (context, index) {
+                      final feature = _projectFeatures[index];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: feature['color'].withOpacity(0.15),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: feature['color'].withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                feature['icon'],
+                                size: 20,
+                                color: feature['color'],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                feature['label'],
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMain,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===== CIRCLE ICON BUTTON =====
+  Widget _buildCircleIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color color = AppColors.textMain,
+  }) {
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: color),
+      ),
+    );
+  }
+
+  // ===== HERO CATEGORY CHIP =====
+  Widget _buildHeroChip(String name, String image) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (image.isNotEmpty)
+            ClipOval(
+              child: Image.network(
+                image,
+                width: 18,
+                height: 18,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          if (image.isNotEmpty) const SizedBox(width: 8),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMain,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== FIXED BOTTOM CTA BAR =====
+  Widget _buildBottomBar() {
+    final isBooked = _service?.isBooked ?? false;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: (isBooked || _isLoading || _service == null)
+                ? null
+                : _onSendEnquiryPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.itServices,
+              foregroundColor: AppColors.white,
+              disabledBackgroundColor:
+              AppColors.itServices.withOpacity(0.4),
+              disabledForegroundColor: Colors.white70,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.white,
+              ),
+            )
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isBooked
+                      ? Icons.check_circle_rounded
+                      : Icons.send_rounded,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  isBooked ? 'Already Booked' : 'Send Enquiry',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===== SECTION TITLE =====
+  Widget _sectionTitle(String title, {IconData? icon}) {
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.itServices.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppColors.itServices),
+          ),
+          const SizedBox(width: 10),
+        ],
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textMain,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===== QUICK STAT =====
+  Widget _quickStat(IconData icon, String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: AppColors.itServices),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() {
+    return Container(
+      width: 1,
+      height: 40,
+      color: AppColors.textSecondary.withOpacity(0.15),
     );
   }
 }
