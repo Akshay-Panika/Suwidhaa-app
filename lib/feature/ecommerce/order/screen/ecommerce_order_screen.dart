@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class EcommerceProductOrderScreen extends StatefulWidget {
-  const EcommerceProductOrderScreen({super.key});
+class EcommerceOrderScreen extends StatefulWidget {
+  const EcommerceOrderScreen({super.key});
 
   @override
-  State<EcommerceProductOrderScreen> createState() => _EcommerceProductOrderScreenState();
+  State<EcommerceOrderScreen> createState() => _EcommerceOrderScreenState();
 }
 
-class _EcommerceProductOrderScreenState extends State<EcommerceProductOrderScreen> {
+class _EcommerceOrderScreenState extends State<EcommerceOrderScreen> {
   String _selectedFilter = 'All';
   int _selectedIndex = 0;
 

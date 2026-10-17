@@ -8,7 +8,7 @@ import '../../../core/utils/app_color.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../widget/module_banner_card.dart';
 import '../widget/module_card.dart';
-import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
+import '../../ecommerce/dashboard/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/dashboard/screen/it_service_dashboard_screen.dart';
 
 

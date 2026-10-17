@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'ecommerce_cart_screen.dart';
+import '../../cart/screen/ecommerce_cart_screen.dart';
 
-class EcommerceDetailsScreen extends StatefulWidget {
+class EcommerceProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
 
-  const EcommerceDetailsScreen({super.key, required this.product});
+  const EcommerceProductDetailsScreen({super.key, required this.product});
 
   @override
-  State<EcommerceDetailsScreen> createState() => _EcommerceDetailsScreenState();
+  State<EcommerceProductDetailsScreen> createState() => _EcommerceProductDetailsScreenState();
 }
 
-class _EcommerceDetailsScreenState extends State<EcommerceDetailsScreen> {
+class _EcommerceProductDetailsScreenState extends State<EcommerceProductDetailsScreen> {
   int _productCount = 1;
   bool _isFavorite = false;
   int _selectedSize = 0;

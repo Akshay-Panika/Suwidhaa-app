@@ -211,4 +211,32 @@ class ApiUrls {
     return 'v1/it_service/booking/$bookingId/';
   }
 
+
+  // ==================== ECOMMERCE BANNER ====================
+  static const String ecommerceBannerList = 'v1/ecommerce/banner/list/';
+  static const String ecommerceCategoryList = 'v1/ecommerce/category/list/';
+  static const String ecommerceSubCategoryList = 'v1/ecommerce/subcategory/list/';
+  static String ecommerceSubCategoryByCategory(int categoryId) =>
+      'v1/ecommerce/subcategory/list/?category=$categoryId';
+
+  // ==================== ECOMMERCE PRODUCT ====================
+  static const String ecommerceProductCreate = 'v1/ecommerce/product/create/';
+  // 1. Feed / List API (Now supports subcategory filter)
+  static String ecommerceProductFeed(int userId, {int? subcategoryId}) {
+    final base = 'v1/ecommerce/product/feed/$userId/';
+    if (subcategoryId != null && subcategoryId > 0) {
+      return '$base?subcategory=$subcategoryId';
+    }
+    return base;
+  }
+  // static String ecommerceProductFeed(int userId) => 'v1/ecommerce/product/feed/$userId/';
+  static String ecommerceProductFavorites(int userId) => 'v1/ecommerce/product/favorites/$userId/';
+  static String ecommerceProductToggleFavorite(int id, int userId) => 'v1/ecommerce/product/$id/favorite/toggle/?user=$userId';
+
+  // ==================== ECOMMERCE STORE ====================
+  static const String ecommerceStoreCreate = 'v1/ecommerce/store/create/';
+  static String ecommerceStoreGetByUser(int userId) => 'v1/ecommerce/store/user/$userId/';
+  static String ecommerceStoreDetail(int storeId) => 'v1/ecommerce/store/$storeId/';
+
+
 }

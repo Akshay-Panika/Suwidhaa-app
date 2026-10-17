@@ -8,6 +8,11 @@ import '../feature/college/controller/college_booking_controller.dart';
 import '../feature/college/controller/college_controller.dart';
 import '../feature/college/controller/room_controller.dart';
 import '../feature/college/controller/tiffin_controller.dart';
+import '../feature/ecommerce/category/controller/ecommerce_category_controller.dart';
+import '../feature/ecommerce/category/controller/ecommerce_subcategory_controller.dart';
+import '../feature/ecommerce/home/controller/ecommerce_banner_controller.dart';
+import '../feature/ecommerce/product/controller/ecommerce_product_controller.dart';
+import '../feature/ecommerce/store/controller/ecommerce_store_controller.dart';
 import '../feature/it_service/home/controller/it_service_banner_controller.dart';
 import '../feature/it_service/home/controller/it_service_category_controller.dart';
 import '../feature/it_service/service/controller/it_service_controller.dart';
@@ -83,5 +88,10 @@ class AppBindings implements Bindings {
     Get.lazyPut<ItServiceBannerController>(() => ItServiceBannerController(), fenix: true);
     Get.lazyPut<ItServiceCategoryController>(() => ItServiceCategoryController(), fenix: true);
     Get.lazyPut<ItServiceController>(() => ItServiceController(), fenix: true);
+    Get.lazyPut<EcommerceBannerController>(() => EcommerceBannerController(), fenix: true);
+    Get.lazyPut<EcommerceCategoryController>(() => EcommerceCategoryController(), fenix: true);
+    Get.lazyPut<EcommerceSubCategoryController>(() => EcommerceSubCategoryController(), fenix: true);
+    Get.lazyPut<EcommerceProductController>(() => EcommerceProductController(), fenix: true);
+    Get.lazyPut<EcommerceStoreController>(() => EcommerceStoreController(), fenix: true);
   }
 }

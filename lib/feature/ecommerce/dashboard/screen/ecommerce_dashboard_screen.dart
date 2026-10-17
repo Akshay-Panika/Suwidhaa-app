@@ -4,11 +4,12 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:untitled/core/utils/app_color.dart';
 import 'package:untitled/router/app_routes.dart'; // 👈 adjust path if different
-import 'package:untitled/feature/ecommerce/screen/ecommerce_category_screen.dart';
+import 'package:untitled/feature/ecommerce/category/screen/ecommerce_category_screen.dart';
 
-import 'eccomerce_product_order_screen.dart';
-import 'ecommerce_home_screen.dart';
-import 'ecommerce_profile_screen.dart';
+import '../../order/screen/ecommerce_order_screen.dart';
+import '../../home/screen/ecommerce_home_screen.dart';
+import '../../account/screen/ecommerce_profile_screen.dart';
+import '../../store/screen/ecommerce_my_store_screen.dart';
 
 class EcommerceDashboardScreen extends StatefulWidget {
   const EcommerceDashboardScreen({super.key});
@@ -149,7 +150,8 @@ class _EcommerceDashboardScreenState extends State<EcommerceDashboardScreen> {
             EcommerceCategoryScreen(
               initialCategory: _selectedCategoryName,
             ),
-            const EcommerceProductOrderScreen(),
+            const EcommerceOrderScreen(),
+            const EcommerceMyStoreScreen(),
             const EcommerceProfileScreen(),
           ],
         ),
@@ -201,6 +203,11 @@ class _EcommerceDashboardScreenState extends State<EcommerceDashboardScreen> {
                 icon: Icon(Icons.shopping_cart_outlined),
                 activeIcon: Icon(Icons.shopping_cart),
                 label: 'Order',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.store_mall_directory_outlined),
+                activeIcon: Icon(Icons.store_mall_directory),
+                label: 'My Store',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline_rounded),

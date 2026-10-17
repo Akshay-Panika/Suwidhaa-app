@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled/core/widget/flutter_toast.dart';
 import '../../../core/utils/app_color.dart';
 import '../../college/dashboard/screen/college_dashboard_screen.dart';
-import '../../ecommerce/screen/ecommerce_dashboard_screen.dart';
+import '../../ecommerce/dashboard/screen/ecommerce_dashboard_screen.dart';
 import '../../it_service/dashboard/screen/it_service_dashboard_screen.dart';
 import '../../ngo/dashboard/screen/ngo_dashboard_screen.dart';
 import '../../ott/auth/screen/ott_splash_screen.dart';
@@ -134,10 +134,10 @@ class _ModuleCardState extends State<ModuleCard> {
       height: 320,
       // height: 200,
       child: Column(
-        spacing: 12,
+        spacing: 6,
         children: [
           // Top row - Same as your original
-          Expanded(
+           Expanded(
             flex: 2,
             child: Row(
               spacing: 12,
@@ -226,6 +226,7 @@ class _ModuleCardState extends State<ModuleCard> {
       },
       child: Container(
         width: double.infinity,
+        margin: module['title'] == 'Video Player'? EdgeInsets.only(left: 12,bottom: 12):null,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
