@@ -221,6 +221,7 @@ class ApiUrls {
 
   // ==================== ECOMMERCE PRODUCT ====================
   static const String ecommerceProductCreate = 'v1/ecommerce/product/create/';
+  static String ecommerceProductOwner(int userId) => 'v1/ecommerce/product/owner/$userId/';
   // 1. Feed / List API (Now supports subcategory filter)
   static String ecommerceProductFeed(int userId, {int? subcategoryId}) {
     final base = 'v1/ecommerce/product/feed/$userId/';
@@ -229,7 +230,7 @@ class ApiUrls {
     }
     return base;
   }
-  // static String ecommerceProductFeed(int userId) => 'v1/ecommerce/product/feed/$userId/';
+
   static String ecommerceProductFavorites(int userId) => 'v1/ecommerce/product/favorites/$userId/';
   static String ecommerceProductToggleFavorite(int id, int userId) => 'v1/ecommerce/product/$id/favorite/toggle/?user=$userId';
 

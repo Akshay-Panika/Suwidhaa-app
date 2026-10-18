@@ -17,37 +17,135 @@ class EcommerceProductController extends GetxController {
 
   final RxInt selectedSubcategoryId = 0.obs;
   final RxBool isViewingFavorites = false.obs;
-
-  /// Track if a fetch has ever completed successfully for the CURRENT mode.
-  /// Reset to false whenever we start a new fetch so UI shows shimmer.
   final RxBool hasFetchedOnce = false.obs;
-
-  /// Per-product toggle lock so only the tapped card is disabled,
-  /// not all cards globally.
   final RxSet<int> togglingIds = <int>{}.obs;
   bool get isTogglingFavorite => togglingIds.isNotEmpty;
-
-  /// Request token to discard stale async responses (race-condition guard)
   int _requestToken = 0;
 
   final AuthController authController = Get.find<AuthController>();
 
-  // =================================================================
-  // ✅ FLASH DEALS — separate state so it doesn't clash with
-  // product list screen or favorites screen
-  // =================================================================
+  // ---- Flash Deals ----
   final RxBool isFlashDealsLoading = false.obs;
   final RxString flashDealsError = ''.obs;
-  final RxList<EcommerceProductModel> flashDeals =
-      <EcommerceProductModel>[].obs;
-
-  /// Only show first N deals on home
+  final RxList<EcommerceProductModel> flashDeals = <EcommerceProductModel>[].obs;
   static const int maxFlashDealsOnHome = 6;
-
-  List<EcommerceProductModel> get visibleFlashDeals =>
-      flashDeals.take(maxFlashDealsOnHome).toList();
-
+  List<EcommerceProductModel> get visibleFlashDeals => flashDeals.take(maxFlashDealsOnHome).toList();
   int _flashToken = 0;
+
+  // ---- Owner Products ----
+  final RxBool isOwnerLoading = false.obs;
+  final RxList<EcommerceProductModel> ownerProducts = <EcommerceProductModel>[].obs;
+  int _ownerToken = 0;
+
+  // ✅ Save/Delete Loading State
+  final RxBool isSaving = false.obs;
+
+  // ✅ FETCH OWNER PRODUCTS
+  Future<void> fetchOwnerProducts() async {
+    final userId = authController.getUserId;
+    if (userId == 0) return;
+
+    final token = ++_ownerToken;
+    try {
+      isOwnerLoading.value = true;
+      final response = await _repository.fetchOwnerProducts(userId: userId);
+      if (token != _ownerToken) return;
+
+      if (response.success) {
+        ownerProducts.assignAll(response.data);
+      } else {
+        FlutterToast.error('Failed to load store products');
+      }
+    } catch (e) {
+      if (token != _ownerToken) return;
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (token == _ownerToken) {
+        isOwnerLoading.value = false;
+      }
+    }
+  }
+
+  // ✅ CREATE OR UPDATE PRODUCT
+  Future<bool> saveProduct({
+    int? productId, // Agar null hai, to Create hoga. Warna Update.
+    required int subcategoryId,
+    required String title,
+    required String description,
+    required String price,
+    required String oldPrice,
+    required int stock,
+    required String badge,
+    required bool isActive,
+    required List<File> images,
+  }) async {
+    if (authController.getUserId == 0) return false;
+
+    try {
+      isSaving.value = true;
+      bool ok = false;
+
+      if (productId == null) {
+        // CREATE
+        ok = await _repository.createProduct(
+          subcategory: subcategoryId,
+          user: authController.getUserId,
+          title: title,
+          description: description,
+          price: price,
+          oldPrice: oldPrice,
+          stock: stock,
+          badge: badge,
+          isActive: isActive,
+          images: images,
+        );
+      } else {
+        // UPDATE
+        ok = await _repository.updateProduct(
+          id: productId,
+          subcategory: subcategoryId,
+          user: authController.getUserId,
+          title: title,
+          description: description,
+          price: price,
+          oldPrice: oldPrice,
+          stock: stock,
+          badge: badge,
+          isActive: isActive,
+          images: images,
+        );
+      }
+
+      if (ok) {
+        await fetchOwnerProducts(); // Refresh list
+        return true;
+      }
+      return false;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  // ✅ DELETE PRODUCT
+  Future<bool> deleteProduct(int productId) async {
+    try {
+      isSaving.value = true;
+      final ok = await _repository.deleteProduct(productId);
+      if (ok) {
+        await fetchOwnerProducts();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
 
   // -----------------------------------------------------------------
   // Helpers
@@ -86,9 +184,7 @@ class EcommerceProductController extends GetxController {
 
       final response = await _repository.fetchFeed(
         user: authController.getUserId,
-        subcategoryId: selectedSubcategoryId.value == 0
-            ? null
-            : selectedSubcategoryId.value,
+        subcategoryId: selectedSubcategoryId.value == 0 ? null : selectedSubcategoryId.value,
       );
 
       if (token != _requestToken) return;
@@ -129,8 +225,7 @@ class EcommerceProductController extends GetxController {
       errorMessage.value = '';
       products.clear();
 
-      final response =
-      await _repository.fetchFavorites(user: authController.getUserId);
+      final response = await _repository.fetchFavorites(user: authController.getUserId);
 
       if (token != _requestToken) return;
 
@@ -152,7 +247,7 @@ class EcommerceProductController extends GetxController {
   }
 
   // -----------------------------------------------------------------
-  // Toggle Favorite (index-safe & id-based)
+  // Toggle Favorite
   // -----------------------------------------------------------------
   Future<void> toggleFavorite(int productId) async {
     if (authController.getUserId == 0) {
@@ -169,7 +264,7 @@ class EcommerceProductController extends GetxController {
         userId: authController.getUserId,
       );
 
-      // Update in main products list
+      // Main list update
       final idx = products.indexWhere((p) => p.id == productId);
       if (idx != -1) {
         if (isViewingFavorites.value && !newStatus) {
@@ -179,15 +274,19 @@ class EcommerceProductController extends GetxController {
         }
       }
 
-      // ✅ Also update in flashDeals list (if present)
+      // Flash deals update
       final fIdx = flashDeals.indexWhere((p) => p.id == productId);
       if (fIdx != -1) {
         flashDeals[fIdx] = flashDeals[fIdx].copyWith(isFavorite: newStatus);
       }
 
-      FlutterToast.success(
-        newStatus ? 'Added to favorites' : 'Removed from favorites',
-      );
+      // Owner list update
+      final oIdx = ownerProducts.indexWhere((p) => p.id == productId);
+      if (oIdx != -1) {
+        ownerProducts[oIdx] = ownerProducts[oIdx].copyWith(isFavorite: newStatus);
+      }
+
+      FlutterToast.success(newStatus ? 'Added to favorites' : 'Removed from favorites');
     } catch (e) {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -195,13 +294,11 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // =================================================================
-  // ✅ FLASH DEALS — fetch
-  // =================================================================
+  // -----------------------------------------------------------------
+  // Flash Deals
+  // -----------------------------------------------------------------
   Future<void> fetchFlashDeals({bool forceRefresh = false}) async {
-    // Skip if already loaded (unless explicitly forced)
     if (!forceRefresh && flashDeals.isNotEmpty) return;
-
     final ok = await _ensureUserLoaded();
     if (!ok) return;
 
@@ -212,9 +309,7 @@ class EcommerceProductController extends GetxController {
       flashDealsError.value = '';
       flashDeals.clear();
 
-      final response = await _repository.fetchFeed(
-        user: authController.getUserId,
-      );
+      final response = await _repository.fetchFeed(user: authController.getUserId);
 
       if (token != _flashToken) return;
 
@@ -244,10 +339,14 @@ class EcommerceProductController extends GetxController {
     errorMessage.value = '';
     togglingIds.clear();
 
-    // ✅ Also reset flash deals
     _flashToken++;
     isFlashDealsLoading.value = false;
     flashDeals.clear();
     flashDealsError.value = '';
+
+    _ownerToken++;
+    isOwnerLoading.value = false;
+    ownerProducts.clear();
+    isSaving.value = false;
   }
 }
