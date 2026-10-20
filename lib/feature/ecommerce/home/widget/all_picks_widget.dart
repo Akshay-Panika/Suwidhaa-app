@@ -1,0 +1,314 @@
+// lib/feature/ecommerce/home/widget/top_picks_widget.dart
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart';
+
+import '../../product/controller/ecommerce_product_controller.dart';
+import '../../product/model/ecommerce_product_model.dart';
+import '../../product/screen/ecommerce_product_details_screen.dart';
+import '../../product/screen/ecommerce_product_screen.dart';
+
+class AllPicksWidget extends StatelessWidget {
+  const AllPicksWidget({super.key});
+
+  static const Color _accent = Color(0xFFE63E3E);
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<EcommerceProductController>();
+    controller.fetchFlashDeals();
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Column(
+        children: [
+          // ---------- Header ----------
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🔥 Best for You',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              // GestureDetector(
+              //   onTap: () => Get.to(() => const EcommerceProductListScreen(
+              //     title: 'Top Picks',
+              //   )),
+              //   behavior: HitTestBehavior.opaque,
+              //   child: const Padding(
+              //     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              //     child: Text(
+              //       'See All',
+              //       style: TextStyle(
+              //         fontSize: 12,
+              //         color: _accent,
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
+              // ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // ---------- Content ----------
+          Obx(() {
+            if (controller.isFlashDealsLoading.value) {
+              return const SizedBox(
+                height: 190,
+                child: _TopPicksShimmer(),
+              );
+            }
+
+            final picks = controller.flashDeals.take(8).toList();
+
+            if (picks.isEmpty) {
+              return const SizedBox(
+                height: 190,
+                child: Center(
+                  child: Text(
+                    'No picks right now',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                  ),
+                ),
+              );
+            }
+
+            return GridView.builder(
+              scrollDirection: Axis.vertical,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6,
+                childAspectRatio: 0.72, // ✅ add — warna card stretch hoga
+              ),
+              itemCount: picks.length,
+              itemBuilder: (context, index) {
+                return _TopPickCard(product: picks[index]);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Product card — image TOP, content BOTTOM
+// ============================================================
+class _TopPickCard extends StatelessWidget {
+  final EcommerceProductModel product;
+
+  const _TopPickCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    // Controller read-only — koi change nahi
+    final controller = Get.find<EcommerceProductController>();
+
+    final price = double.tryParse(product.price) ?? 0;
+    final oldPrice = double.tryParse(product.oldPrice) ?? 0;
+    String? discountLabel;
+    if (oldPrice > price && oldPrice > 0) {
+      final pct = ((oldPrice - price) / oldPrice * 100).round();
+      discountLabel = '$pct%';
+    }
+
+    final badgeText = (product.badge != null && product.badge!.isNotEmpty)
+        ? product.badge!
+        : discountLabel;
+
+    return GestureDetector(
+      onTap: () => Get.to(() => EcommerceProductDetailsScreen(productId: product.id)),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ==================================================
+            // IMAGE — top, expanded (fills available space)
+            // ==================================================
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    product.primaryImage ?? '',
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(color: const Color(0xFFE8E8E8));
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported_rounded,
+                          color: Colors.grey,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Discount / badge
+                  if (badgeText != null)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE63E3E),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // ⚡ FAVORITE BUTTON
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () => controller.toggleFavorite(product.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          product.isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          size: 14,
+                          color: product.isFavorite
+                              ? const Color(0xFFE63E3E)
+                              : const Color(0xFF666666),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ==================================================
+            // CONTENT — bottom, natural height
+            // ==================================================
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title — 1 line truncated
+                  Text(
+                    product.title,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF333333),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Price row
+                  Row(
+                    children: [
+                      Text(
+                        '₹${product.price}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE63E3E),
+                        ),
+                      ),
+                      if (oldPrice > 0 && oldPrice > price) ...[
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '₹${product.oldPrice}',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFF999999),
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Shimmer — matches real grid shape
+// ============================================================
+class _TopPicksShimmer extends StatelessWidget {
+  const _TopPicksShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFE8E8E8),
+      highlightColor: const Color(0xFFF5F5F5),
+      child: GridView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 6,
+          crossAxisSpacing: 6,
+          childAspectRatio: 0.72,
+        ),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

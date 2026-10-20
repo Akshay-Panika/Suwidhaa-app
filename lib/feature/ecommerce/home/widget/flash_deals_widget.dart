@@ -3,9 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
-
 import '../../product/controller/ecommerce_product_controller.dart';
 import '../../product/model/ecommerce_product_model.dart';
+import '../../product/screen/ecommerce_product_details_screen.dart';
 import '../../product/screen/ecommerce_product_screen.dart';
 
 class FlashDealsWidget extends StatefulWidget {
@@ -60,14 +60,13 @@ class _FlashDealsWidgetState extends State<FlashDealsWidget> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Get.to(() => const EcommerceProductListScreen(
+                      Get.to(() =>  EcommerceProductListScreen(
                         title: 'Flash Deals',
                       ));
                     },
                     behavior: HitTestBehavior.opaque,
                     child: const Padding(
-                      padding:
-                      EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Text(
                         'See All',
                         style: TextStyle(
@@ -139,6 +138,9 @@ class _FlashDealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Controller read-only — koi change nahi
+    final controller = Get.find<EcommerceProductController>();
+
     // Auto-calc discount % from oldPrice vs price
     final price = double.tryParse(product.price) ?? 0;
     final oldPrice = double.tryParse(product.oldPrice) ?? 0;
@@ -148,95 +150,140 @@ class _FlashDealCard extends StatelessWidget {
       discountLabel = '$pct%';
     }
 
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        spacing: 10,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           Expanded(child: Container(
-             width: double.infinity,
-             decoration: BoxDecoration(
-               image: DecorationImage(image: NetworkImage(product.primaryImage ?? ''),fit: BoxFit.cover)
-             ),
-             child: Column(
-               crossAxisAlignment: CrossAxisAlignment.end,
-               children: [
-                 if ((product.badge != null && product.badge!.isNotEmpty) ||
-                     discountLabel != null)
-                   Positioned(
-                     top: 4,
-                     left: 4,
-                     child: Container(
-                       padding: const EdgeInsets.symmetric(
-                           horizontal: 6, vertical: 2),
-                       decoration: BoxDecoration(
-                         color: const Color(0xFFE63E3E),
-                         borderRadius: BorderRadius.circular(4),
-                       ),
-                       child: Text(
-                         product.badge?.isNotEmpty == true
-                             ? product.badge!
-                             : discountLabel!,
-                         style: const TextStyle(
-                           color: Colors.white,
-                           fontSize: 10,
-                           fontWeight: FontWeight.bold,
-                         ),
-                       ),
-                     ),
-                   ),
-               ],
-             ),
-           )),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  product.title,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF333333),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return InkWell(
+      onTap: () => Get.to(() => EcommerceProductDetailsScreen(productId: product.id)),
+      child: Container(
+        width: 150,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ---------------- IMAGE (Stack so we can Position badge + fav) ----------------
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Text(
-                      '₹${product.price}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFE63E3E),
+                    Image.network(
+                      product.primaryImage ?? '',
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(color: const Color(0xFFE8E8E8));
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image, color: Colors.grey),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    if (product.oldPrice != '0')
-                      Text(
-                        '₹${product.oldPrice}',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: Color(0xFF999999),
-                          decoration: TextDecoration.lineThrough,
+
+                    // Badge / discount
+                    if ((product.badge != null &&
+                        product.badge!.isNotEmpty) ||
+                        discountLabel != null)
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE63E3E),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            product.badge?.isNotEmpty == true
+                                ? product.badge!
+                                : discountLabel!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
+
+                    // ⚡ FAVORITE BUTTON
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => controller.toggleFavorite(product.id),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            product.isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 14,
+                            color: product.isFavorite
+                                ? const Color(0xFFE63E3E)
+                                : const Color(0xFF666666),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+
+            // ---------------- TITLE + PRICE ----------------
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.title,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF333333),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '₹${product.price}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE63E3E),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      if (oldPrice > 0 && oldPrice > price)
+                        Text(
+                          '₹${product.oldPrice}',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFF999999),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -258,7 +305,7 @@ class _FlashDealsShimmer extends StatelessWidget {
         itemCount: 3,
         itemBuilder: (context, index) {
           return Container(
-            width: 120,
+            width: 150,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               color: Colors.white,

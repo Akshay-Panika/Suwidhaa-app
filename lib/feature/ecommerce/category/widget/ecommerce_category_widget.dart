@@ -52,9 +52,16 @@ class _EcommerceCategoryWidgetState extends State<EcommerceCategoryWidget> {
 
           // ---- Empty ----
           if (controller.categories.isEmpty) {
-            return const SizedBox(
-              height: 100,
-              child: Center(child: Text('No categories available')),
+            return  SizedBox(
+              height: 600,
+              child: Center(child: Column(
+                spacing: 16,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.info,size: 40,color: Colors.red,),
+                  Text('No categories available',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 18,color: Colors.grey.shade700),),
+                ],
+              )),
             );
           }
 

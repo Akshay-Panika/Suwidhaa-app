@@ -6,6 +6,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../product/controller/ecommerce_product_controller.dart';
 import '../../product/model/ecommerce_product_model.dart';
+import '../../product/screen/ecommerce_product_details_screen.dart';
 import '../../product/screen/ecommerce_product_screen.dart';
 
 class TopPicksWidget extends StatelessWidget {
@@ -60,7 +61,7 @@ class TopPicksWidget extends StatelessWidget {
           Obx(() {
             if (controller.isFlashDealsLoading.value) {
               return const SizedBox(
-                height: 190, // ✅ reduced
+                height: 190,
                 child: _TopPicksShimmer(),
               );
             }
@@ -80,18 +81,16 @@ class TopPicksWidget extends StatelessWidget {
             }
 
             return SizedBox(
-              height: 150, // ✅ only 190px tall
-              child: GridView.builder(
+              height: 190,
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 1,        // ✅ single row
-                  mainAxisSpacing: 12,      // horizontal gap between cards
-                  crossAxisSpacing: 0,
-                  childAspectRatio: 0.72,   // ✅ wide card: 190*0.72 = ~137 wide
-                ),
                 itemCount: picks.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
-                  return _TopPickCard(product: picks[index]);
+                  return SizedBox(
+                    width: 140,
+                    child: _TopPickCard(product: picks[index]),
+                  );
                 },
               ),
             );
@@ -112,6 +111,9 @@ class _TopPickCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Controller read-only — koi change nahi
+    final controller = Get.find<EcommerceProductController>();
+
     final price = double.tryParse(product.price) ?? 0;
     final oldPrice = double.tryParse(product.oldPrice) ?? 0;
     String? discountLabel;
@@ -124,11 +126,8 @@ class _TopPickCard extends StatelessWidget {
         ? product.badge!
         : discountLabel;
 
-    return GestureDetector(
-      onTap: () {
-
-      },
-      behavior: HitTestBehavior.opaque,
+    return  InkWell(
+      onTap: () => Get.to(() => EcommerceProductDetailsScreen(productId: product.id)),
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF8F8F8),
@@ -139,7 +138,7 @@ class _TopPickCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ==================================================
-            // ✅ IMAGE — top, expanded (fills available space)
+            // IMAGE — top, expanded (fills available space)
             // ==================================================
             Expanded(
               child: Stack(
@@ -150,11 +149,7 @@ class _TopPickCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) return child;
-                      return Shimmer.fromColors(
-                        baseColor: const Color(0xFFE8E8E8),
-                        highlightColor: const Color(0xFFF5F5F5),
-                        child: Container(color: Colors.white),
-                      );
+                      return Container(color: const Color(0xFFE8E8E8));
                     },
                     errorBuilder: (_, __, ___) => Container(
                       color: Colors.grey[200],
@@ -167,7 +162,8 @@ class _TopPickCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Discount badge
+
+                  // Discount / badge
                   if (badgeText != null)
                     Positioned(
                       top: 6,
@@ -189,21 +185,45 @@ class _TopPickCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                  // ⚡ FAVORITE BUTTON
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () => controller.toggleFavorite(product.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          product.isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          size: 14,
+                          color: product.isFavorite
+                              ? const Color(0xFFE63E3E)
+                              : const Color(0xFF666666),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
 
             // ==================================================
-            // ✅ CONTENT — bottom, fixed natural height
+            // CONTENT — bottom, natural height
             // ==================================================
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Title — 1 line (truncated)
+                  // Title — 1 line truncated
                   Text(
                     product.title,
                     style: const TextStyle(
@@ -214,7 +234,7 @@ class _TopPickCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(height: 4),
 
                   // Price row
                   Row(
@@ -227,17 +247,19 @@ class _TopPickCard extends StatelessWidget {
                           color: Color(0xFFE63E3E),
                         ),
                       ),
-                      if (product.oldPrice != '0') ...[
+                      if (oldPrice > 0 && oldPrice > price) ...[
                         const SizedBox(width: 4),
-                        Text(
-                          '₹${product.oldPrice}',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: Color(0xFF999999),
-                            decoration: TextDecoration.lineThrough,
+                        Flexible(
+                          child: Text(
+                            '₹${product.oldPrice}',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: Color(0xFF999999),
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
@@ -263,20 +285,18 @@ class _TopPicksShimmer extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: const Color(0xFFE8E8E8),
       highlightColor: const Color(0xFFF5F5F5),
-      child: GridView.builder(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 1,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 0,
-          childAspectRatio: 0.72,
-        ),
         itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+          return SizedBox(
+            width: 140,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         },

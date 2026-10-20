@@ -1,5 +1,3 @@
-// lib/feature/ecommerce/product/controller/ecommerce_product_controller.dart
-
 import 'dart:io';
 import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
@@ -29,7 +27,8 @@ class EcommerceProductController extends GetxController {
   final RxString flashDealsError = ''.obs;
   final RxList<EcommerceProductModel> flashDeals = <EcommerceProductModel>[].obs;
   static const int maxFlashDealsOnHome = 6;
-  List<EcommerceProductModel> get visibleFlashDeals => flashDeals.take(maxFlashDealsOnHome).toList();
+  List<EcommerceProductModel> get visibleFlashDeals =>
+      flashDeals.take(maxFlashDealsOnHome).toList();
   int _flashToken = 0;
 
   // ---- Owner Products ----
@@ -37,8 +36,25 @@ class EcommerceProductController extends GetxController {
   final RxList<EcommerceProductModel> ownerProducts = <EcommerceProductModel>[].obs;
   int _ownerToken = 0;
 
-  // ✅ Save/Delete Loading State
+  // ---- Save/Delete Loading State ----
   final RxBool isSaving = false.obs;
+
+  // ---- Product Detail State ----
+  final RxBool isProductDetailLoading = false.obs;
+  final RxString productDetailError = ''.obs;
+  final Rxn<EcommerceProductModel> selectedProduct = Rxn<EcommerceProductModel>();
+  int _detailToken = 0;
+
+  // 🆕 ---- Cart State ----
+  final RxBool isCartLoading = false.obs;
+  final RxString cartError = ''.obs;
+  final RxList<EcommerceCartItemModel> cartItems = <EcommerceCartItemModel>[].obs;
+  final RxString cartGrandTotal = '0'.obs;
+  final RxSet<int> addingToCartIds = <int>{}.obs;
+  int _cartToken = 0;
+
+  int get cartCount =>
+      cartItems.fold(0, (sum, item) => sum + item.quantity);
 
   // ✅ FETCH OWNER PRODUCTS
   Future<void> fetchOwnerProducts() async {
@@ -66,9 +82,9 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // ✅ CREATE OR UPDATE PRODUCT
+  // ✅ CREATE OR UPDATE
   Future<bool> saveProduct({
-    int? productId, // Agar null hai, to Create hoga. Warna Update.
+    int? productId,
     required int subcategoryId,
     required String title,
     required String description,
@@ -86,7 +102,6 @@ class EcommerceProductController extends GetxController {
       bool ok = false;
 
       if (productId == null) {
-        // CREATE
         ok = await _repository.createProduct(
           subcategory: subcategoryId,
           user: authController.getUserId,
@@ -100,7 +115,6 @@ class EcommerceProductController extends GetxController {
           images: images,
         );
       } else {
-        // UPDATE
         ok = await _repository.updateProduct(
           id: productId,
           subcategory: subcategoryId,
@@ -117,7 +131,7 @@ class EcommerceProductController extends GetxController {
       }
 
       if (ok) {
-        await fetchOwnerProducts(); // Refresh list
+        await fetchOwnerProducts();
         return true;
       }
       return false;
@@ -129,7 +143,7 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // ✅ DELETE PRODUCT
+  // ✅ DELETE
   Future<bool> deleteProduct(int productId) async {
     try {
       isSaving.value = true;
@@ -147,9 +161,7 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Helpers
-  // -----------------------------------------------------------------
+  // ---- Helpers ----
   Future<bool> _ensureUserLoaded() async {
     if (authController.getUserId != 0) return true;
     for (int i = 0; i < 3; i++) {
@@ -159,9 +171,7 @@ class EcommerceProductController extends GetxController {
     return false;
   }
 
-  // -----------------------------------------------------------------
-  // Feed (List Screen)
-  // -----------------------------------------------------------------
+  // ---- Feed ----
   Future<void> fetchProducts({int? subcategoryId}) async {
     final isUserLoaded = await _ensureUserLoaded();
     if (!isUserLoaded) {
@@ -184,7 +194,8 @@ class EcommerceProductController extends GetxController {
 
       final response = await _repository.fetchFeed(
         user: authController.getUserId,
-        subcategoryId: selectedSubcategoryId.value == 0 ? null : selectedSubcategoryId.value,
+        subcategoryId:
+        selectedSubcategoryId.value == 0 ? null : selectedSubcategoryId.value,
       );
 
       if (token != _requestToken) return;
@@ -206,9 +217,7 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Favorites (Favorite Screen)
-  // -----------------------------------------------------------------
+  // ---- Favorites ----
   Future<void> fetchFavorites() async {
     final isUserLoaded = await _ensureUserLoaded();
     if (!isUserLoaded) {
@@ -225,7 +234,8 @@ class EcommerceProductController extends GetxController {
       errorMessage.value = '';
       products.clear();
 
-      final response = await _repository.fetchFavorites(user: authController.getUserId);
+      final response =
+      await _repository.fetchFavorites(user: authController.getUserId);
 
       if (token != _requestToken) return;
 
@@ -246,9 +256,7 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Toggle Favorite
-  // -----------------------------------------------------------------
+  // ---- Toggle Favorite ----
   Future<void> toggleFavorite(int productId) async {
     if (authController.getUserId == 0) {
       FlutterToast.error('User not logged in');
@@ -264,7 +272,6 @@ class EcommerceProductController extends GetxController {
         userId: authController.getUserId,
       );
 
-      // Main list update
       final idx = products.indexWhere((p) => p.id == productId);
       if (idx != -1) {
         if (isViewingFavorites.value && !newStatus) {
@@ -274,19 +281,24 @@ class EcommerceProductController extends GetxController {
         }
       }
 
-      // Flash deals update
       final fIdx = flashDeals.indexWhere((p) => p.id == productId);
       if (fIdx != -1) {
         flashDeals[fIdx] = flashDeals[fIdx].copyWith(isFavorite: newStatus);
       }
 
-      // Owner list update
       final oIdx = ownerProducts.indexWhere((p) => p.id == productId);
       if (oIdx != -1) {
-        ownerProducts[oIdx] = ownerProducts[oIdx].copyWith(isFavorite: newStatus);
+        ownerProducts[oIdx] =
+            ownerProducts[oIdx].copyWith(isFavorite: newStatus);
       }
 
-      FlutterToast.success(newStatus ? 'Added to favorites' : 'Removed from favorites');
+      if (selectedProduct.value?.id == productId) {
+        selectedProduct.value =
+            selectedProduct.value!.copyWith(isFavorite: newStatus);
+      }
+
+      FlutterToast.success(
+          newStatus ? 'Added to favorites' : 'Removed from favorites');
     } catch (e) {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -294,9 +306,7 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Flash Deals
-  // -----------------------------------------------------------------
+  // ---- Flash Deals ----
   Future<void> fetchFlashDeals({bool forceRefresh = false}) async {
     if (!forceRefresh && flashDeals.isNotEmpty) return;
     final ok = await _ensureUserLoaded();
@@ -309,7 +319,8 @@ class EcommerceProductController extends GetxController {
       flashDealsError.value = '';
       flashDeals.clear();
 
-      final response = await _repository.fetchFeed(user: authController.getUserId);
+      final response =
+      await _repository.fetchFeed(user: authController.getUserId);
 
       if (token != _flashToken) return;
 
@@ -328,9 +339,163 @@ class EcommerceProductController extends GetxController {
     }
   }
 
-  // -----------------------------------------------------------------
-  // Reset
-  // -----------------------------------------------------------------
+  // ---- Product Detail ----
+  Future<EcommerceProductModel?> fetchProductDetail(int id) async {
+    final token = ++_detailToken;
+
+    try {
+      isProductDetailLoading.value = true;
+      productDetailError.value = '';
+      selectedProduct.value = null;
+
+      final product = await _repository.fetchProductDetail(id: id);
+
+      if (token != _detailToken) return null;
+
+      selectedProduct.value = product;
+      return product;
+    } catch (e) {
+      if (token != _detailToken) return null;
+      productDetailError.value = e.toString().replaceFirst('Exception: ', '');
+      FlutterToast.error(productDetailError.value);
+      return null;
+    } finally {
+      if (token == _detailToken) {
+        isProductDetailLoading.value = false;
+      }
+    }
+  }
+
+  Future<void> toggleFavoriteFromDetail(int productId) async {
+    await toggleFavorite(productId);
+  }
+
+  // ============================================================
+  // 🆕 CART METHODS
+  // ============================================================
+  Future<bool> addToCart(int productId, {int quantity = 1}) async {
+    if (authController.getUserId == 0) {
+      FlutterToast.error('User not logged in');
+      return false;
+    }
+    if (addingToCartIds.contains(productId)) return false;
+
+    try {
+      addingToCartIds.add(productId);
+
+      await _repository.addToCart(
+        productId: productId,
+        userId: authController.getUserId,
+        quantity: quantity,
+      );
+
+      _setIsCartLocal(productId, true);
+      FlutterToast.success('Added to cart');
+      return true;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      addingToCartIds.remove(productId);
+    }
+  }
+
+  Future<void> fetchCart() async {
+    if (authController.getUserId == 0) return;
+
+    final token = ++_cartToken;
+
+    try {
+      isCartLoading.value = true;
+      cartError.value = '';
+
+      final response =
+      await _repository.fetchCart(userId: authController.getUserId);
+
+      if (token != _cartToken) return;
+
+      if (response.success) {
+        cartItems.assignAll(response.data);
+        cartGrandTotal.value = response.grandTotal;
+      } else {
+        cartError.value = 'Failed to load cart';
+      }
+    } catch (e) {
+      if (token != _cartToken) return;
+      cartError.value = e.toString().replaceFirst('Exception: ', '');
+      FlutterToast.error(cartError.value);
+    } finally {
+      if (token == _cartToken) {
+        isCartLoading.value = false;
+      }
+    }
+  }
+
+  Future<bool> removeFromCart(int productId, {int? quantity}) async {
+    if (authController.getUserId == 0) return false;
+
+    try {
+      await _repository.removeFromCart(
+        productId: productId,
+        userId: authController.getUserId,
+        quantity: quantity,
+      );
+
+      if (quantity == null) {
+        cartItems.removeWhere((item) => item.productId == productId);
+        _setIsCartLocal(productId, false);
+      } else {
+        final idx =
+        cartItems.indexWhere((item) => item.productId == productId);
+        if (idx != -1) {
+          final current = cartItems[idx];
+          final newQty = current.quantity - quantity;
+          if (newQty <= 0) {
+            cartItems.removeAt(idx);
+            _setIsCartLocal(productId, false);
+          } else {
+            cartItems[idx] = current.copyWith(quantity: newQty);
+          }
+        }
+      }
+
+      // Recompute grand total locally
+      final total = cartItems.fold<double>(
+        0,
+            (sum, item) => sum + (double.tryParse(item.price) ?? 0) * item.quantity,
+      );
+      cartGrandTotal.value = total.toStringAsFixed(2);
+
+      FlutterToast.success(
+          quantity == null ? 'Removed from cart' : 'Cart updated');
+      return true;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    }
+  }
+
+  bool isProductInCart(int productId) =>
+      cartItems.any((i) => i.productId == productId);
+
+  void _setIsCartLocal(int productId, bool isCart) {
+    final idx = products.indexWhere((p) => p.id == productId);
+    if (idx != -1) products[idx] = products[idx].copyWith(isCart: isCart);
+
+    final fIdx = flashDeals.indexWhere((p) => p.id == productId);
+    if (fIdx != -1) flashDeals[fIdx] = flashDeals[fIdx].copyWith(isCart: isCart);
+
+    final oIdx = ownerProducts.indexWhere((p) => p.id == productId);
+    if (oIdx != -1) {
+      ownerProducts[oIdx] = ownerProducts[oIdx].copyWith(isCart: isCart);
+    }
+
+    if (selectedProduct.value?.id == productId) {
+      selectedProduct.value = selectedProduct.value!.copyWith(isCart: isCart);
+    }
+  }
+
+  // ---- Reset ----
   void reset() {
     _requestToken++;
     isLoading.value = false;
@@ -348,5 +513,17 @@ class EcommerceProductController extends GetxController {
     isOwnerLoading.value = false;
     ownerProducts.clear();
     isSaving.value = false;
+
+    _detailToken++;
+    isProductDetailLoading.value = false;
+    productDetailError.value = '';
+    selectedProduct.value = null;
+
+    _cartToken++;
+    isCartLoading.value = false;
+    cartError.value = '';
+    cartItems.clear();
+    cartGrandTotal.value = '0';
+    addingToCartIds.clear();
   }
 }

@@ -28,7 +28,7 @@ class EcommerceProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const CircleAvatar(
                         radius: 40,
@@ -140,45 +140,8 @@ class EcommerceProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.logout_rounded,
-                        color: Color(0xFFE63E3E),
-                        size: 24,
-                      ),
-                    ),
-                    title: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFE63E3E),
-                      ),
-                    ),
-                    onTap: () {},
-                  ),
-                ),
-                const SizedBox(height: 80),
+
+                const SizedBox(height: 20),
               ],
             ),
           ),

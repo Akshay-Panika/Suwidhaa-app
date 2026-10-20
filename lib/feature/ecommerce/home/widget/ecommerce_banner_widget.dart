@@ -42,10 +42,7 @@ class _EcommerceBannerWidgetState extends State<EcommerceBannerWidget> {
 
       // ---- Empty ----
       if (banners.isEmpty) {
-        return const SizedBox(
-          height: _height,
-          child: Center(child: Text('No banners available')),
-        );
+        return SizedBox.shrink();
       }
 
       // Clamp indicator index if the list shrank

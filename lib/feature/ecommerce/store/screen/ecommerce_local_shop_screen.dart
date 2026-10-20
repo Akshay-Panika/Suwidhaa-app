@@ -861,25 +861,25 @@ class _LocalShopScreenState extends State<LocalShopScreen> {
   Widget _buildProductCard(Map<String, dynamic> product) {
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EcommerceProductDetailsScreen(
-              product: {
-                'title': product['title'],
-                'imageUrl': product['imageUrl'],
-                'shop': product['shop'],
-                'price': product['price'],
-                'oldPrice': product['oldPrice'],
-                'badge': product['badge'],
-                'rating': product['rating'] ?? 4.8,
-                'reviews': product['reviews'] ?? 120,
-                'color': product['color'],
-                'description': product['description'] ?? 'This premium item is carefully selected.',
-              },
-            ),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => EcommerceProductDetailsScreen(
+        //       product: {
+        //         'title': product['title'],
+        //         'imageUrl': product['imageUrl'],
+        //         'shop': product['shop'],
+        //         'price': product['price'],
+        //         'oldPrice': product['oldPrice'],
+        //         'badge': product['badge'],
+        //         'rating': product['rating'] ?? 4.8,
+        //         'reviews': product['reviews'] ?? 120,
+        //         'color': product['color'],
+        //         'description': product['description'] ?? 'This premium item is carefully selected.',
+        //       },
+        //     ),
+        //   ),
+        // );
       },
       child: Container(
         decoration: BoxDecoration(

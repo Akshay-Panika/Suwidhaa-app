@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../controller/ecommerce_product_controller.dart';
 import '../model/ecommerce_product_model.dart';
+import 'ecommerce_product_details_screen.dart';
 
 class EcommerceProductListScreen extends StatefulWidget {
   final int? subcategoryId;
@@ -119,73 +120,76 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    product.primaryImage ?? '',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (_, __, ___) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)),
-                  ),
-                ),
-                if (product.badge != null && product.badge!.isNotEmpty)
-                  Positioned(
-                    top: 8, left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: const Color(0xFFE63E3E), borderRadius: BorderRadius.circular(4)),
-                      child: Text(product.badge!, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+    return InkWell(
+      onTap: () => Get.to(() => EcommerceProductDetailsScreen(productId: product.id)),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: Image.network(
+                      product.primaryImage ?? '',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(color: Colors.grey[200], child: const Icon(Icons.image, color: Colors.grey)),
                     ),
                   ),
-                Positioned(
-                  top: 8, right: 8,
-                  child: GestureDetector(
-                    onTap: onFavoriteTap,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: Icon(
-                        product.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        size: 16,
-                        color: product.isFavorite ? const Color(0xFFE63E3E) : const Color(0xFF666666),
+                  if (product.badge != null && product.badge!.isNotEmpty)
+                    Positioned(
+                      top: 8, left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: const Color(0xFFE63E3E), borderRadius: BorderRadius.circular(4)),
+                        child: Text(product.badge!, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  Positioned(
+                    top: 8, right: 8,
+                    child: GestureDetector(
+                      onTap: onFavoriteTap,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: Icon(
+                          product.isFavorite ? Icons.favorite : Icons.favorite_border,
+                          size: 16,
+                          color: product.isFavorite ? const Color(0xFFE63E3E) : const Color(0xFF666666),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text('₹${product.price}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFE63E3E))),
-                    const SizedBox(width: 4),
-                    if (product.oldPrice != '0')
-                      Text('₹${product.oldPrice}', style: const TextStyle(fontSize: 10, color: Color(0xFF999999), decoration: TextDecoration.lineThrough)),
-                  ],
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(product.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text('₹${product.price}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFE63E3E))),
+                      const SizedBox(width: 4),
+                      if (product.oldPrice != '0')
+                        Text('₹${product.oldPrice}', style: const TextStyle(fontSize: 10, color: Color(0xFF999999), decoration: TextDecoration.lineThrough)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

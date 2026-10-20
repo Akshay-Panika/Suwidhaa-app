@@ -230,6 +230,8 @@ class ApiUrls {
     }
     return base;
   }
+  static String ecommerceProductDetail(int id) => 'v1/ecommerce/product/$id/';
+
 
   static String ecommerceProductFavorites(int userId) => 'v1/ecommerce/product/favorites/$userId/';
   static String ecommerceProductToggleFavorite(int id, int userId) => 'v1/ecommerce/product/$id/favorite/toggle/?user=$userId';
@@ -238,6 +240,17 @@ class ApiUrls {
   static const String ecommerceStoreCreate = 'v1/ecommerce/store/create/';
   static String ecommerceStoreGetByUser(int userId) => 'v1/ecommerce/store/user/$userId/';
   static String ecommerceStoreDetail(int storeId) => 'v1/ecommerce/store/$storeId/';
+
+  // ==================== ECOMMERCE CART ====================
+  static String ecommerceCartAdd(int productId) =>
+      'v1/ecommerce/product/$productId/cart/add/';
+  static String ecommerceCartList(int userId) =>
+      'v1/ecommerce/product/cart/$userId/';
+  static String ecommerceCartRemove(int productId, int userId, {int? quantity}) {
+    final base = 'v1/ecommerce/product/$productId/cart/remove/?user=$userId';
+    if (quantity != null && quantity > 0) return '$base&quantity=$quantity';
+    return base;
+  }
 
 
 }

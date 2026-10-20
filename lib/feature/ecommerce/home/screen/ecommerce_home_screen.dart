@@ -7,7 +7,9 @@ import '../../category/widget/ecommerce_category_widget.dart';
 import '../../product/screen/ecommerce_product_details_screen.dart';
 import '../../product/screen/ecommerce_product_favorite_screen.dart';
 import '../../product/screen/ecommerce_product_screen.dart';
+import '../../search/screen/ecommerce_search_screen.dart';
 import '../../store/screen/ecommerce_local_shop_screen.dart';
+import '../widget/all_picks_widget.dart';
 import '../widget/ecommerce_banner_widget.dart';
 import '../widget/flash_deals_widget.dart';
 import '../widget/top_picks_widget.dart';
@@ -290,13 +292,17 @@ class EcommerceHomeScreenState extends State<EcommerceHomeScreen> {
                           color: const Color(0xFFF0F0F0),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(Icons.search_rounded, color: Color(0xFF999999), size: 20),
                             SizedBox(width: 12),
                             Expanded(
                               child: TextField(
                                 readOnly: true,
+                                onTap: () {
+                                  Get.to(() => EcommerceSearchScreen(
+                                  ));
+                                },
                                 decoration: InputDecoration(
                                   hintText: 'Search for products...',
                                   hintStyle: TextStyle(color: Color(0xFF999999), fontSize: 14),
@@ -344,6 +350,9 @@ class EcommerceHomeScreenState extends State<EcommerceHomeScreen> {
           // ====== TOP PICKS ======
           SliverToBoxAdapter(
             child: TopPicksWidget(),
+          ),
+          SliverToBoxAdapter(
+            child: AllPicksWidget(),
           ),
 
           SliverToBoxAdapter(child: SizedBox(height: 50,),)

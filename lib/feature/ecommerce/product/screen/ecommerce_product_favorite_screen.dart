@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 import '../controller/ecommerce_product_controller.dart';
 import '../model/ecommerce_product_model.dart';
+import 'ecommerce_product_details_screen.dart';
 
 class EcommerceProductFavoriteScreen extends StatefulWidget {
   const EcommerceProductFavoriteScreen({super.key});
@@ -121,9 +122,7 @@ class _FavoriteProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to Product Details
-      },
+      onTap: () => Get.to(() => EcommerceProductDetailsScreen(productId: product.id)),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
