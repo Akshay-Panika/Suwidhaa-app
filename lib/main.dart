@@ -5,48 +5,22 @@ import 'package:untitled/router/app_pages.dart';
 import 'package:untitled/router/app_routes.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'feature/auth/controller/auth_controller.dart';
+import 'feature/auth/shared_preferences/auth_shared_preferences.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   WebViewPlatform.instance = AndroidWebViewPlatform();
-  runApp(const MyApp());
+  final bool loggedIn = await AuthSharedPreferences.isLoggedIn();
+
+  runApp(MyApp(
+    initialRoute: loggedIn ? AppRoutes.dashboard : AppRoutes.intro,
+  ));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class MyApp extends StatelessWidget {
+  final String initialRoute;
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-
-  bool _navigated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAuth();
-    });
-  }
-
-  void _checkAuth() async {
-    if (_navigated) return;
-
-    final authController = Get.find<AuthController>();
-    await authController.checkLoginStatus();
-
-    if (_navigated) return;
-    _navigated = true;
-
-    if (authController.isLoggedIn.value) {
-      Get.offAllNamed(AppRoutes.dashboard);
-    } else {
-      Get.offAllNamed(AppRoutes.intro);
-    }
-  }
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +28,8 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'Suwidhaa',
       initialBinding: AppBindings(),
-      // ✅ Start with intro, will be redirected by AuthController
-      initialRoute: AppRoutes.intro,
+      // ✅ Direct route — no flash
+      initialRoute: initialRoute,
       getPages: AppPages.pages,
       unknownRoute: GetPage(
         name: '/not-found',

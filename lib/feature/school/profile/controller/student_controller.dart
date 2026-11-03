@@ -1,5 +1,6 @@
 // lib/feature/school/student/controller/student_controller.dart
 import 'package:get/get.dart';
+
 import '../../../../core/widget/flutter_toast.dart';
 import '../model/student_model.dart';
 import '../repsitory/student_repository.dart';
@@ -7,7 +8,6 @@ import '../repsitory/student_repository.dart';
 class StudentController extends GetxController {
   final StudentRepository _repository = StudentRepository();
 
-  // Observable variables
   final isLoading = false.obs;
   final studentData = Rxn<StudentData>();
   final errorMessage = ''.obs;
@@ -23,7 +23,6 @@ class StudentController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Get student ID from shared preferences
       final studentId = await _repository.getStudentId();
 
       if (studentId == 0) {
@@ -32,7 +31,6 @@ class StudentController extends GetxController {
         return;
       }
 
-      // Fetch student profile
       final response = await _repository.getStudentProfile(studentId);
 
       if (response.success) {
@@ -48,38 +46,20 @@ class StudentController extends GetxController {
     }
   }
 
-  // Refresh student profile
   Future<void> refreshProfile() async {
     await loadStudentProfile();
   }
 
-  // Get full name
+  // ==================== GETTERS ====================
   String get fullName => studentData.value?.fullName ?? '';
+  String get schoolName => studentData.value?.schoolName ?? '';
   String get schoolType => studentData.value?.schoolType ?? '';
-
-  // Get profile image URL
+  SchoolInfo? get school => studentData.value?.school;
   String get profileImage => studentData.value?.studentProfile ?? '';
-
-  // Get student class
   String get studentClass => studentData.value?.studentClass ?? '';
-
-  // Get roll number
   String get rollNumber => studentData.value?.rollNumber ?? '';
-
-  // Get student ID card
   String get studentIdCard => studentData.value?.studentIdCard ?? '';
-
-  // Get fee status
   String get feeStatus => studentData.value?.feeStatus ?? '';
-
-  // Get remaining fee
   double get remainingFee => studentData.value?.remainingFee ?? 0;
-
-  // Check if student data is available
   bool get hasData => studentData.value != null;
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

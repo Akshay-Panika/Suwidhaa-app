@@ -1,5 +1,4 @@
 // lib/feature/school/teacher/controller/teacher_controller.dart
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
@@ -18,8 +17,6 @@ class TeacherController extends GetxController {
   final isListLoading = false.obs;
   final teacherList = <TeacherData>[].obs;
   final listErrorMessage = ''.obs;
-
-  /// Currently selected school type filter (null = all)
   final selectedSchoolType = RxnString();
 
   @override
@@ -57,22 +54,15 @@ class TeacherController extends GetxController {
     }
   }
 
-  Future<void> refreshProfile() async {
-    await loadTeacherProfile();
-  }
+  Future<void> refreshProfile() async => await loadTeacherProfile();
 
-  // ==================== TEACHER LIST (school_type wise) ====================
-  /// Load teachers, optionally filtered by [schoolType].
-  /// If [schoolType] is null, uses the current [selectedSchoolType].
+  // ==================== TEACHER LIST ====================
   Future<void> loadTeacherList({String? schoolType}) async {
     try {
       isListLoading.value = true;
       listErrorMessage.value = '';
 
-      // If an explicit schoolType is passed, remember it as selection
-      if (schoolType != null) {
-        selectedSchoolType.value = schoolType;
-      }
+      if (schoolType != null) selectedSchoolType.value = schoolType;
 
       final response = await _repository.getTeacherList(
         schoolType: selectedSchoolType.value,
@@ -91,22 +81,19 @@ class TeacherController extends GetxController {
     }
   }
 
-  /// Change the school type filter and reload.
   Future<void> filterBySchoolType(String? schoolType) async {
     selectedSchoolType.value = schoolType;
     await loadTeacherList(schoolType: schoolType);
   }
 
-  Future<void> refreshTeacherList() async {
-    await loadTeacherList();
-  }
+  Future<void> refreshTeacherList() async => await loadTeacherList();
 
   // ==================== SINGLE PROFILE GETTERS ====================
   int get id => teacherData.value?.id ?? 0;
   String get fullName => teacherData.value?.fullName ?? '';
   String get profileImage => teacherData.value?.teacherProfile ?? '';
   String get teacherIdCard => teacherData.value?.teacherIdCard ?? '';
-  String get schoolType => teacherData.value?.schoolType ?? '';
+  SchoolInfo? get school => teacherData.value?.school;
   String get qualification => teacherData.value?.qualification ?? '';
   String get experienceString => teacherData.value?.experienceString ?? '';
   List<String> get subjects => teacherData.value?.subjects ?? [];
@@ -124,9 +111,4 @@ class TeacherController extends GetxController {
   // ==================== LIST GETTERS ====================
   bool get hasListData => teacherList.isNotEmpty;
   int get teacherCount => teacherList.length;
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

@@ -2,7 +2,26 @@ class ApiUrls {
 
   // Auth endpoints
   static const String studentLogin = 'v1/school/student-pass/login/';
+  // ==================== STUDENT PASS AUTH (NEW) ====================
+  static const String studentPassLogin =
+      'v1/school/student-pass/login/';
+  static const String studentPassRequestOtp =
+      'v1/school/student-pass/forgot-password/request-otp/';
+  static const String studentPassVerifyAndReset =
+      'v1/school/student-pass/forgot-password/verify-and-reset/';
+  static const String studentPassLogout =
+      'v1/school/student-pass/logout/';
+
   static const String teacherLogin = 'v1/school/teacher-pass/login/';
+  // ==================== TEACHER PASS AUTH (NEW) ====================
+  static const String teacherPassLogin =
+      'v1/school/teacher-pass/login/';
+  static const String teacherPassRequestOtp =
+      'v1/school/teacher-pass/forgot-password/request-otp/';
+  static const String teacherPassVerifyAndReset =
+      'v1/school/teacher-pass/forgot-password/verify-and-reset/';
+  static const String teacherPassLogout =
+      'v1/school/teacher-pass/logout/';
   
   // Student endpoints
   static const String studentList = 'v1/school/student/list/';

@@ -364,7 +364,7 @@ class TeacherProfileCard extends StatelessWidget {
                   const SizedBox(width: 8),
                    Expanded(
                     child: Text(
-                      "${teacher.schoolType}",
+                      "${0}",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,

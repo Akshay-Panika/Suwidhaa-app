@@ -4,6 +4,8 @@ class AuthResponse {
   final String? action;
   final UserData? data;
   final String? error;
+  final String? phoneNumber;
+  final String? status;
 
   AuthResponse({
     required this.success,
@@ -11,6 +13,8 @@ class AuthResponse {
     this.action,
     this.data,
     this.error,
+    this.phoneNumber,
+    this.status,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -20,6 +24,8 @@ class AuthResponse {
       action: json['action'],
       data: json['data'] != null ? UserData.fromJson(json['data']) : null,
       error: json['error'],
+      phoneNumber: json['phone_number'],
+      status: json['status'],
     );
   }
 
@@ -36,7 +42,7 @@ class UserData {
 
   UserData({
     required this.id,
-    required this.name,
+    this.name = '',
     required this.phoneNumber,
     required this.isLoggedIn,
     required this.createdAt,
@@ -63,5 +69,16 @@ class UserData {
       'created_at': createdAt,
       'updated_at': updatedAt,
     };
+  }
+
+  UserData copyWith({bool? isLoggedIn}) {
+    return UserData(
+      id: id,
+      name: name,
+      phoneNumber: phoneNumber,
+      isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 }

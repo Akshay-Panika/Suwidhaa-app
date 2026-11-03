@@ -5,86 +5,102 @@ import '../model/auth_model.dart';
 class AuthRepository {
   final Dio _dio = ApiClient.dio;
 
-  // Authenticate user (register or login)
-  Future<AuthResponse> authenticate({
-    required String phoneNumber,
-    String? name,
-  }) async {
+  /// 1. Send OTP
+  Future<AuthResponse> sendOtp({required String phoneNumber}) async {
     try {
-      final Map<String, dynamic> data = {
-        'phone_number': phoneNumber,
-      };
-
-      // Add name only if provided (for registration)
-      if (name != null && name.isNotEmpty) {
-        data['name'] = name;
-      }
-
-      print('📤 Sending auth request: $data');
-
+      print('📤 send-otp for: $phoneNumber');
       final response = await _dio.post(
-        'v1/auth/auth/',
-        data: data,
+        'v1/auth/send-otp/',
+        data: {'phone_number': phoneNumber},
       );
-
-      print('📥 Auth response: ${response.data}');
+      print('📥 send-otp response: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return AuthResponse.fromJson(response.data);
-      } else {
-        return AuthResponse(
-          success: false,
-          error: 'Failed to authenticate. Please try again.',
-        );
       }
+      return AuthResponse(
+        success: false,
+        error: 'Failed to send OTP. Please try again.',
+      );
     } on DioException catch (e) {
-      print('❌ Dio error: ${e.message}');
-      if (e.response != null) {
-        print('❌ Response data: ${e.response?.data}');
-        return AuthResponse(
-          success: false,
-          error: e.response?.data['error'] ?? 'Network error occurred.',
-        );
-      }
-      return AuthResponse(
-        success: false,
-        error: 'Network error. Please check your connection.',
-      );
+      return AuthResponse(success: false, error: _extractError(e));
     } catch (e) {
-      print('❌ Unexpected error: $e');
-      return AuthResponse(
-        success: false,
-        error: 'An unexpected error occurred.',
-      );
+      print('❌ sendOtp error: $e');
+      return AuthResponse(success: false, error: 'Unexpected error: $e');
     }
   }
 
-  // Get all users (for testing)
-  Future<List<UserData>> getAllUsers() async {
+  /// 2. Verify OTP
+  Future<AuthResponse> verifyOtp({
+    required String phoneNumber,
+    required String otp,
+  }) async {
     try {
-      final response = await _dio.get('v1/auth/users/');
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data['success'] == true) {
-          final List<dynamic> users = data['data'] ?? [];
-          return users.map((user) => UserData.fromJson(user)).toList();
-        }
+      print('📤 verify-otp for: $phoneNumber | otp: $otp');
+      final response = await _dio.post(
+        'v1/auth/verify-otp/',
+        data: {'phone_number': phoneNumber, 'otp': otp},
+      );
+      print('📥 verify-otp response: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return AuthResponse.fromJson(response.data);
       }
-      return [];
+      return AuthResponse(success: false, error: 'OTP verification failed.');
+    } on DioException catch (e) {
+      return AuthResponse(success: false, error: _extractError(e));
     } catch (e) {
-      print('❌ Error fetching users: $e');
-      return [];
+      print('❌ verifyOtp error: $e');
+      return AuthResponse(success: false, error: 'Unexpected error: $e');
     }
   }
 
-  // Delete user
+  /// 3. Logout
+  Future<AuthResponse> logout({required String phoneNumber}) async {
+    try {
+      print('📤 logout for: $phoneNumber');
+      final response = await _dio.post(
+        'v1/auth/logout/',
+        data: {'phone_number': phoneNumber},
+      );
+      print('📥 logout response: ${response.data}');
+
+      if (response.statusCode == 200) {
+        return AuthResponse.fromJson(response.data);
+      }
+      return AuthResponse(success: false, error: 'Logout failed.');
+    } on DioException catch (e) {
+      return AuthResponse(success: false, error: _extractError(e));
+    } catch (e) {
+      return AuthResponse(success: false, error: 'Unexpected error: $e');
+    }
+  }
+
+  /// 4. Delete user
   Future<bool> deleteUser(int userId) async {
     try {
       final response = await _dio.delete('v1/auth/users/$userId/delete/');
+      print('📥 delete user response: ${response.data}');
       return response.statusCode == 200;
+    } on DioException catch (e) {
+      print('❌ deleteUser error: ${e.message}');
+      return false;
     } catch (e) {
-      print('❌ Error deleting user: $e');
+      print('❌ deleteUser error: $e');
       return false;
     }
+  }
+
+  String _extractError(DioException e) {
+    print('❌ Dio error: ${e.message}');
+    print('❌ Response: ${e.response?.data}');
+    final data = e.response?.data;
+    if (data is Map) {
+      return data['error']?.toString() ??
+          data['message']?.toString() ??
+          data['detail']?.toString() ??
+          'Network error occurred.';
+    }
+    return 'Network error. Please check your connection.';
   }
 }

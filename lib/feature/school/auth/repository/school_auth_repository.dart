@@ -18,7 +18,7 @@ class SchoolAuthRepository {
       final loginResponse = SchoolAuthLoginResponse.fromJson(response.data);
 
       if (loginResponse.success && loginResponse.data != null) {
-        await SchoolAuthSharedPrefService.saveUserData(
+        await OldSchoolAuthSharedPrefService.saveUserData(
           userId: loginResponse.data!.student,
           userName: loginResponse.data!.studentName,
           userType: 'student',
@@ -63,7 +63,7 @@ class SchoolAuthRepository {
       final loginResponse = SchoolAuthLoginResponse.fromJson(response.data);
 
       if (loginResponse.success && loginResponse.data != null) {
-        await SchoolAuthSharedPrefService.saveUserData(
+        await OldSchoolAuthSharedPrefService.saveUserData(
           userId: loginResponse.data!.teacher,
           userName: loginResponse.data!.teacherName,
           userType: 'teacher',
@@ -99,22 +99,22 @@ class SchoolAuthRepository {
   }
 
   Future<bool> isLoggedIn() async {
-    return await SchoolAuthSharedPrefService.isLoggedIn();
+    return await OldSchoolAuthSharedPrefService.isLoggedIn();
   }
 
   Future<String> getUserType() async {
-    return await SchoolAuthSharedPrefService.getUserType();
+    return await OldSchoolAuthSharedPrefService.getUserType();
   }
 
   Future<int> getUserId() async {
-    return await SchoolAuthSharedPrefService.getUserId();
+    return await OldSchoolAuthSharedPrefService.getUserId();
   }
 
   Future<String> getUserName() async {
-    return await SchoolAuthSharedPrefService.getUserName();
+    return await OldSchoolAuthSharedPrefService.getUserName();
   }
 
   Future<void> logout() async {
-    await SchoolAuthSharedPrefService.clearUserData();
+    await OldSchoolAuthSharedPrefService.clearUserData();
   }
 }

@@ -2,8 +2,8 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
-import '../model/teacher_model.dart';
 import '../../auth/service/school_auth_shared_pref_service.dart';
+import '../model/teacher_model.dart';
 
 class TeacherRepository {
   final Dio _dio = ApiClient.dio;
@@ -11,19 +11,12 @@ class TeacherRepository {
   // ==================== SINGLE TEACHER PROFILE ====================
   Future<TeacherResponse> getTeacherProfile(int teacherId) async {
     try {
-      final response = await _dio.get(
-        '${ApiUrls.teacherDetail}$teacherId/',
-      );
-
+      final response = await _dio.get('${ApiUrls.teacherDetail}$teacherId/');
       return TeacherResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.data != null) {
-        try {
-          final errorData = e.response?.data as Map<String, dynamic>;
-          throw Exception(errorData['message'] ?? 'Failed to load teacher profile');
-        } catch (_) {
-          throw Exception('Network error: ${e.message}');
-        }
+        final errorData = e.response?.data as Map<String, dynamic>;
+        throw Exception(errorData['message'] ?? 'Failed to load teacher profile');
       }
       throw Exception('Network error: ${e.message}');
     } catch (e) {
@@ -31,9 +24,7 @@ class TeacherRepository {
     }
   }
 
-  // ==================== TEACHER LIST (school_type wise) ====================
-  /// Fetch teachers list.
-  /// Optionally filter by [schoolType] (e.g. "A", "B", "C").
+  // ==================== TEACHER LIST ====================
   Future<TeacherListResponse> getTeacherList({String? schoolType}) async {
     try {
       final response = await _dio.get(
@@ -43,16 +34,11 @@ class TeacherRepository {
             'school_type': schoolType,
         },
       );
-
       return TeacherListResponse.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.data != null) {
-        try {
-          final errorData = e.response?.data as Map<String, dynamic>;
-          throw Exception(errorData['message'] ?? 'Failed to load teacher list');
-        } catch (_) {
-          throw Exception('Network error: ${e.message}');
-        }
+        final errorData = e.response?.data as Map<String, dynamic>;
+        throw Exception(errorData['message'] ?? 'Failed to load teacher list');
       }
       throw Exception('Network error: ${e.message}');
     } catch (e) {
@@ -60,13 +46,9 @@ class TeacherRepository {
     }
   }
 
-  // Method to get teacher ID from shared preferences
+  // ✅ Naye SharedPref se ID uthayega
   Future<int> getTeacherId() async {
-    return await SchoolAuthSharedPrefService.getUserId();
-  }
-
-  // Method to get teacher name from shared preferences
-  Future<String> getTeacherName() async {
-    return await SchoolAuthSharedPrefService.getUserName();
+    final id = await SchoolAuthSharedPrefService.getTeacherId();
+    return id ?? 0;
   }
 }

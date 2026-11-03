@@ -1445,7 +1445,7 @@ class _TeacherAssignReportFormScreenState
       FlutterToast.error("Admin ID missing — cannot submit");
       return;
     }
-    final schoolType = teacherController.schoolType;
+    final schoolType = teacherController.teacherList;
 
     final requests = <CreateReportCardRequest>[];
     for (final s in _selectedStudents) {
@@ -1460,7 +1460,7 @@ class _TeacherAssignReportFormScreenState
         CreateReportCardRequest(
           adminId: adminId,
           studentId: sid,
-          schoolType: schoolType,
+          schoolType: schoolType.first.teacherIdCard,
           className: _selectedClass!,
           subjectName: _selectedSubject!,
           examName: _examController.text.trim(),
@@ -1506,7 +1506,7 @@ class _TeacherAssignReportFormScreenState
     final req = CreateReportCardRequest(
       adminId: adminId,
       studentId: sid,
-      schoolType: teacherController.schoolType,
+      schoolType: teacherController.id.toString(),
       className: _selectedClass ?? widget.existing!.className,
       subjectName: _selectedSubject ?? widget.existing!.subjectName,
       examName: _examController.text.trim().isEmpty

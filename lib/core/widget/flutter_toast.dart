@@ -9,7 +9,6 @@ class FlutterToast {
     Color textColor = Colors.white,
     ToastGravity gravity = ToastGravity.BOTTOM,
   }) {
-
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,

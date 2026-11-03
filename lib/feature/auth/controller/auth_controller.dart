@@ -1,10 +1,13 @@
-import 'package:get/get.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:untitled/router/app_routes.dart';
 import '../../../core/widget/flutter_toast.dart';
 import '../model/auth_model.dart';
 import '../repository/auth_repository.dart';
 import '../shared_preferences/auth_shared_preferences.dart';
+
+enum AuthStep { phone, otp }
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository = AuthRepository();
@@ -14,14 +17,13 @@ class AuthController extends GetxController {
   final RxBool isLoggedIn = false.obs;
   final Rx<UserData?> currentUser = Rx<UserData?>(null);
   final RxString errorMessage = ''.obs;
+  final Rx<AuthStep> currentStep = AuthStep.phone.obs;
 
   // Text controllers
-  final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
 
   // Focus nodes
-  final FocusNode nameFocusNode = FocusNode();
   final FocusNode phoneFocusNode = FocusNode();
   final FocusNode otpFocusNode = FocusNode();
 
@@ -29,7 +31,7 @@ class AuthController extends GetxController {
   final RxBool isOtpSent = false.obs;
   final RxBool isResendEnabled = false.obs;
   final RxInt resendTimer = 60.obs;
-  final RxString generatedOTP = ''.obs;
+  Timer? _resendTimerHandle;
 
   @override
   void onInit() {
@@ -39,16 +41,14 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
-    nameController.dispose();
+    _resendTimerHandle?.cancel();
     phoneController.dispose();
     otpController.dispose();
-    nameFocusNode.dispose();
     phoneFocusNode.dispose();
     otpFocusNode.dispose();
     super.onClose();
   }
 
-  // Check if user is already logged in
   Future<void> checkLoginStatus() async {
     try {
       final loggedIn = await AuthSharedPreferences.isLoggedIn();
@@ -57,7 +57,7 @@ class AuthController extends GetxController {
         if (user != null) {
           currentUser.value = user;
           isLoggedIn.value = true;
-          print('✅ User already logged in: ${user.name}');
+          print('✅ User already logged in: ${user.phoneNumber}');
         }
       }
     } catch (e) {
@@ -65,95 +65,123 @@ class AuthController extends GetxController {
     }
   }
 
-  // Authenticate user (register or login)
-  Future<void> authenticate() async {
-    // Validate name (only for new registration)
-    if (nameController.text.trim().isEmpty) {
-      FlutterToast.error('Please enter your name');
-      nameFocusNode.requestFocus();
-      return;
-    }
-
-    if (nameController.text.trim().length < 2) {
-      FlutterToast.error('Name must be at least 2 characters');
-      nameFocusNode.requestFocus();
-      return;
-    }
-
-    // Validate phone
+  /// STEP 1 — Send OTP
+  Future<void> sendOtp() async {
+    errorMessage.value = '';
     final phone = phoneController.text.trim();
     if (phone.isEmpty) {
       FlutterToast.error('Please enter your phone number');
       phoneFocusNode.requestFocus();
       return;
     }
-
-    final cleanedPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanedPhone.length != 10) {
+    final cleaned = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length != 10) {
       FlutterToast.error('Please enter a valid 10-digit phone number');
       phoneFocusNode.requestFocus();
       return;
     }
 
-    // OTP is optional - we ignore it
-    // Just proceed with authentication
-
     isLoading.value = true;
-    errorMessage.value = '';
-
     try {
-      final response = await _authRepository.authenticate(
-        phoneNumber: cleanedPhone,
-        name: nameController.text.trim(),
-      );
-
-      if (response.success && response.data != null) {
-        // Save user data
-        await AuthSharedPreferences.saveUserData(response.data!);
-        currentUser.value = response.data!;
-        isLoggedIn.value = true;
-
-        // Show success message
-        if (response.action == 'register') {
-          FlutterToast.success('Welcome ${response.data!.name}! 🎉');
-        } else {
-          FlutterToast.success('Welcome back ${response.data!.name}! 👋');
-        }
-
-        // Navigate to dashboard
-        await Future.delayed(const Duration(milliseconds: 500));
-        _navigateToDashboard();
+      final response = await _authRepository.sendOtp(phoneNumber: cleaned);
+      if (response.success) {
+        isOtpSent.value = true;
+        currentStep.value = AuthStep.otp;
+        _startResendTimer();
+        FlutterToast.success(response.message ?? 'OTP sent successfully');
+        Future.delayed(const Duration(milliseconds: 300), () {
+          otpFocusNode.requestFocus();
+        });
       } else {
-        errorMessage.value = response.error ?? 'Authentication failed';
-        FlutterToast.error(response.error ?? 'Authentication failed. Please try again.');
+        errorMessage.value = response.error ?? 'Failed to send OTP';
+        FlutterToast.error(errorMessage.value);
       }
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred';
-      FlutterToast.error('An unexpected error occurred. Please try again.');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Generate OTP (optional - for UI only)
-  void generateOTP() {
-    // This is optional - just for UI demonstration
-    final otp = '123456';
-    generatedOTP.value = otp;
-    isOtpSent.value = true;
+  /// STEP 2 — Verify OTP + save everything
+  Future<void> verifyOtp() async {
+    errorMessage.value = '';
+    final phone =
+    phoneController.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    final otp = otpController.text.trim();
+
+    if (otp.isEmpty || otp.length < 4) {
+      FlutterToast.error('Please enter a valid OTP');
+      otpFocusNode.requestFocus();
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      final response = await _authRepository.verifyOtp(
+        phoneNumber: phone,
+        otp: otp,
+      );
+
+      if (response.success && response.data != null) {
+        // ✅ Save FULL user data in shared prefs
+        await AuthSharedPreferences.saveUserData(response.data!);
+        currentUser.value = response.data!;
+        isLoggedIn.value = true;
+
+        FlutterToast.success(response.message ?? 'Login successful');
+        await Future.delayed(const Duration(milliseconds: 500));
+        _navigateToDashboard();
+      } else {
+        errorMessage.value = response.error ?? 'OTP verification failed';
+        FlutterToast.error(errorMessage.value);
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Resend OTP
+  Future<void> resendOtp() async {
+    if (!isResendEnabled.value) return;
+    otpController.clear();
+    await sendOtp();
+  }
+
+  /// Back to phone step
+  void editPhone() {
+    currentStep.value = AuthStep.phone;
+    isOtpSent.value = false;
+    otpController.clear();
+    _resendTimerHandle?.cancel();
     isResendEnabled.value = false;
     resendTimer.value = 60;
-    startResendTimer();
-    FlutterToast.success('OTP sent successfully!');
+    phoneFocusNode.requestFocus();
   }
 
-  void startResendTimer() {
-    // Timer logic for UI only
+  void _startResendTimer() {
+    isResendEnabled.value = false;
+    resendTimer.value = 60;
+    _resendTimerHandle?.cancel();
+    _resendTimerHandle = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (resendTimer.value <= 1) {
+        t.cancel();
+        isResendEnabled.value = true;
+      } else {
+        resendTimer.value--;
+      }
+    });
   }
 
-  // Logout
+  /// Logout — also hits API
   Future<void> logout() async {
     try {
+      final phoneRaw =
+          currentUser.value?.phoneNumber ?? phoneController.text;
+      final phone = phoneRaw.replaceAll(RegExp(r'[^0-9]'), '');
+
+      if (phone.isNotEmpty) {
+        await _authRepository.logout(phoneNumber: phone);
+      }
+
       await AuthSharedPreferences.clearUserData();
       currentUser.value = null;
       isLoggedIn.value = false;
@@ -164,10 +192,23 @@ class AuthController extends GetxController {
     }
   }
 
-  // Navigation
+  /// Delete account
+  Future<bool> deleteAccount() async {
+    if (currentUser.value == null) return false;
+    final ok = await _authRepository.deleteUser(currentUser.value!.id);
+    if (ok) {
+      await AuthSharedPreferences.clearUserData();
+      currentUser.value = null;
+      isLoggedIn.value = false;
+      FlutterToast.success('Account deleted successfully');
+      Get.offAllNamed(AppRoutes.auth);
+    } else {
+      FlutterToast.error('Failed to delete account');
+    }
+    return ok;
+  }
+
   void _navigateToDashboard() {
-    // Navigate to your dashboard
-    // Get.offAllNamed('/');
     Get.offAllNamed(AppRoutes.location);
   }
 
@@ -176,11 +217,4 @@ class AuthController extends GetxController {
   String get getUserPhone => currentUser.value?.phoneNumber ?? '';
   int get getUserId => currentUser.value?.id ?? 0;
   bool get isUserLoggedIn => isLoggedIn.value;
-
-  // Clear OTP state
-  void resetOTPState() {
-    isOtpSent.value = false;
-    generatedOTP.value = '';
-    otpController.clear();
-  }
 }

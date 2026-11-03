@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -18,99 +17,66 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controller
     authController = Get.put(AuthController(), permanent: false);
-  }
-
-  @override
-  void dispose() {
-    // Don't dispose controller here, it's managed by GetX
-    super.dispose();
-  }
-
-  bool _isValidPhoneNumber(String phone) {
-    phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    return phone.length == 10;
-  }
-
-  bool _isValidName(String name) {
-    return name.trim().isNotEmpty && name.trim().length >= 2;
-  }
-
-  void _handleAuth() {
-    // OTP is ignored - we directly authenticate
-    authController.authenticate();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-      resizeToAvoidBottomInset: true,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: const Text(
-        'Create Account',
-        style: TextStyle(
-          color: Colors.black87,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Sign In',
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBody() {
-    return Obx(() {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildLogoWithText(),
-            const SizedBox(height: 32),
-            _buildNameInput(),
-            const SizedBox(height: 16),
-            _buildPhoneInput(),
-            const SizedBox(height: 16),
-
-            // OTP Section - Optional (just for UI)
-            _buildOptionalOTPSection(),
-
-            const SizedBox(height: 16),
-            _buildAuthButton(),
-            const SizedBox(height: 24),
-            _buildTermsText(),
-
-            // Show error message if any
-            if (authController.errorMessage.value.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Text(
-                    authController.errorMessage.value,
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 14),
-                    textAlign: TextAlign.center,
+      body: Obx(() {
+        final isOtpStep = authController.currentStep.value == AuthStep.otp;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildLogoWithText(),
+              const SizedBox(height: 32),
+              if (!isOtpStep) _buildPhoneInput() else _buildOtpInput(),
+              const SizedBox(height: 20),
+              _buildActionButton(isOtpStep),
+              const SizedBox(height: 12),
+              if (isOtpStep) _buildResendRow(),
+              const SizedBox(height: 24),
+              _buildTermsText(),
+              if (authController.errorMessage.value.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Text(
+                      authController.errorMessage.value,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-      );
-    });
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   Widget _buildLogoWithText() {
@@ -146,7 +112,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Sign in to continue exploring colleges,\naccommodations, and more',
+          'Sign in with OTP to continue exploring\ncolleges, accommodations, and more',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.grey[600],
@@ -159,72 +125,17 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _buildNameInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: const Icon(
-              Icons.person_outline,
-              color: AppColors.primary,
-              size: 22,
-            ),
-          ),
-          const VerticalDivider(
-            color: Colors.grey,
-            width: 1,
-          ),
-          Expanded(
-            child: TextField(
-              controller: authController.nameController,
-              focusNode: authController.nameFocusNode,
-              textCapitalization: TextCapitalization.words,
-              style: const TextStyle(color: Colors.black87, fontSize: 16),
-              decoration: const InputDecoration(
-                hintText: 'Enter your full name',
-                hintStyle: TextStyle(color: Colors.grey),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16),
-              ),
-              onSubmitted: (_) => authController.phoneFocusNode.requestFocus(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPhoneInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
-      ),
+    return _inputContainer(
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: [
-                const Icon(
-                  Icons.phone_android,
-                  color: AppColors.primary,
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
+              children: const [
+                Icon(Icons.phone_android,
+                    color: AppColors.primary, size: 22),
+                SizedBox(width: 8),
                 Text(
                   '+91',
                   style: TextStyle(
@@ -236,10 +147,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ],
             ),
           ),
-          const VerticalDivider(
-            color: Colors.grey,
-            width: 1,
-          ),
+          const VerticalDivider(color: Colors.grey, width: 1),
           Expanded(
             child: TextField(
               controller: authController.phoneController,
@@ -256,7 +164,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),
-              onSubmitted: (_) => _handleAuth(),
+              onSubmitted: (_) => authController.sendOtp(),
             ),
           ),
         ],
@@ -264,43 +172,95 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  // Optional OTP Section - UI only, ignored in logic
-  Widget _buildOptionalOTPSection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline,
-            color: Colors.grey,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'OTP is optional. You can skip and continue.',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
+  Widget _buildOtpInput() {
+    final phone = authController.phoneController.text;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'OTP sent to +91 $phone',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
+            TextButton(
+              onPressed: authController.editPhone,
+              child: const Text('Change'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _inputContainer(
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: const Icon(Icons.lock_outline,
+                    color: AppColors.primary, size: 22),
+              ),
+              const VerticalDivider(color: Colors.grey, width: 1),
+              Expanded(
+                child: TextField(
+                  controller: authController.otpController,
+                  focusNode: authController.otpFocusNode,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 18,
+                    letterSpacing: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Enter OTP',
+                    hintStyle: TextStyle(
+                      color: Colors.grey,
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  onSubmitted: (_) => authController.verifyOtp(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAuthButton() {
+  Widget _inputContainer({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildActionButton(bool isOtpStep) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: authController.isLoading.value ? null : _handleAuth,
+        onPressed: authController.isLoading.value
+            ? null
+            : (isOtpStep
+            ? authController.verifyOtp
+            : authController.sendOtp),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           shape: RoundedRectangleBorder(
@@ -317,9 +277,9 @@ class _AuthScreenState extends State<AuthScreen> {
             strokeWidth: 2,
           ),
         )
-            : const Text(
-          'Continue',
-          style: TextStyle(
+            : Text(
+          isOtpStep ? 'Verify & Continue' : 'Send OTP',
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -327,6 +287,24 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildResendRow() {
+    return Obx(() {
+      final enabled = authController.isResendEnabled.value;
+      return TextButton(
+        onPressed: enabled ? authController.resendOtp : null,
+        child: Text(
+          enabled
+              ? 'Resend OTP'
+              : 'Resend in ${authController.resendTimer.value}s',
+          style: TextStyle(
+            color: enabled ? AppColors.primary : Colors.grey,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildTermsText() {

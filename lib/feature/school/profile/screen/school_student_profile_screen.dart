@@ -1,53 +1,43 @@
-// lib/feature/school/dashboard/screen/school_student_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:untitled/feature/school/auth/controller/student_auth_controller.dart';
+import 'package:untitled/feature/school/profile/controller/student_controller.dart';
+import 'package:untitled/feature/school/profile/model/student_model.dart';
 import '../../../../core/widget/contact_helper.dart';
-import '../../auth/controller/school_auth_controller.dart';
 import '../../student/widget/student_attendance_card.dart';
-import '../controller/student_controller.dart';
-import '../model/student_model.dart';
 
 class SchoolStudentProfileScreen extends StatelessWidget {
   const SchoolStudentProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get student controller
     final studentController = Get.find<StudentController>();
-    final authController = Get.find<SchoolAuthController>();
+    final authController = Get.find<StudentAuthController>();
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(toolbarHeight: 0,backgroundColor: Colors.indigo,),
+      appBar: AppBar(toolbarHeight: 0, backgroundColor: Colors.indigo),
       body: Obx(() {
-        // Show shimmer loading
         if (studentController.isLoading.value) {
           return _buildShimmerLoading();
         }
-
-        // Show error message
         if (studentController.errorMessage.value.isNotEmpty) {
           return _buildErrorState(studentController);
         }
-
-        // Show student data
         if (studentController.hasData) {
           return Column(
             children: [
-              Expanded(
-                child: _buildStudentCard(studentController),
-              ),
+              Expanded(child: _buildStudentCard(studentController)),
               const StudentAttendanceCard(),
               Expanded(
                 flex: 2,
-                child: _buildSchoolFeatures(context, studentController, authController),
+                child: _buildSchoolFeatures(
+                    context, studentController, authController),
               ),
             ],
           );
         }
-
-        // No data available
         return _buildEmptyState();
       }),
     );
@@ -60,29 +50,19 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       highlightColor: Colors.grey.shade100,
       child: Column(
         children: [
-          // Shimmer Header - Same as Student Card Design
           Expanded(
             child: Stack(
               alignment: Alignment.bottomCenter,
               children: [
                 Column(
                   children: [
-                    Expanded(
-                      child: Container(
-                        color: Colors.blue,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        color: Colors.white,
-                      ),
-                    ),
+                    Expanded(child: Container(color: Colors.blue)),
+                    Expanded(child: Container(color: Colors.white)),
                   ],
                 ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // Shimmer Profile Circle
                     Container(
                       height: 80,
                       width: 80,
@@ -93,14 +73,8 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Shimmer Name
-                    Container(
-                      width: 150,
-                      height: 18,
-                      color: Colors.white,
-                    ),
+                    Container(width: 150, height: 18, color: Colors.white),
                     const SizedBox(height: 8),
-                    // Shimmer Class Badge
                     Container(
                       width: 180,
                       height: 26,
@@ -110,19 +84,13 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Shimmer ID
-                    Container(
-                      width: 120,
-                      height: 12,
-                      color: Colors.white,
-                    ),
+                    Container(width: 120, height: 12, color: Colors.white),
                     const SizedBox(height: 16),
                   ],
                 ),
               ],
             ),
           ),
-          // Shimmer Attendance Card - Same as StudentAttendanceCard
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             color: Colors.white,
@@ -135,7 +103,6 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Shimmer School Features
           Expanded(
             flex: 2,
             child: Container(
@@ -144,14 +111,8 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Shimmer Section Title
-                    Container(
-                      width: 150,
-                      height: 20,
-                      color: Colors.white,
-                    ),
+                    Container(width: 150, height: 20, color: Colors.white),
                     const SizedBox(height: 12),
-                    // Shimmer Facilities Grid
                     Row(
                       children: [
                         Expanded(child: _buildShimmerFacilityItem()),
@@ -172,13 +133,10 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Shimmer Address Card
                     _buildShimmerAddressCard(),
                     const SizedBox(height: 12),
-                    // Shimmer About Card
                     _buildShimmerAboutCard(),
                     const SizedBox(height: 16),
-                    // Shimmer Fee Status Card
                     _buildShimmerFeeCard(),
                   ],
                 ),
@@ -189,7 +147,6 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildShimmerAttendanceItem() {
     return Column(
@@ -203,17 +160,9 @@ class SchoolStudentProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Container(
-          width: 40,
-          height: 10,
-          color: Colors.white,
-        ),
+        Container(width: 40, height: 10, color: Colors.white),
         const SizedBox(height: 2),
-        Container(
-          width: 25,
-          height: 8,
-          color: Colors.white,
-        ),
+        Container(width: 25, height: 8, color: Colors.white),
       ],
     );
   }
@@ -236,11 +185,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Container(
-            width: 40,
-            height: 10,
-            color: Colors.white,
-          ),
+          Container(width: 40, height: 10, color: Colors.white),
         ],
       ),
     );
@@ -270,17 +215,10 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 80,
-                  height: 10,
-                  color: Colors.white,
-                ),
+                Container(width: 80, height: 10, color: Colors.white),
                 const SizedBox(height: 4),
                 Container(
-                  width: double.infinity,
-                  height: 14,
-                  color: Colors.white,
-                ),
+                    width: double.infinity, height: 14, color: Colors.white),
               ],
             ),
           ),
@@ -300,29 +238,15 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 100,
-            height: 14,
-            color: Colors.white,
-          ),
+          Container(width: 100, height: 14, color: Colors.white),
           const SizedBox(height: 8),
           Container(
-            width: double.infinity,
-            height: 10,
-            color: Colors.white,
-          ),
+              width: double.infinity, height: 10, color: Colors.white),
           const SizedBox(height: 4),
           Container(
-            width: double.infinity,
-            height: 10,
-            color: Colors.white,
-          ),
+              width: double.infinity, height: 10, color: Colors.white),
           const SizedBox(height: 4),
-          Container(
-            width: 200,
-            height: 10,
-            color: Colors.white,
-          ),
+          Container(width: 200, height: 10, color: Colors.white),
         ],
       ),
     );
@@ -339,20 +263,12 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 100,
-            height: 14,
-            color: Colors.white,
-          ),
+          Container(width: 100, height: 14, color: Colors.white),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 60,
-                height: 12,
-                color: Colors.white,
-              ),
+              Container(width: 60, height: 12, color: Colors.white),
               Container(
                 width: 60,
                 height: 22,
@@ -367,48 +283,24 @@ class SchoolStudentProfileScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 60,
-                height: 12,
-                color: Colors.white,
-              ),
-              Container(
-                width: 80,
-                height: 12,
-                color: Colors.white,
-              ),
+              Container(width: 60, height: 12, color: Colors.white),
+              Container(width: 80, height: 12, color: Colors.white),
             ],
           ),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 60,
-                height: 12,
-                color: Colors.white,
-              ),
-              Container(
-                width: 80,
-                height: 12,
-                color: Colors.white,
-              ),
+              Container(width: 60, height: 12, color: Colors.white),
+              Container(width: 80, height: 12, color: Colors.white),
             ],
           ),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 60,
-                height: 12,
-                color: Colors.white,
-              ),
-              Container(
-                width: 80,
-                height: 12,
-                color: Colors.white,
-              ),
+              Container(width: 60, height: 12, color: Colors.white),
+              Container(width: 80, height: 12, color: Colors.white),
             ],
           ),
         ],
@@ -416,64 +308,44 @@ class SchoolStudentProfileScreen extends StatelessWidget {
     );
   }
 
-  // ==================== ERROR STATE ====================
+  // ==================== ERROR / EMPTY ====================
   Widget _buildErrorState(StudentController controller) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 60,
-            color: Colors.red.shade300,
-          ),
+          Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
             controller.errorMessage.value,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.red,
-            ),
+            style: const TextStyle(fontSize: 16, color: Colors.red),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => controller.refreshProfile(),
+            onPressed: controller.refreshProfile,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              'Retry',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Retry', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  // ==================== EMPTY STATE ====================
   Widget _buildEmptyState() {
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.person_outline,
-            size: 60,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No student data available',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
-          ),
+          Icon(Icons.person_outline, size: 60, color: Colors.grey),
+          SizedBox(height: 16),
+          Text('No student data available',
+              style: TextStyle(fontSize: 16, color: Colors.grey)),
         ],
       ),
     );
@@ -488,22 +360,13 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       children: [
         Column(
           children: [
-            Expanded(
-              child: Container(
-                color: Colors.indigo,
-              ),
-            ),
-            Expanded(
-              child: Container(
-                color: Colors.white,
-              ),
-            ),
+            Expanded(child: Container(color: Colors.indigo)),
+            Expanded(child: Container(color: Colors.white)),
           ],
         ),
         Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Profile Image
             Container(
               height: 80,
               width: 80,
@@ -511,18 +374,15 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.blue.shade300,
-                  width: 2,
-                ),
-                image: student?.studentProfile != null && student!.studentProfile.isNotEmpty
+                border: Border.all(color: Colors.blue.shade300, width: 2),
+                image: (student?.studentProfile.isNotEmpty ?? false)
                     ? DecorationImage(
-                  image: NetworkImage(student.studentProfile),
+                  image: NetworkImage(student!.studentProfile),
                   fit: BoxFit.cover,
                 )
                     : null,
               ),
-              child: student?.studentProfile == null || student!.studentProfile.isEmpty
+              child: (student?.studentProfile.isEmpty ?? true)
                   ? Text(
                 studentController.fullName.isNotEmpty
                     ? studentController.fullName[0].toUpperCase()
@@ -535,7 +395,6 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               )
                   : null,
             ),
-            // Student Name
             Text(
               studentController.fullName.isNotEmpty
                   ? studentController.fullName
@@ -547,7 +406,6 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            // Class and Section
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
@@ -565,13 +423,9 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            // Student ID
             Text(
               "Student ID: ${studentController.studentIdCard}",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 16),
           ],
@@ -584,7 +438,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
   Widget _buildSchoolFeatures(
       BuildContext context,
       StudentController studentController,
-      SchoolAuthController authController,
+      StudentAuthController authController,
       ) {
     final student = studentController.studentData.value;
 
@@ -597,13 +451,10 @@ class SchoolStudentProfileScreen extends StatelessWidget {
           children: [
             _buildPersonalInfoCard(student),
             const SizedBox(height: 12),
-            // About School
-            _buildAboutSchool(),
+            _buildAboutSchool(studentController),
             const SizedBox(height: 16),
-            // Fee Status Card
             _buildFeeStatusCard(studentController),
             const SizedBox(height: 16),
-            // Contact Section
             _buildContactSection(context, authController),
             const SizedBox(height: 100),
           ],
@@ -611,7 +462,6 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildPersonalInfoCard(StudentData? student) {
     if (student == null) return const SizedBox.shrink();
@@ -627,15 +477,11 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              Icon(
-                Icons.person_outline,
-                color: Colors.indigo,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.person_outline, color: Colors.indigo, size: 20),
+              SizedBox(width: 8),
+              Text(
                 "Student Information",
                 style: TextStyle(
                   fontSize: 14,
@@ -646,12 +492,11 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.email, "Email", ''),
           _buildInfoRow(Icons.phone, "Phone", student.parentPhone),
           _buildInfoRow(Icons.location_on, "Address", student.address),
           _buildInfoRow(Icons.calendar_today, "Join Date", student.createdAt),
           _buildInfoRow(Icons.attach_money, "Fee", "₹${student.feeAmount}"),
-          _buildInfoRow(Icons.work, "Class", "${student.studentClass}th"),
+          _buildInfoRow(Icons.work, "Class", student.studentClass),
           _buildInfoRow(Icons.person, "Gender", student.gender),
         ],
       ),
@@ -687,23 +532,21 @@ class SchoolStudentProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildAboutSchool(StudentController studentController) {
+    final school = studentController.school;
 
-
-  Widget _buildAboutSchool() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             "About School",
             style: TextStyle(
               fontSize: 14,
@@ -711,17 +554,50 @@ class SchoolStudentProfileScreen extends StatelessWidget {
               color: Colors.black87,
             ),
           ),
-          SizedBox(height: 7),
-          Text(
-            "Suwidhaa Public School provides quality education "
-                "with a focus on academic excellence, discipline, "
-                "sports and overall personality development of students.",
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: Colors.grey,
+          const SizedBox(height: 7),
+          if (school != null) ...[
+            if (school.schoolName.isNotEmpty)
+              Text(
+                school.schoolName,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              school.fullAddress.isNotEmpty
+                  ? school.fullAddress
+                  : 'Address not available',
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: Colors.grey,
+              ),
             ),
-          ),
+            if (school.board.isNotEmpty || school.schoolType.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                [
+                  if (school.board.isNotEmpty) 'Board: ${school.board}',
+                  if (school.schoolType.isNotEmpty) school.schoolType,
+                ].join('  •  '),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ] else
+            const Text(
+              "School information not available.",
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: Colors.grey,
+              ),
+            ),
         ],
       ),
     );
@@ -729,8 +605,9 @@ class SchoolStudentProfileScreen extends StatelessWidget {
 
   Widget _buildFeeStatusCard(StudentController studentController) {
     final student = studentController.studentData.value;
-
     if (student == null) return const SizedBox.shrink();
+
+    final isPaid = student.feeStatus.toLowerCase() == 'paid';
 
     return Container(
       width: double.infinity,
@@ -738,9 +615,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.blue.shade200,
-        ),
+        border: Border.all(color: Colors.blue.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,23 +629,16 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // Fee Status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Status:",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
+              const Text("Status:",
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: student.feeStatus.toLowerCase() == 'paid'
-                      ? Colors.green.shade100
-                      : Colors.orange.shade100,
+                  color: isPaid ? Colors.green.shade100 : Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -778,7 +646,7 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: student.feeStatus.toLowerCase() == 'paid'
+                    color: isPaid
                         ? Colors.green.shade700
                         : Colors.orange.shade700,
                   ),
@@ -787,87 +655,46 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          // Fee Amount
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Total Fee:",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                "₹${student.feeAmount}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
+          _feeRow("Total Fee:", "₹${student.feeAmount}", Colors.black87),
           const SizedBox(height: 4),
-          // Paid Amount
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Paid Amount:",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                "₹${student.paidAmount}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
+          _feeRow("Paid Amount:", "₹${student.paidAmount}", Colors.green),
           const SizedBox(height: 4),
-          // Remaining Fee
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Remaining Fee:",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
-              Text(
-                "₹${studentController.remainingFee.toStringAsFixed(2)}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
+          _feeRow(
+            "Remaining Fee:",
+            "₹${studentController.remainingFee.toStringAsFixed(2)}",
+            Colors.blue,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContactSection(BuildContext context, SchoolAuthController controller) {
+  Widget _feeRow(String label, String value, Color valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactSection(
+      BuildContext context,
+      StudentAuthController controller,
+      ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -876,13 +703,14 @@ class SchoolStudentProfileScreen extends StatelessWidget {
             icon: Icons.call,
             label: "Contact",
             color: Colors.green,
-            onPressed:() => ContactHelper.call('+918989207770'),
+            onPressed: () => ContactHelper.call('+918989207770'),
           ),
           _buildContactButton(
             icon: Icons.help_outline,
             label: "Help",
             color: Colors.blue,
-            onPressed:() => ContactHelper.whatsapp('+918989207770',"Hello Akshay"),
+            onPressed: () =>
+                ContactHelper.whatsapp('+918989207770', "Hello Suwidhaa"),
           ),
           _buildContactButton(
             icon: Icons.logout,
@@ -922,7 +750,10 @@ class SchoolStudentProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context, SchoolAuthController controller) {
+  void _showLogoutDialog(
+      BuildContext context,
+      StudentAuthController controller,
+      ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -932,27 +763,15 @@ class SchoolStudentProfileScreen extends StatelessWidget {
         ),
         title: const Text(
           "Logout",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
-        content: const Text(
-          "Are you sure you want to logout?",
-          style: TextStyle(
-            fontSize: 16,
-          ),
-        ),
+        content:
+        const Text("Are you sure you want to logout?", style: TextStyle(fontSize: 16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
-            ),
+            child: const Text("Cancel",
+                style: TextStyle(color: Colors.grey, fontSize: 16)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -965,13 +784,8 @@ class SchoolStudentProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              "Logout",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
+            child: const Text("Logout",
+                style: TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:untitled/feature/location/screen/location_permission_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../auth/controller/auth_controller.dart';
@@ -22,6 +23,11 @@ class ModuleScreen extends StatefulWidget {
 class _ModuleScreenState extends State<ModuleScreen> {
 
   final AuthController authController = Get.find<AuthController>();
+
+  String _getDisplayName() {
+    final name = authController.getUserName.trim();
+    return name.isEmpty ? 'Suwidhaa User' : name;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,10 +108,6 @@ class _ModuleScreenState extends State<ModuleScreen> {
                   const SizedBox(height: 24),
                   _buildDivider(),
                   const SizedBox(height: 24),
-                  _buildQuickActions(),
-                  const SizedBox(height: 24),
-                  _buildDivider(),
-                  const SizedBox(height: 24),
                   _buildAboutSection(),
                   const SizedBox(height: 80),
                 ],
@@ -164,12 +166,13 @@ class _ModuleScreenState extends State<ModuleScreen> {
                 fontWeight: FontWeight.w400,
               ),
             ),
-             Text(
-               authController.getUserName,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            Obx(() => Text(
+              _getDisplayName(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -314,33 +317,6 @@ class _ModuleScreenState extends State<ModuleScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildQuickActionItem(Icons.support_agent_rounded, 'Support', () {}),
-          _buildQuickActionItem(Icons.history_rounded, 'History', () {}),
-          _buildQuickActionItem(Icons.favorite_rounded, 'Favorites', () {}),
-          _buildQuickActionItem(Icons.settings_rounded, 'Settings', () {}),
-        ],
       ),
     );
   }

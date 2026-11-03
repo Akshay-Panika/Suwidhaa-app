@@ -30,6 +30,8 @@ import '../feature/ott/controller/webseries_controller.dart';
 import '../feature/school/attendance/controller/student_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_checkin_checkout_controller.dart';
+import '../feature/school/auth/controller/student_auth_controller.dart';
+import '../feature/school/auth/controller/teacher_auth_controller.dart';
 import '../feature/school/leave/controller/teacher_leave_controller.dart';
 import '../feature/school/auth/controller/school_auth_controller.dart';
 import '../feature/school/event/controller/school_event_controller.dart';
@@ -51,6 +53,8 @@ class AppBindings implements Bindings {
   void dependencies() {
     // Use lazyPut for most controllers (they'll be created when first used)
     Get.lazyPut<LocationController>(() => LocationController(), fenix: true);
+    Get.lazyPut<StudentAuthController>(() => StudentAuthController(), fenix: true);
+    Get.lazyPut<TeacherAuthController>(() => TeacherAuthController(), fenix: true);
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
     Get.lazyPut<SchoolAuthController>(() => SchoolAuthController(), fenix: true);
     Get.lazyPut<StudentController>(() => StudentController(), fenix: true);
