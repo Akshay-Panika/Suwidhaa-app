@@ -17,27 +17,25 @@ class SchoolAuthScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final studentCtrl = Get.isRegistered<StudentAuthController>()
-        ? Get.find<StudentAuthController>()
-        : Get.put(StudentAuthController());
+    final studentCtrl = Get.find<StudentAuthController>();
+    final teacherCtrl = Get.find<TeacherAuthController>();
 
-    final teacherCtrl = Get.isRegistered<TeacherAuthController>()
-        ? Get.find<TeacherAuthController>()
-        : Get.put(TeacherAuthController());
-
-    return GetBuilder<StudentAuthController>(
-      builder: (controller) {
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: _buildAppBar(controller),
-          body: Stack(
-            children: [
-              _buildBannerBackground(controller),
-              _buildDraggableSheet(context, controller, teacherCtrl),
-            ],
-          ),
-        );
-      },
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: GetBuilder<StudentAuthController>(
+        builder: (controller) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: _buildAppBar(controller),
+            body: Stack(
+              children: [
+                _buildBannerBackground(controller),
+                _buildDraggableSheet(context, controller, teacherCtrl),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -224,6 +222,7 @@ class SchoolAuthScreen extends StatelessWidget {
           ),
           child: CustomScrollView(
             controller: scrollController,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, // ✅ Scroll karte hi keyboard band
             slivers: [
               SliverToBoxAdapter(
                 child: Column(
@@ -275,8 +274,11 @@ class SchoolAuthScreen extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () => _openForgotPasswordSheet(
-                                context, controller, teacherController),
+                            onPressed: () {
+                              FocusManager.instance.primaryFocus?.unfocus(); // ✅ Sheet open se pehle keyboard band
+                              _openForgotPasswordSheet(
+                                  context, controller, teacherController);
+                            },
                             child: const Text(
                               'Forgot Password?',
                               style: TextStyle(
@@ -338,7 +340,10 @@ class SchoolAuthScreen extends StatelessWidget {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => controller.toggleMode(true),
+              onTap: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                controller.toggleMode(true);
+              },
               child: Obx(() => Container(
                 decoration: BoxDecoration(
                   color: controller.isStudentMode.value
@@ -378,7 +383,10 @@ class SchoolAuthScreen extends StatelessWidget {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => controller.toggleMode(false),
+              onTap: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                controller.toggleMode(false);
+              },
               child: Obx(() => Container(
                 decoration: BoxDecoration(
                   color: !controller.isStudentMode.value
@@ -437,6 +445,7 @@ class SchoolAuthScreen extends StatelessWidget {
         TextFormField(
           controller: controller.idController,
           textInputAction: TextInputAction.next,
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(), // ✅ Bahar tap karne pe unfocus
           validator: (v) {
             if (v == null || v.trim().isEmpty) {
               return 'Please enter your ID';
@@ -498,6 +507,7 @@ class SchoolAuthScreen extends StatelessWidget {
         Obx(() => TextFormField(
           controller: controller.passwordController,
           obscureText: !controller.isPasswordVisible.value,
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(), // ✅
           validator: (v) {
             if (v == null || v.isEmpty) return 'Please enter password';
             return null;
@@ -559,12 +569,15 @@ class SchoolAuthScreen extends StatelessWidget {
           onPressed: loading
               ? null
               : () {
-            // ✅ 1. Form Validation (Dono modes ke liye common)
+            // ✅ 1. Form Validation
             if (controller.formKey.currentState?.validate() != true) {
               return;
             }
 
-            // ✅ 2. Call respective login
+            // ✅ 2. Keyboard band karo taaki navigation pe crash na ho
+            FocusManager.instance.primaryFocus?.unfocus();
+
+            // ✅ 3. Call respective login
             if (controller.isStudentMode.value) {
               controller.studentLogin();
             } else {
@@ -643,9 +656,6 @@ class SchoolAuthScreen extends StatelessWidget {
     ));
   }
 
-  // ==========================================================
-  // FORGOT PASSWORD BOTTOM SHEET
-  // ==========================================================
   void _openForgotPasswordSheet(
       BuildContext context,
       StudentAuthController studentCtrl,
@@ -675,6 +685,7 @@ class SchoolAuthScreen extends StatelessWidget {
           ),
           child: Obx(() {
             return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, // ✅
               child: auth.fpStep.value == 1
                   ? _buildFpStep1(auth, isStudentMode: isStudentMode)
                   : _buildFpStep2(auth, isStudentMode: isStudentMode),
@@ -685,7 +696,6 @@ class SchoolAuthScreen extends StatelessWidget {
     );
   }
 
-  // ---- STEP 1 ----
   Widget _buildFpStep1(dynamic controller, {required bool isStudentMode}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -721,6 +731,7 @@ class SchoolAuthScreen extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller.fpIdCardController,
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(), // ✅
           decoration: _fpInputDecoration(
             hint: isStudentMode ? 'e.g. st-student01' : 'e.g. t-teacher01',
             icon: Icons.person_outline,
@@ -734,6 +745,7 @@ class SchoolAuthScreen extends StatelessWidget {
           controller: controller.fpDobController,
           readOnly: true,
           onTap: () async {
+            FocusManager.instance.primaryFocus?.unfocus(); // ✅ Date picker se pehle
             final initial =
                 DateTime.tryParse(controller.fpDobController.text) ??
                     DateTime(1990, 1, 1);
@@ -760,8 +772,10 @@ class SchoolAuthScreen extends StatelessWidget {
           width: double.infinity,
           height: 48,
           child: Obx(() => ElevatedButton(
-            onPressed:
-            controller.fpLoading.value ? null : controller.requestOtp,
+            onPressed: () {
+              FocusManager.instance.primaryFocus?.unfocus(); // ✅ API call se pehle
+              if (!controller.fpLoading.value) controller.requestOtp();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -788,7 +802,6 @@ class SchoolAuthScreen extends StatelessWidget {
     );
   }
 
-  // ---- STEP 2 ----
   Widget _buildFpStep2(dynamic controller, {required bool isStudentMode}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -824,6 +837,7 @@ class SchoolAuthScreen extends StatelessWidget {
           controller: controller.fpOtpController,
           keyboardType: TextInputType.number,
           maxLength: 6,
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(), // ✅
           decoration: _fpInputDecoration(
             hint: '• • • • • •',
             icon: Icons.lock_clock_outlined,
@@ -835,7 +849,8 @@ class SchoolAuthScreen extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller.fpNewPasswordController,
-          obscureText: true, // Isko true kar diya taaki password hide ho
+          obscureText: true,
+          onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(), // ✅
           decoration: _fpInputDecoration(
             hint: 'Minimum 6 characters',
             icon: Icons.lock_outline,
@@ -846,9 +861,10 @@ class SchoolAuthScreen extends StatelessWidget {
           width: double.infinity,
           height: 48,
           child: Obx(() => ElevatedButton(
-            onPressed: controller.fpLoading.value
-                ? null
-                : controller.verifyOtpAndReset,
+            onPressed: () {
+              FocusManager.instance.primaryFocus?.unfocus(); // ✅ Verify se pehle keyboard band
+              if (!controller.fpLoading.value) controller.verifyOtpAndReset();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -873,6 +889,7 @@ class SchoolAuthScreen extends StatelessWidget {
         const SizedBox(height: 8),
         TextButton(
           onPressed: () {
+            FocusManager.instance.primaryFocus?.unfocus(); // ✅ Back se pehle
             controller.fpStep.value = 1;
             controller.fpOtpController.clear();
             controller.fpNewPasswordController.clear();

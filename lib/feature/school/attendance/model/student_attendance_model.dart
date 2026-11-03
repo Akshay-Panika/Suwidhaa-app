@@ -1,52 +1,153 @@
-// lib/model/student_attendance_idwise_model.dart
+// lib/feature/school/attendance/model/student_attendance_model.dart
 
-class StudentAttendanceIdwiseModel {
-  final bool status;
-  final String studentCardId;
-  final String studentName;
-  final String studentClass;
+// ==================== SCHOOL INFO ====================
+class AttendanceSchoolInfo {
+  final int id;
+  final String schoolName;
+  final String schoolCode;
+  final String address;
+  final String city;
+  final String state;
+  final String pincode;
+  final String phone;
+  final String email;
+  final String website;
+  final String board;
   final String schoolType;
-  final int totalRecords;
-  final Map<String, Map<String, List<AttendanceRecord>>> history;
 
-  StudentAttendanceIdwiseModel({
-    required this.status,
-    required this.studentCardId,
-    required this.studentName,
-    required this.studentClass,
+  AttendanceSchoolInfo({
+    required this.id,
+    required this.schoolName,
+    required this.schoolCode,
+    required this.address,
+    required this.city,
+    required this.state,
+    required this.pincode,
+    required this.phone,
+    required this.email,
+    required this.website,
+    required this.board,
     required this.schoolType,
-    required this.totalRecords,
-    required this.history,
   });
 
-  factory StudentAttendanceIdwiseModel.fromJson(Map<String, dynamic> json) {
-    Map<String, Map<String, List<AttendanceRecord>>> parsedHistory = {};
-
-    if (json['history'] != null) {
-      final historyMap = json['history'] as Map<String, dynamic>;
-      historyMap.forEach((year, months) {
-        final monthMap = <String, List<AttendanceRecord>>{};
-        (months as Map<String, dynamic>).forEach((month, records) {
-          monthMap[month] = (records as List)
-              .map((e) => AttendanceRecord.fromJson(e))
-              .toList();
-        });
-        parsedHistory[year] = monthMap;
-      });
-    }
-
-    return StudentAttendanceIdwiseModel(
-      status: json['status'] ?? false,
-      studentCardId: json['student_card_id'] ?? '',
-      studentName: json['student_name'] ?? '',
-      studentClass: json['student_class'] ?? '',
+  factory AttendanceSchoolInfo.fromJson(Map<String, dynamic> json) {
+    return AttendanceSchoolInfo(
+      id: json['id'] ?? 0,
+      schoolName: json['school_name'] ?? '',
+      schoolCode: json['school_code'] ?? '',
+      address: json['address'] ?? '',
+      city: json['city'] ?? '',
+      state: json['state'] ?? '',
+      pincode: json['pincode'] ?? '',
+      phone: json['phone'] ?? '',
+      email: json['email'] ?? '',
+      website: json['website'] ?? '',
+      board: json['board'] ?? '',
       schoolType: json['school_type'] ?? '',
-      totalRecords: json['total_records'] ?? 0,
-      history: parsedHistory,
     );
+  }
+
+  String get fullAddress {
+    final parts = [address, city, state, pincode]
+        .where((e) => e.isNotEmpty && e != 'null')
+        .toList();
+    return parts.join(', ');
   }
 }
 
+// ==================== STUDENT INFO ====================
+class AttendanceStudentInfo {
+  final int id;
+  final String studentProfile;
+  final AttendanceSchoolInfo? school;
+  final String firstName;
+  final String middleName;
+  final String lastName;
+  final String dob;
+  final String gender;
+  final String fatherName;
+  final String motherName;
+  final String parentPhone;
+  final String alternativePhone;
+  final String adharNumber;
+  final String sssmid;
+  final String studentClass;
+  final String rollNumber;
+  final String address;
+  final String casteCategory;
+  final String feeStatus;
+  final String feeAmount;
+  final String paidAmount;
+  final bool checkBox;
+  final String studentIdCard;
+  final String createdAt;
+  final String updatedAt;
+
+  AttendanceStudentInfo({
+    required this.id,
+    required this.studentProfile,
+    this.school,
+    required this.firstName,
+    required this.middleName,
+    required this.lastName,
+    required this.dob,
+    required this.gender,
+    required this.fatherName,
+    required this.motherName,
+    required this.parentPhone,
+    required this.alternativePhone,
+    required this.adharNumber,
+    required this.sssmid,
+    required this.studentClass,
+    required this.rollNumber,
+    required this.address,
+    required this.casteCategory,
+    required this.feeStatus,
+    required this.feeAmount,
+    required this.paidAmount,
+    required this.checkBox,
+    required this.studentIdCard,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AttendanceStudentInfo.fromJson(Map<String, dynamic> json) {
+    return AttendanceStudentInfo(
+      id: json['id'] ?? 0,
+      studentProfile: json['student_profile'] ?? '',
+      school: json['school'] is Map
+          ? AttendanceSchoolInfo.fromJson(Map<String, dynamic>.from(json['school']))
+          : null,
+      firstName: json['first_name'] ?? '',
+      middleName: json['middle_name'] ?? '',
+      lastName: json['last_name'] ?? '',
+      dob: json['dob'] ?? '',
+      gender: json['gender'] ?? '',
+      fatherName: json['father_name'] ?? '',
+      motherName: json['mother_name'] ?? '',
+      parentPhone: json['parent_phone'] ?? '',
+      alternativePhone: json['alternative_phone'] ?? '',
+      adharNumber: json['adhar_number'] ?? '',
+      sssmid: json['SSSMID'] ?? '',
+      studentClass: json['student_class'] ?? '',
+      rollNumber: json['roll_number'] ?? '',
+      address: json['address'] ?? '',
+      casteCategory: json['caste_category'] ?? '',
+      feeStatus: json['fee_status'] ?? '',
+      feeAmount: json['fee_amount'] ?? '',
+      paidAmount: json['paid_amount'] ?? '',
+      checkBox: json['check_box'] ?? false,
+      studentIdCard: json['student_id_card'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+    );
+  }
+
+  String get fullName => '$firstName $middleName $lastName'.trim();
+  double get remainingFee => (double.tryParse(feeAmount) ?? 0) - (double.tryParse(paidAmount) ?? 0);
+}
+
+// ==================== ATTENDANCE RECORD ====================
 class AttendanceRecord {
   final int id;
   final String date;
@@ -87,50 +188,99 @@ class AttendanceRecord {
   bool get isPresent => attendanceStatus.toLowerCase() == 'present';
 }
 
+// ==================== MAIN MODEL (Single Student Detail) ====================
+class StudentAttendanceIdwiseModel {
+  final bool status;
+  final AttendanceStudentInfo? student;
+  final int totalRecords;
+  final Map<String, Map<String, List<AttendanceRecord>>> history;
 
-// lib/feature/student_attendance/model/student_attendance_create_model.dart
+  StudentAttendanceIdwiseModel({
+    required this.status,
+    this.student,
+    required this.totalRecords,
+    required this.history,
+  });
 
-class StudentAttendanceCreateRequest {
-  final List<StudentAttendanceItem> students;
+  factory StudentAttendanceIdwiseModel.fromJson(Map<String, dynamic> json) {
+    Map<String, Map<String, List<AttendanceRecord>>> parsedHistory = {};
 
-  StudentAttendanceCreateRequest({required this.students});
+    if (json['history'] != null) {
+      final historyMap = json['history'] as Map<String, dynamic>;
+      historyMap.forEach((year, months) {
+        final monthMap = <String, List<AttendanceRecord>>{};
+        (months as Map<String, dynamic>).forEach((month, records) {
+          monthMap[month] = (records as List)
+              .map((e) => AttendanceRecord.fromJson(e))
+              .toList();
+        });
+        parsedHistory[year] = monthMap;
+      });
+    }
 
-  Map<String, dynamic> toJson() => {
-    "students": students.map((e) => e.toJson()).toList(),
-  };
+    return StudentAttendanceIdwiseModel(
+      status: json['status'] ?? false,
+      student: json['student'] is Map
+          ? AttendanceStudentInfo.fromJson(Map<String, dynamic>.from(json['student']))
+          : null,
+      totalRecords: json['total_records'] ?? 0,
+      history: parsedHistory,
+    );
+  }
 }
 
+// ==================== TODAY'S ATTENDANCE MODEL ====================
+class TodayAttendanceModel {
+  final bool status;
+  final String message;
+  final AttendanceRecord? attendance;
+  final String date;
+  final String dayName;
+
+  TodayAttendanceModel({
+    required this.status,
+    this.message = '',
+    this.attendance,
+    this.date = '',
+    this.dayName = '',
+  });
+
+  factory TodayAttendanceModel.fromJson(Map<String, dynamic> json) {
+    return TodayAttendanceModel(
+      status: json['status'] ?? false,
+      message: json['message'] ?? '',
+      date: json['date'] ?? '',
+      dayName: json['day_name'] ?? '',
+      attendance: json['attendance'] != null && json['attendance'] is Map
+          ? AttendanceRecord.fromJson(Map<String, dynamic>.from(json['attendance']))
+          : null,
+    );
+  }
+}
+
+// ==================== BULK CREATE REQUEST ====================
 class StudentAttendanceItem {
-  final String studentCardId;
-  final String studentName;
-  final String studentClass;
-  final String schoolType;
+  final int studentId; // ✅ Backend 'student_id' (int) maang raha hai
   final String date; // "YYYY-MM-DD"
   final String attendanceStatus; // present | absent | leave
   final String remarks;
 
   StudentAttendanceItem({
-    required this.studentCardId,
-    required this.studentName,
-    required this.studentClass,
-    required this.schoolType,
+    required this.studentId,
     required this.date,
     required this.attendanceStatus,
-    required this.remarks,
+    this.remarks = '',
   });
 
   Map<String, dynamic> toJson() => {
-    "student_card_id": studentCardId,
-    "student_name": studentName,
-    "student_class": studentClass,
-    "school_type": schoolType,
+    "student_id": studentId,
     "date": date,
     "attendance_status": attendanceStatus.toLowerCase(),
     "remarks": remarks,
   };
 }
 
-// ============ RESPONSE ============
+// ==================== BULK CREATE RESPONSE ====================
 class StudentAttendanceCreateResponse {
   final bool status;
   final String message;
@@ -157,39 +307,18 @@ class StudentAttendanceCreateResponse {
 }
 
 class StudentAttendanceResult {
-  final int id;
-  final String studentCardId;
-  final String studentName;
-  final String studentClass;
-  final String schoolType;
-  final String date;
-  final String dayName;
-  final String attendanceStatus;
-  final String remarks;
+  final Map<String, dynamic> student;
+  final Map<String, dynamic> attendance;
 
   StudentAttendanceResult({
-    required this.id,
-    required this.studentCardId,
-    required this.studentName,
-    required this.studentClass,
-    required this.schoolType,
-    required this.date,
-    required this.dayName,
-    required this.attendanceStatus,
-    required this.remarks,
+    required this.student,
+    required this.attendance,
   });
 
   factory StudentAttendanceResult.fromJson(Map<String, dynamic> json) {
     return StudentAttendanceResult(
-      id: json['id'] ?? 0,
-      studentCardId: json['student_card_id'] ?? '',
-      studentName: json['student_name'] ?? '',
-      studentClass: json['student_class'] ?? '',
-      schoolType: json['school_type'] ?? '',
-      date: json['date'] ?? '',
-      dayName: json['day_name'] ?? '',
-      attendanceStatus: json['attendance_status'] ?? '',
-      remarks: json['remarks'] ?? '',
+      student: Map<String, dynamic>.from(json['student'] ?? {}),
+      attendance: Map<String, dynamic>.from(json['attendance'] ?? {}),
     );
   }
 }

@@ -2,6 +2,55 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+// ==================== SCHOOL INFO ====================
+class StudentListSchoolInfo {
+  final int id;
+  final String schoolName;
+  final String schoolCode;
+  final String address;
+  final String city;
+  final String state;
+  final String pincode;
+  final String phone;
+  final String email;
+  final String website;
+  final String board;
+  final String schoolType;
+
+  StudentListSchoolInfo({
+    required this.id,
+    required this.schoolName,
+    required this.schoolCode,
+    required this.address,
+    required this.city,
+    required this.state,
+    required this.pincode,
+    required this.phone,
+    required this.email,
+    required this.website,
+    required this.board,
+    required this.schoolType,
+  });
+
+  factory StudentListSchoolInfo.fromJson(Map<String, dynamic> json) {
+    return StudentListSchoolInfo(
+      id: json['id'] ?? 0,
+      schoolName: json['school_name'] ?? '',
+      schoolCode: json['school_code'] ?? '',
+      address: json['address'] ?? '',
+      city: json['city'] ?? '',
+      state: json['state'] ?? '',
+      pincode: json['pincode'] ?? '',
+      phone: json['phone'] ?? '',
+      email: json['email'] ?? '',
+      website: json['website'] ?? '',
+      board: json['board'] ?? '',
+      schoolType: json['school_type'] ?? '',
+    );
+  }
+}
+
+// ==================== LIST RESPONSE ====================
 class StudentListResponse {
   final bool success;
   final int count;
@@ -24,9 +73,11 @@ class StudentListResponse {
   }
 }
 
+// ==================== STUDENT DATA ====================
 class StudentListData {
   final int id;
   final String? studentProfile;
+  final StudentListSchoolInfo? school; // ✅ Naya nested object
   final String firstName;
   final String middleName;
   final String lastName;
@@ -46,7 +97,6 @@ class StudentListData {
   final String feeAmount;
   final String paidAmount;
   final bool checkBox;
-  final String schoolType;
   final String studentIdCard;
   final String createdAt;
   final String updatedAt;
@@ -54,6 +104,7 @@ class StudentListData {
   StudentListData({
     required this.id,
     this.studentProfile,
+    this.school,
     required this.firstName,
     required this.middleName,
     required this.lastName,
@@ -73,7 +124,6 @@ class StudentListData {
     required this.feeAmount,
     required this.paidAmount,
     required this.checkBox,
-    required this.schoolType,
     required this.studentIdCard,
     required this.createdAt,
     required this.updatedAt,
@@ -83,6 +133,9 @@ class StudentListData {
     return StudentListData(
       id: json['id'] ?? 0,
       studentProfile: json['student_profile'],
+      school: json['school'] is Map
+          ? StudentListSchoolInfo.fromJson(Map<String, dynamic>.from(json['school']))
+          : null, // ✅ Safe Parse
       firstName: json['first_name'] ?? '',
       middleName: json['middle_name'] ?? '',
       lastName: json['last_name'] ?? '',
@@ -102,26 +155,24 @@ class StudentListData {
       feeAmount: json['fee_amount'] ?? '',
       paidAmount: json['paid_amount'] ?? '',
       checkBox: json['check_box'] ?? false,
-      schoolType: json['school_type'] ?? '',
       studentIdCard: json['student_id_card'] ?? '',
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
     );
   }
 
-  // Helper method to get full name
+  // Helper Methods
   String get fullName {
     String full = firstName;
-    if (middleName.isNotEmpty) {
-      full += ' $middleName';
-    }
-    if (lastName.isNotEmpty) {
-      full += ' $lastName';
-    }
-    return full;
+    if (middleName.isNotEmpty) full += ' $middleName';
+    if (lastName.isNotEmpty) full += ' $lastName';
+    return full.trim();
   }
 
-  // Helper method to get remaining fee
+  // Backward compatibility getter (agar UI me pehle use ho raha tha)
+  String get schoolType => school?.schoolType ?? '';
+  String get schoolName => school?.schoolName ?? '';
+
   double get remainingFee {
     try {
       double total = double.tryParse(feeAmount) ?? 0;
@@ -132,28 +183,9 @@ class StudentListData {
     }
   }
 
-  // Helper method to get gender color
-  Color get genderColor {
-    return gender.toLowerCase() == 'male' ? Colors.blue : Colors.pink;
-  }
-
-  // Helper method to get gender icon
-  IconData get genderIcon {
-    return gender.toLowerCase() == 'male' ? Icons.male : Icons.female;
-  }
-
-  // Helper method to get status color
-  Color get statusColor {
-    return feeStatus.toLowerCase() == 'paid' ? Colors.green : Colors.orange;
-  }
-
-  // Helper method to get status icon
-  IconData get statusIcon {
-    return feeStatus.toLowerCase() == 'paid' ? Icons.check_circle : Icons.warning_amber;
-  }
-
-  // Helper method to get profile image or initials
-  String get displayName {
-    return firstName.isNotEmpty ? firstName[0].toUpperCase() : '?';
-  }
+  Color get genderColor => gender.toLowerCase() == 'male' ? Colors.blue : Colors.pink;
+  IconData get genderIcon => gender.toLowerCase() == 'male' ? Icons.male : Icons.female;
+  Color get statusColor => feeStatus.toLowerCase() == 'paid' ? Colors.green : Colors.orange;
+  IconData get statusIcon => feeStatus.toLowerCase() == 'paid' ? Icons.check_circle : Icons.warning_amber;
+  String get displayName => firstName.isNotEmpty ? firstName[0].toUpperCase() : '?';
 }

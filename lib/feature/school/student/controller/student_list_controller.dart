@@ -11,7 +11,6 @@ class StudentListController extends GetxController {
   final isLoading = false.obs;
   final studentList = <StudentListData>[].obs;
   final errorMessage = ''.obs;
-  final schoolType = ''.obs; // 👈 NEW: track current school type
 
   @override
   void onInit() {
@@ -32,30 +31,8 @@ class StudentListController extends GetxController {
         errorMessage.value = 'Failed to load student list';
       }
     } catch (e) {
-      errorMessage.value = e.toString();
-      FlutterToast.error('Failed to load students: $e');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // 👇 NEW METHOD: Load students by school type
-  Future<void> loadStudentListBySchoolType(String type) async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
-      schoolType.value = type;
-
-      final response = await _repository.getStudentListBySchoolType(type);
-
-      if (response.success) {
-        studentList.value = response.data;
-      } else {
-        errorMessage.value = 'Failed to load student list';
-      }
-    } catch (e) {
-      errorMessage.value = e.toString();
-      FlutterToast.error('Failed to load students: $e');
+      errorMessage.value = e.toString().replaceAll('Exception: ', '');
+      FlutterToast.error(errorMessage.value);
     } finally {
       isLoading.value = false;
     }
@@ -82,26 +59,9 @@ class StudentListController extends GetxController {
   // Get student count
   int get totalStudents => studentList.length;
 
-  // Get paid students count
-  int get paidStudents =>
-      studentList.where((s) => s.feeStatus.toLowerCase() == 'paid').length;
-
-  // Get pending students count
-  int get pendingStudents => totalStudents - paidStudents;
-
-  // Get attendance percentage
-  String get attendancePercentage {
-    if (totalStudents == 0) return '0%';
-    return '${((paidStudents / totalStudents) * 100).toStringAsFixed(0)}%';
-  }
-
   // Refresh student list
   Future<void> refreshStudents() async {
-    if (schoolType.value.isNotEmpty) {
-      await loadStudentListBySchoolType(schoolType.value);
-    } else {
-      await loadStudentList();
-    }
+    await loadStudentList();
   }
 
   @override

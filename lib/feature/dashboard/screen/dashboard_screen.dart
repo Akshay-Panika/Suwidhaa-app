@@ -6,6 +6,7 @@ import '../../../core/utils/app_color.dart';
 import '../../account/screen/account_screen.dart';
 import '../../auth/controller/auth_controller.dart';
 import '../../module/screen/module_screen.dart';
+import '../../school/auth/service/school_auth_shared_pref_service.dart';
 import '../widget/promotional_bottomsheet_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -18,6 +19,23 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthController authController = Get.find<AuthController>();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    checkSchoolData();
+  }
+
+  void checkSchoolData() async {
+    // Student ke liye
+    final studentSchool = await SchoolAuthSharedPrefService.getStudentSchoolData();
+    print("STUDENT SCHOOL DATA: $studentSchool");
+
+    // Teacher ke liye
+    final teacherSchool = await SchoolAuthSharedPrefService.getTeacherSchoolData();
+    print("TEACHER SCHOOL DATA: $teacherSchool");
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SchoolAuthSharedPrefService {
   // ============================================================
-  // STUDENT KEYS (UNCHANGED)
+  // STUDENT KEYS
   // ============================================================
   static const _keyIsLoggedIn       = 'school_is_logged_in';
   static const _keyStudentId        = 'school_student_id';
@@ -12,20 +12,22 @@ class SchoolAuthSharedPrefService {
   static const _keyStudentIdCard    = 'school_student_id_card';
   static const _keyLastLogin        = 'school_last_login';
   static const _keyRawJson          = 'school_auth_raw_json';
+  static const _keyStudentSchoolJson = 'school_student_school_json'; // ✅ NEW
 
   // ============================================================
-  // TEACHER KEYS (NEW)
+  // TEACHER KEYS
   // ============================================================
-  static const _keyUserType         = 'school_user_type'; // 'student' | 'teacher'
+  static const _keyUserType         = 'school_user_type';
   static const _keyTeacherId        = 'school_teacher_id';
   static const _keyTeacherName      = 'school_teacher_name';
   static const _keyTeacherClass     = 'school_teacher_class';
   static const _keyTeacherIdCard    = 'school_teacher_id_card';
   static const _keyTeacherLastLogin = 'school_teacher_last_login';
   static const _keyTeacherRawJson   = 'school_teacher_raw_json';
+  static const _keyTeacherSchoolJson = 'school_teacher_school_json'; // ✅ NEW
 
   // ============================================================
-  // SAVE — STUDENT (same behaviour + 1 line for userType)
+  // SAVE — STUDENT
   // ============================================================
   static Future<void> saveStudentLogin(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,10 +39,17 @@ class SchoolAuthSharedPrefService {
     await prefs.setString(_keyStudentIdCard, data['student_id_card'] ?? '');
     await prefs.setString(_keyLastLogin, data['last_login'] ?? '');
     await prefs.setString(_keyRawJson, jsonEncode(data));
+
+    // ✅ Save Nested School Object
+    if (data['school'] != null) {
+      await prefs.setString(_keyStudentSchoolJson, jsonEncode(data['school']));
+    } else {
+      await prefs.remove(_keyStudentSchoolJson);
+    }
   }
 
   // ============================================================
-  // SAVE — TEACHER (NEW)
+  // SAVE — TEACHER
   // ============================================================
   static Future<void> saveTeacherLogin(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
@@ -52,6 +61,13 @@ class SchoolAuthSharedPrefService {
     await prefs.setString(_keyTeacherIdCard, data['teacher_id_card'] ?? '');
     await prefs.setString(_keyTeacherLastLogin, data['last_login'] ?? '');
     await prefs.setString(_keyTeacherRawJson, jsonEncode(data));
+
+    // ✅ Save Nested School Object
+    if (data['school'] != null) {
+      await prefs.setString(_keyTeacherSchoolJson, jsonEncode(data['school']));
+    } else {
+      await prefs.remove(_keyTeacherSchoolJson);
+    }
   }
 
   // ============================================================
@@ -80,7 +96,7 @@ class SchoolAuthSharedPrefService {
   }
 
   // ============================================================
-  // STUDENT READ (existing names unchanged)
+  // STUDENT READ
   // ============================================================
   static Future<int?> getStudentId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -118,8 +134,20 @@ class SchoolAuthSharedPrefService {
     }
   }
 
+  // ✅ NEW: Get Student's School Data
+  static Future<Map<String, dynamic>?> getStudentSchoolData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyStudentSchoolJson);
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ============================================================
-  // TEACHER READ (NEW)
+  // TEACHER READ
   // ============================================================
   static Future<int?> getTeacherId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -157,8 +185,20 @@ class SchoolAuthSharedPrefService {
     }
   }
 
+  // ✅ NEW: Get Teacher's School Data
+  static Future<Map<String, dynamic>?> getTeacherSchoolData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyTeacherSchoolJson);
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ============================================================
-  // CLEAR — STUDENT (existing, unchanged)
+  // CLEAR — STUDENT
   // ============================================================
   static Future<void> clearStudent() async {
     final prefs = await SharedPreferences.getInstance();
@@ -169,13 +209,14 @@ class SchoolAuthSharedPrefService {
     await prefs.remove(_keyStudentIdCard);
     await prefs.remove(_keyLastLogin);
     await prefs.remove(_keyRawJson);
+    await prefs.remove(_keyStudentSchoolJson); // ✅ Remove school
     if (prefs.getString(_keyUserType) == 'student') {
       await prefs.remove(_keyUserType);
     }
   }
 
   // ============================================================
-  // CLEAR — TEACHER (NEW)
+  // CLEAR — TEACHER
   // ============================================================
   static Future<void> clearTeacher() async {
     final prefs = await SharedPreferences.getInstance();
@@ -185,6 +226,7 @@ class SchoolAuthSharedPrefService {
     await prefs.remove(_keyTeacherIdCard);
     await prefs.remove(_keyTeacherLastLogin);
     await prefs.remove(_keyTeacherRawJson);
+    await prefs.remove(_keyTeacherSchoolJson); // ✅ Remove school
     if (prefs.getString(_keyUserType) == 'teacher') {
       await prefs.remove(_keyIsLoggedIn);
       await prefs.remove(_keyUserType);
@@ -192,26 +234,33 @@ class SchoolAuthSharedPrefService {
   }
 
   // ============================================================
-  // CLEAR — EVERYTHING (NEW)
+  // CLEAR — EVERYTHING
   // ============================================================
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIsLoggedIn);
     await prefs.remove(_keyUserType);
+
+    // Student
     await prefs.remove(_keyStudentId);
     await prefs.remove(_keyStudentName);
     await prefs.remove(_keyStudentClass);
     await prefs.remove(_keyStudentIdCard);
     await prefs.remove(_keyLastLogin);
     await prefs.remove(_keyRawJson);
+    await prefs.remove(_keyStudentSchoolJson);
+
+    // Teacher
     await prefs.remove(_keyTeacherId);
     await prefs.remove(_keyTeacherName);
     await prefs.remove(_keyTeacherClass);
     await prefs.remove(_keyTeacherIdCard);
     await prefs.remove(_keyTeacherLastLogin);
     await prefs.remove(_keyTeacherRawJson);
+    await prefs.remove(_keyTeacherSchoolJson);
   }
 }
+
 
 class OldSchoolAuthSharedPrefService {
   static const String _keyIsLoggedIn = 'school_is_logged_in';

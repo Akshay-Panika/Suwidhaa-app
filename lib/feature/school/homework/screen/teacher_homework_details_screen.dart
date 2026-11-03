@@ -44,7 +44,7 @@ class _TeacherHomeworkDetailsScreenState
     // 2. Ensure student list is available for name/photo lookup
     if (hw != null && hw.schoolType != null && hw.schoolType!.isNotEmpty) {
       // Load students for the same school type
-      await studentListController.loadStudentListBySchoolType(hw.schoolType!);
+      // await studentListController.loadStudentListBySchoolType(hw.schoolType!);
     }
 
     if (!mounted) return;

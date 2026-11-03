@@ -1,6 +1,5 @@
 // lib/feature/school/student/controller/student_controller.dart
 import 'package:get/get.dart';
-
 import '../../../../core/widget/flutter_toast.dart';
 import '../model/student_model.dart';
 import '../repsitory/student_repository.dart';

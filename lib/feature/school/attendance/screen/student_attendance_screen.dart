@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../controller/student_attendance_controller.dart';
 import '../model/student_attendance_model.dart';
-import '../../profile/controller/student_controller.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
   const StudentAttendanceScreen({super.key});
@@ -17,7 +16,6 @@ class StudentAttendanceScreen extends StatefulWidget {
 }
 
 class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
-  late final StudentController studentController;
   late final StudentAttendanceController attendanceController;
 
   static const Color _primary = Colors.indigo;
@@ -26,7 +24,6 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   @override
   void initState() {
     super.initState();
-    studentController = Get.find<StudentController>();
     attendanceController = Get.find<StudentAttendanceController>();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -34,14 +31,11 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     });
   }
 
+  // ✅ Ab bina studentCardId ke call hoga
   void _loadAttendance() {
-    // Student controller se card id, warna fallback
-    final studentCardId =
-        studentController.studentData.value?.studentIdCard ?? 'St-Student01';
-
     if (!attendanceController.isLoading.value &&
         !attendanceController.hasData) {
-      attendanceController.fetchStudentAttendance(studentCardId);
+      attendanceController.fetchStudentAttendance();
     }
   }
 
@@ -390,7 +384,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
           startingDayOfWeek: StartingDayOfWeek.sunday,
           selectedDayPredicate: (_) => false,
           onDaySelected: null,
-          availableGestures: AvailableGestures.none, // swipe band
+          availableGestures: AvailableGestures.none,
           onPageChanged: (newFocused) {
             final target = DateTime(newFocused.year, newFocused.month, 1);
             final index = attendanceController.availableMonths

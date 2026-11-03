@@ -64,7 +64,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
 
       // 2. Load students for name/photo lookup
       if (studentSchool.isNotEmpty) {
-        await studentListController.loadStudentListBySchoolType(studentSchool);
+        // await studentListController.loadStudentListBySchoolType(studentSchool);
       }
 
       // 3. Filter my homework
