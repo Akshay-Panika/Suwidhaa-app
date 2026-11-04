@@ -41,6 +41,7 @@ import '../feature/school/leave/controller/student_leave_controller.dart';
 import '../feature/school/library/controller/library_controller.dart';
 import '../feature/school/meeting/controller/meeting_controller.dart';
 import '../feature/school/notice/controller/notice_controller.dart';
+import '../feature/school/payment/controller/student_fee_history_controller.dart';
 import '../feature/school/payment/controller/teacher_salary_controller.dart';
 import '../feature/school/profile/controller/student_controller.dart';
 import '../feature/school/profile/controller/teacher_controller.dart';
@@ -97,5 +98,6 @@ class AppBindings implements Bindings {
     Get.lazyPut<EcommerceSubCategoryController>(() => EcommerceSubCategoryController(), fenix: true);
     Get.lazyPut<EcommerceProductController>(() => EcommerceProductController(), fenix: true);
     Get.lazyPut<EcommerceStoreController>(() => EcommerceStoreController(), fenix: true);
+    Get.lazyPut<StudentFeeHistoryController>(() => StudentFeeHistoryController(), fenix: true);
   }
 }

@@ -1,5 +1,4 @@
 // lib/feature/school/attendance/widget/teacher_attendance_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../attendance/controller/teacher_attendance_controller.dart';
@@ -44,10 +43,10 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
     ever(teacherController.teacherData, (_) => _loadAttendance());
   }
 
+  /// ✅ No teacherId param — controller reads from SharedPrefs
   void _loadAttendance() {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isNotEmpty && !attendanceController.hasData) {
-      attendanceController.fetchAttendance(teacherId: teacherId);
+    if (!attendanceController.hasData) {
+      attendanceController.fetchAttendance();
     }
   }
 
@@ -58,9 +57,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
   }
 
   int _countByStatus(
-      List<AttendanceRecord> records,
-      AttendanceStatusType type,
-      ) {
+      List<AttendanceRecord> records, AttendanceStatusType type) {
     return records.where((r) => r.statusType == type).length;
   }
 
@@ -70,7 +67,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
       final isLoading = attendanceController.isLoading.value;
       final hasData = attendanceController.hasData;
 
-      // ── Loading State ──
+      // ── Loading ──
       if (isLoading && !hasData) {
         return Container(
           height: 78,
@@ -86,68 +83,40 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.indigo,
-                ),
+                    strokeWidth: 2, color: Colors.indigo),
               ),
             ),
           ),
         );
       }
 
-      // ── Focused month ──
       final focused = attendanceController.focusedDay.value;
       final allRecords =
           attendanceController.attendanceData.value?.allRecords ??
               <AttendanceRecord>[];
 
+      // ✅ Only 3 statuses now — no weekOff/running/halfDay
       final records = allRecords
           .where((r) =>
       r.date.year == focused.year && r.date.month == focused.month)
           .toList();
 
-      final attendableRecords = records.where((r) {
-        return r.statusType != AttendanceStatusType.weekOff &&
-            r.statusType != AttendanceStatusType.running;
-      }).toList();
+      final presentDays =
+      _countByStatus(records, AttendanceStatusType.present);
+      final absentDays =
+      _countByStatus(records, AttendanceStatusType.absent);
+      final leaveDays =
+      _countByStatus(records, AttendanceStatusType.leave);
 
-      final presentDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.present,
-      );
-      final absentDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.absent,
-      );
-      final halfDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.halfDay,
-      );
-      final leaveDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.leave,
-      );
-
-      // ══════════════════════════════════════════════════════
-      // ✅ NEW: total days in the focused month
-      // ══════════════════════════════════════════════════════
+      // Total days in month (used for percentage)
       final int daysInMonth =
           DateTime(focused.year, focused.month + 1, 0).day;
 
-      // ✅ attended = present + (half × 0.5)
-      final double attended = presentDays + (halfDays * 0.5);
-
-      // ✅ ratio = attended / daysInMonth
+      final double attended = presentDays.toDouble(); // no half days
       final double ratio = daysInMonth > 0
           ? (attended / daysInMonth).clamp(0.0, 1.0)
           : 0.0;
-
       final double percent = ratio * 100;
-
-      // 🐛 Debug (remove later)
-      print('📊 Card: month=${focused.year}-${focused.month} '
-          'days=$daysInMonth present=$presentDays half=$halfDays '
-          'attended=$attended ratio=$ratio');
 
       return AnimatedBuilder(
         animation: _animationController,
@@ -161,7 +130,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
             child: Row(
               spacing: 10,
               children: [
-                // ================= PRESENT & ABSENT =================
+                // ── Present & Absent ──
                 Expanded(
                   flex: 2,
                   child: Container(
@@ -182,10 +151,9 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                           ),
                         ),
                         Container(
-                          height: 38,
-                          width: 1,
-                          color: Colors.grey.shade200,
-                        ),
+                            height: 38,
+                            width: 1,
+                            color: Colors.grey.shade200),
                         Expanded(
                           child: _buildAttendanceItem(
                             icon: Icons.cancel_outlined,
@@ -199,7 +167,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                   ),
                 ),
 
-                // ================= ATTENDANCE PERCENTAGE =================
+                // ── Percentage ──
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -222,8 +190,7 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                 backgroundColor: Colors.indigo.shade100,
                                 valueColor:
                                 const AlwaysStoppedAnimation<Color>(
-                                  Colors.indigo,
-                                ),
+                                    Colors.indigo),
                               ),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
@@ -250,9 +217,8 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500),
                               ),
                               const SizedBox(height: 3),
                               Text(
@@ -260,10 +226,9 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.indigo,
-                                ),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo),
                               ),
                             ],
                           ),
@@ -302,10 +267,9 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -313,10 +277,9 @@ class _TeacherAttendanceCardState extends State<TeacherAttendanceCard>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: color),
                 ),
               ],
             ),

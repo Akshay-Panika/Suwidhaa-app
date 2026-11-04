@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../controller/student_leave_controller.dart';
 import '../model/student_leave_list_model.dart';
+import '../widget/profile_avatar.dart';
 import 'student_leave_form_screen.dart';
 
 class StudentLeaveDetailsScreen extends StatefulWidget {
@@ -22,8 +23,7 @@ class StudentLeaveDetailsScreen extends StatefulWidget {
       _StudentLeaveDetailsScreenState();
 }
 
-class _StudentLeaveDetailsScreenState
-    extends State<StudentLeaveDetailsScreen> {
+class _StudentLeaveDetailsScreenState extends State<StudentLeaveDetailsScreen> {
   final controller = Get.find<StudentLeaveController>();
 
   StudentLeaveData? _leave;
@@ -45,9 +45,6 @@ class _StudentLeaveDetailsScreenState
     }
   }
 
-  // ═══════════════════════════════════════════════
-  // DELETE
-  // ═══════════════════════════════════════════════
   Future<void> _confirmDelete() async {
     if (_leave == null) return;
 
@@ -102,13 +99,10 @@ class _StudentLeaveDetailsScreenState
     if (!mounted) return;
 
     if (ok) {
-      Navigator.pop(context, true); // list screen ko signal
+      Navigator.pop(context, true);
     }
   }
 
-  // ═══════════════════════════════════════════════
-  // EDIT — FormScreen open karo (reuse)
-  // ═══════════════════════════════════════════════
   Future<void> _openEditScreen() async {
     if (_leave == null) return;
 
@@ -121,9 +115,6 @@ class _StudentLeaveDetailsScreenState
     }
   }
 
-  // ═══════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +136,6 @@ class _StudentLeaveDetailsScreenState
           ),
         ),
         actions: [
-          // 🔹 Pending hone par hi edit/delete
           if (_leave != null && _leave!.isPending) ...[
             IconButton(
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
@@ -187,7 +177,13 @@ class _StudentLeaveDetailsScreenState
         children: [
           _buildStatusBanner(leave),
           const SizedBox(height: 16),
-          _buildInfoCard(leave),
+          _buildStudentCard(leave),
+          const SizedBox(height: 16),
+          _buildLeaveInfoCard(leave),
+          if (leave.hasTeacher) ...[
+            const SizedBox(height: 16),
+            _buildTeacherCard(leave),
+          ],
           if (leave.hasImage) ...[
             const SizedBox(height: 16),
             _buildImageCard(leave.image!),
@@ -243,7 +239,80 @@ class _StudentLeaveDetailsScreenState
     );
   }
 
-  Widget _buildInfoCard(StudentLeaveData leave) {
+  // ─── Student card with profile ───
+  Widget _buildStudentCard(StudentLeaveData leave) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          LeaveProfileAvatar(
+            imageUrl: leave.studentProfileImage,
+            name: leave.studentName,
+            size: 64,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  leave.studentName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.badge_outlined,
+                        size: 13, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      leave.studentIdCard,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+                if (leave.studentClass.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Class ${leave.studentClass}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.indigo,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Leave info card ───
+  Widget _buildLeaveInfoCard(StudentLeaveData leave) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -264,13 +333,6 @@ class _StudentLeaveDetailsScreenState
             ),
           ),
           const SizedBox(height: 14),
-          _row(Icons.person_outline_rounded, 'Student', leave.studentName),
-          _divider(),
-          _row(Icons.badge_outlined, 'Student ID Card',
-              leave.studentIdCard),
-          _divider(),
-          _row(Icons.class_outlined, 'Class', leave.studentClass),
-          _divider(),
           _row(Icons.calendar_today_rounded, 'Start Date',
               leave.formattedStartDate),
           _divider(),
@@ -282,12 +344,99 @@ class _StudentLeaveDetailsScreenState
           _divider(),
           _row(Icons.access_time_rounded, 'Applied On',
               leave.formattedCreatedDate),
-          if (leave.teacherName != null &&
-              leave.teacherName!.isNotEmpty) ...[
-            _divider(),
-            _row(Icons.verified_user_outlined, 'Reviewed By',
-                leave.teacherName!),
-          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── Teacher card with profile ───
+  Widget _buildTeacherCard(StudentLeaveData leave) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.green.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 16, color: Colors.green[700]),
+              const SizedBox(width: 6),
+              Text(
+                'Reviewed By',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              LeaveProfileAvatar(
+                imageUrl: leave.teacherProfileImage,
+                name: leave.teacherName,
+                size: 56,
+                fallbackColor: Colors.green,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      leave.teacherName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.badge_outlined,
+                            size: 12, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          leave.teacher?.teacherIdCard ?? '',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (leave.teacher?.phone != null &&
+                        leave.teacher!.phone!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.phone_outlined,
+                              size: 12, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            leave.teacher!.phone!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

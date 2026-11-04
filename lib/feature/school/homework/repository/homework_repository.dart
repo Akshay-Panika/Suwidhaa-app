@@ -30,8 +30,9 @@ class HomeworkRepository {
 
   Future<HomeworkResponse> getHomeworkByTeacher(String teacherId) async {
     try {
+      final id = Uri.encodeComponent(teacherId.trim());
       final res = await _dio.get(
-        'v1/school/homework/list/teacher-id/$teacherId/',
+        'v1/school/homework/list/teacher-id/$id/',
       );
       return _parse(res);
     } on DioException catch (e) {
@@ -39,22 +40,17 @@ class HomeworkRepository {
     }
   }
 
-  Future<HomeworkResponse> getHomeworkByClass({
-    required String schoolType,
-    required String className,
-  }) async {
+  /// ✅ NEW: Student's homework list
+  Future<HomeworkResponse> getHomeworkByStudent(String studentIdCard) async {
     try {
-      // URL-encode for safety (class may have spaces like "Class 6")
-      final type = Uri.encodeComponent(schoolType.trim());
-      final cls = Uri.encodeComponent(className.trim());
-
+      final id = Uri.encodeComponent(studentIdCard.trim());
       final res = await _dio.get(
-        'v1/school/homework/list/$type/$cls/',
+        'v1/school/homework/list/student-id/$id/',
       );
       return _parse(res);
     } on DioException catch (e) {
       final msg = e.response?.data?['message'] ?? e.message;
-      throw Exception('Failed to fetch class homework: $msg');
+      throw Exception('Failed to fetch student homework: $msg');
     }
   }
 
@@ -73,14 +69,10 @@ class HomeworkRepository {
     }
   }
 
-  // ══════════════════════════════════════════════════════
-  // TOGGLE / SET STUDENT STATUS
-  // POST /v1/school/homework/<id>/toggle-status/<student_idcard>/
-  // ══════════════════════════════════════════════════════
   Future<bool> toggleStudentStatus({
     required int homeworkId,
     required String studentIdcard,
-    bool? explicitStatus, // null = toggle, else set explicit value
+    bool? explicitStatus,
   }) async {
     try {
       final body = explicitStatus == null
@@ -98,6 +90,8 @@ class HomeworkRepository {
       throw Exception('Toggle failed: $msg');
     }
   }
+
+  /// ✅ teacherName removed — backend auto-fills from Teacher model
   Future<HomeworkModel> createHomework({
     required String schoolType,
     required String className,
@@ -107,7 +101,6 @@ class HomeworkRepository {
     required String endDate,
     required List<StudentHomeworkEntry> students,
     required String teacherId,
-    required String teacherName,
     String? imagePath,
   }) async {
     try {
@@ -120,7 +113,6 @@ class HomeworkRepository {
         "end_date": endDate,
         "student_ids_list": _studentsToJsonString(students),
         "teacher_id": teacherId,
-        "teacher_name": teacherName,
         if (imagePath != null)
           "image": await MultipartFile.fromFile(
             imagePath,
@@ -141,15 +133,13 @@ class HomeworkRepository {
       }
       throw Exception(json['message'] ?? 'Create failed');
     } on DioException catch (e) {
-      final msg = e.response?.data?['message'] ?? e.message;
-      throw Exception('Create error: $msg');
+      final data = e.response?.data;
+      final msg = data is Map ? (data['message'] ?? e.message) : e.message;
+      final errors = data is Map ? data['errors'] : null;
+      throw Exception('Create error: $msg${errors != null ? ' | $errors' : ''}');
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // PUT — UPDATE
-  // PUT /api/v1/school/homework/<id>/
-  // ────────────────────────────────────────────────────────
   Future<HomeworkModel> updateHomework({
     required int id,
     required String schoolType,
@@ -160,8 +150,7 @@ class HomeworkRepository {
     required String endDate,
     required List<StudentHomeworkEntry> students,
     required String teacherId,
-    required String teacherName,
-    String? imagePath,   // null = keep existing
+    String? imagePath,
   }) async {
     try {
       final map = <String, dynamic>{
@@ -173,7 +162,6 @@ class HomeworkRepository {
         "end_date": endDate,
         "student_ids_list": _studentsToJsonString(students),
         "teacher_id": teacherId,
-        "teacher_name": teacherName,
       };
       if (imagePath != null) {
         map["image"] = await MultipartFile.fromFile(
@@ -195,15 +183,13 @@ class HomeworkRepository {
       }
       throw Exception(json['message'] ?? 'Update failed');
     } on DioException catch (e) {
-      final msg = e.response?.data?['message'] ?? e.message;
-      throw Exception('Update error: $msg');
+      final data = e.response?.data;
+      final msg = data is Map ? (data['message'] ?? e.message) : e.message;
+      final errors = data is Map ? data['errors'] : null;
+      throw Exception('Update error: $msg${errors != null ? ' | $errors' : ''}');
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // DELETE
-  // DELETE /api/v1/school/homework/<id>/
-  // ────────────────────────────────────────────────────────
   Future<bool> deleteHomework(int id) async {
     try {
       final res = await _dio.delete('v1/school/homework/$id/');
@@ -213,9 +199,6 @@ class HomeworkRepository {
     }
   }
 
-  // ────────────────────────────────────────────────────────
-  // Helpers
-  // ────────────────────────────────────────────────────────
   HomeworkResponse _parse(Response res) {
     final json = res.data as Map<String, dynamic>;
     final list = (json['data'] as List<dynamic>? ?? [])
@@ -230,7 +213,6 @@ class HomeworkRepository {
   }
 
   String _studentsToJsonString(List<StudentHomeworkEntry> students) {
-    // Backend expects a JSON array string in multipart form field
     final buf = StringBuffer('[');
     for (int i = 0; i < students.length; i++) {
       if (i > 0) buf.write(',');

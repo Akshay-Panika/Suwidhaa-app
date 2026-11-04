@@ -33,9 +33,33 @@ class ApiUrls {
   // Student Leave endpoints
   static const String studentLeaveList = 'v1/school/student-leave/list/';
   static const String studentLeaveApproval = 'v1/school/student-leave/approval/';
-  static const String studentLeaveByIdCard = 'v1/school/student-leave/list/';
   static const String studentLeaveCreate = 'v1/school/student-leave/create/';
   static const String studentLeaveDetail = 'v1/school/student-leave/';
+  static const String studentLeaveByIdCard = 'v1/school/student-leave/list/';
+  static String studentLeaveByClass(String className) =>
+      'v1/school/student-leave/list/class/${Uri.encodeComponent(className)}/';
+
+  // ===== Student Fee =====
+  static const String studentFeeList = 'v1/school/student/fee/list/';
+  static String studentFeeListBySchool(int schoolId) => 'v1/school/student/fee/list/school/$schoolId/';
+  static const String studentFeeTransactionCreate = 'v1/school/student/fee/transaction/create/';
+  static String studentFeeTransactionHistory(int studentId) => 'v1/school/student/fee/transaction/history/$studentId/';
+  static String studentFeeTransactionDetail(int studentId, int transactionId) => 'v1/school/student/fee/transaction/$studentId/$transactionId/';
+
+  // ==================== TEACHER SALARY ====================
+  static const String teacherSalaryList = 'v1/school/teacher/salary/list/';
+  static String teacherSalaryListBySchool(int schoolId) =>
+      'v1/school/teacher/salary/list/school/$schoolId/';
+
+  static const String teacherSalaryTransactionCreate =
+      'v1/school/teacher/salary/transaction/create/';
+
+  static String teacherSalaryTransactionDetail(
+      int teacherId, int transactionId) =>
+      'v1/school/teacher/salary/transaction/$teacherId/$transactionId/';
+
+  static String teacherSalaryTransactionHistory(int teacherId) =>
+      'v1/school/teacher/salary/transaction/history/$teacherId/';
 
   // Teacher endpoints
   static const String teacherList = 'v1/school/teacher/list/';
@@ -43,17 +67,33 @@ class ApiUrls {
   static const String teacherDetail = 'v1/school/teacher/';
   static const String teacherSalarySummary = 'v1/school/teacher/salary/summary/';
 
-  // Teacher Leave endpoints
+  // ==================== TEACHER LEAVE ====================
   static const String teacherLeaveCreate = 'v1/school/teacher-leave/create/';
-  static const String teacherLeaveList   = 'v1/school/teacher-leave/list/';
-  static const String teacherLeaveDetail = 'v1/school/teacher-leave/'; // + id
-  static const String teacherLeaveByIdCard = 'v1/school/teacher-leave/list/'; // + teacher_id_card
+  static const String teacherLeaveList = 'v1/school/teacher-leave/list/';
+  static const String teacherLeaveDetail = 'v1/school/teacher-leave/'; // + id/
+  static const String teacherLeaveByIdCard = 'v1/school/teacher-leave/list/';
 
-  // In your ApiUrls class, add:
+  // ✅ NEW: teacher DB-int-id wise
+  static String teacherLeaveByTeacherId(int teacherId) =>
+      'v1/school/teacher-leave/teacher/$teacherId/';
+
+  // ✅ NEW: school-wise
+  static String teacherLeaveBySchool(int schoolId) =>
+      'v1/school/teacher-leave/school/$schoolId/';
+
+  // ✅ NEW: status-only update
+  static String teacherLeaveStatusUpdate(int id) =>
+      'v1/school/teacher-leave/$id/status/';
+
+  // ==================== TEACHER ATTENDANCE ====================
   static const String teacherAttendanceHistory = 'v1/school/teacher-attendance/history/';
-  static const String teacherAttendanceCheckIn  = 'v1/school/teacher-attendance/check-in/';
+  static const String teacherAttendanceCheckIn = 'v1/school/teacher-attendance/check-in/';
   static const String teacherAttendanceCheckOut = 'v1/school/teacher-attendance/check-out/';
-  static const String teacherAttendanceToday    = 'v1/school/teacher-attendance/today/';
+  static const String teacherAttendanceList = 'v1/school/teacher-attendance/list/';
+  static const String teacherAttendanceUpdate = 'v1/school/teacher-attendance/update/';
+  static String teacherAttendanceDelete(int pk) =>
+      'v1/school/teacher-attendance/delete/$pk/';
+
 
   // Student Attendance endpoints
   static const String studentAttendanceCreate = 'v1/school/student-attendance/create/';
@@ -142,10 +182,16 @@ class ApiUrls {
   }
 
 
-  static const String reportCardCreate      = 'v1/school/report-cards/create/';
-  static const String reportCardList        = 'v1/school/report-cards/list/';
-  static const String reportCardDetailBase  = 'v1/school/report-cards/list/';       // + id/
-  static const String reportCardByAdminBase = 'v1/school/report-cards/adminid/';
+  // ==================== REPORT CARD ====================
+  static const String reportCardCreate     = 'v1/school/report-cards/create/';
+  static const String reportCardBulkCreate = 'v1/school/report-cards/bulk-create/';   // ✅ NEW
+  static const String reportCardList       = 'v1/school/report-cards/list/';
+  static const String reportCardDetailBase = 'v1/school/report-cards/list/';          // + id/
+
+  // ✅ Teacher-wise (replaces old adminid path)
+  static const String reportCardByTeacherBase = 'v1/school/report-cards/teacher/';
+
+  // ✅ Student-wise (student DB int id)
   static const String reportCardByStudentBase = 'v1/school/report-cards/student-list/';
 
   // Meeting endpoints

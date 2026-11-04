@@ -1,5 +1,4 @@
 // lib/feature/school/attendance/repository/teacher_checkin_checkout_repository.dart
-
 import 'package:dio/dio.dart';
 import 'package:untitled/core/network/api_client.dart';
 import 'package:untitled/core/network/api_urls.dart';
@@ -26,14 +25,11 @@ class TeacherCheckInOutRepository {
         return TeacherCheckInOutModel.fromJson(
           response.data as Map<String, dynamic>,
         );
-      } else {
-        throw Exception('Check-in failed: ${response.statusCode}');
       }
+      throw Exception('Check-in failed: ${response.statusCode}');
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data['message'] ??
-            e.message ??
-            'Check-in failed',
+        e.response?.data['message'] ?? e.message ?? 'Check-in failed',
       );
     }
   }
@@ -56,39 +52,71 @@ class TeacherCheckInOutRepository {
         return TeacherCheckInOutModel.fromJson(
           response.data as Map<String, dynamic>,
         );
-      } else {
-        throw Exception('Check-out failed: ${response.statusCode}');
       }
+      throw Exception('Check-out failed: ${response.statusCode}');
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data['message'] ??
-            e.message ??
-            'Check-out failed',
+        e.response?.data['message'] ?? e.message ?? 'Check-out failed',
       );
     }
   }
 
-  /// ✅ GET — Today's attendance
+  /// ✅ GET — today's record via /history/?from=today&to=today
+  /// (backend has NO /today/ endpoint — must use history with date range)
   Future<TeacherCheckInOutModel> getToday({required String teacherId}) async {
     try {
+      final today = DateTime.now();
+      final dateStr =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
       final response = await _dio.get(
-        ApiUrls.teacherAttendanceToday,
-        queryParameters: {'teacher_id': teacherId},
+        ApiUrls.teacherAttendanceHistory,
+        queryParameters: {
+          'teacher_id': teacherId,
+          'from': dateStr,
+          'to': dateStr,
+        },
       );
 
-      if (response.statusCode == 200) {
-        return TeacherCheckInOutModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      } else {
+      if (response.statusCode != 200 || response.data == null) {
         throw Exception('Failed to load today: ${response.statusCode}');
       }
+
+      final root = response.data as Map<String, dynamic>;
+      final history = root['history'] as Map<String, dynamic>? ?? {};
+      final yearKey = today.year.toString();
+      final monthName = _monthName(today.month);
+
+      CheckInOutData? todayRecord;
+      final yearMap = history[yearKey];
+      if (yearMap is Map) {
+        final monthMap = yearMap[monthName];
+        if (monthMap is List && monthMap.isNotEmpty) {
+          todayRecord = CheckInOutData.fromJson(
+            Map<String, dynamic>.from(monthMap.first),
+          );
+        }
+      }
+
+      return TeacherCheckInOutModel(
+        status: true,
+        message: todayRecord == null ? 'No record yet' : 'OK',
+        teacherId: root['teacher_id']?.toString(),
+        teacherIdCard: root['teacher_id_card']?.toString(),
+        data: todayRecord,
+      );
     } on DioException catch (e) {
       throw Exception(
-        e.response?.data['message'] ??
-            e.message ??
-            'Failed to load today',
+        e.response?.data['message'] ?? e.message ?? 'Failed to load today',
       );
     }
+  }
+
+  String _monthName(int m) {
+    const names = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    return names[(m - 1).clamp(0, 11)];
   }
 }

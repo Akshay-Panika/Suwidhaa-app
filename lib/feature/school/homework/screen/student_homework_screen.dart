@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import '../../student/controller/student_list_controller.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../../student/model/student_list_model.dart';
 import '../../profile/controller/student_controller.dart';
 import '../controller/homework_controller.dart';
@@ -18,16 +18,15 @@ class StudentHomeworkScreen extends StatefulWidget {
 class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
   final studentController = Get.find<StudentController>();
   final hwController = Get.find<HomeworkController>();
-  final studentListController = Get.find<StudentListController>();
 
-  late final String studentId;
+  // ✅ From SharedPrefs
+  String studentId = '';
   late final String studentName;
   late final String studentSchool;
   late final String studentClass;
 
   final RxBool _localLoading = true.obs;
 
-  // ── Filter state ──
   String _statusFilter = 'All';
   DateTime? _dateFilter;
 
@@ -37,61 +36,45 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
   void initState() {
     super.initState();
 
-    studentId = studentController.studentIdCard;
     studentName = studentController.fullName;
     studentSchool = studentController.schoolType;
     studentClass = studentController.studentClass;
 
     hwController.homeworkList.clear();
-    // ✅ Set initial loading
     _localLoading.value = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _load();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+  }
+
+  Future<void> _init() async {
+    final card = await SchoolAuthSharedPrefService.getStudentIdCard();
+    studentId = (card ?? '').trim();
+    print('🟢 student_id_card="$studentId"');
+    await _load();
   }
 
   Future<void> _load() async {
-    // ✅ Start loading
     _localLoading.value = true;
-
     try {
-      // 1. Load homework for my class
-      await hwController.fetchHomeworkByClass(
-        schoolType: studentSchool,
-        className: studentClass,
-      );
-
-      // 2. Load students for name/photo lookup
-      if (studentSchool.isNotEmpty) {
-        // await studentListController.loadStudentListBySchoolType(studentSchool);
+      if (studentId.isEmpty) {
+        hwController.homeworkList.clear();
+        return;
       }
 
-      // 3. Filter my homework
+      await hwController.fetchHomeworkByStudent(studentId);
+
       _allHomework
         ..clear()
-        ..addAll(
-          hwController.homeworkList.where(
-                (hw) => hw.studentIdsList.any(
-                  (e) => e.studentIdcard == studentId,
-            ),
-          ),
-        );
+        ..addAll(hwController.homeworkList);
 
-      // 4. Apply filters
       _applyFilters();
     } finally {
-      // ✅ Stop loading (always)
       _localLoading.value = false;
     }
   }
 
-  // ── Match a homework entry's studentIdCard with loaded students ──
-  StudentListData? _findStudent(String idCard) {
-    for (final s in studentListController.studentList) {
-      if (s.studentIdCard == idCard) return s;
-    }
-    return null;
+  StudentListData? _findStudent(HomeworkModel hw, String idCard) {
+    return hw.findStudent(idCard);
   }
 
   void _applyFilters() {
@@ -169,9 +152,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                     const Text(
                       'Filter by Due Date',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                          fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
                     IconButton(
@@ -202,8 +183,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                           Navigator.pop(ctx);
                         },
                         style: OutlinedButton.styleFrom(
-                          padding:
-                          const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -230,16 +210,13 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.indigo,
                           foregroundColor: Colors.white,
-                          padding:
-                          const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
-                          'Apply',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        child: const Text('Apply',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -337,9 +314,6 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  // Filter Bar
-  // ══════════════════════════════════════════════════════
   Widget _buildFilterBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -474,11 +448,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 13,
-              color: selected ? Colors.white : color,
-            ),
+            Icon(icon, size: 13, color: selected ? Colors.white : color),
             const SizedBox(width: 5),
             Text(
               label,
@@ -494,9 +464,6 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  // Homework Card
-  // ══════════════════════════════════════════════════════
   Widget _buildHomeworkCard(BuildContext context, HomeworkModel hw) {
     final subjectColor = _subjectColor(hw.subjectName);
     final hasImage = hw.image != null && hw.image!.isNotEmpty;
@@ -508,9 +475,9 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: completed ? Colors.green : Colors.grey,width: 0.3
+          color: completed ? Colors.green : Colors.grey,
+          width: 0.3,
         ),
-
       ),
       child: Material(
         color: Colors.transparent,
@@ -552,20 +519,14 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                           },
                           errorBuilder: (_, __, ___) => Container(
                             color: subjectColor.withOpacity(0.12),
-                            child: Icon(
-                              Icons.menu_book_sharp,
-                              color: subjectColor,
-                              size: 28,
-                            ),
+                            child: Icon(Icons.menu_book_sharp,
+                                color: subjectColor, size: 28),
                           ),
                         )
                             : Container(
                           color: subjectColor.withOpacity(0.12),
-                          child: Icon(
-                            Icons.menu_book_sharp,
-                            color: subjectColor,
-                            size: 28,
-                          ),
+                          child: Icon(Icons.menu_book_sharp,
+                              color: subjectColor, size: 28),
                         ),
                       ),
                     ),
@@ -595,9 +556,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                           Text(
                             hw.subjectTopic ?? '-',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
+                                fontSize: 12, color: Colors.grey[600]),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -627,12 +586,33 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.person_rounded,
-                        size: 13, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
+                    // ✅ Small teacher avatar in card
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.indigo.withOpacity(0.12),
+                      backgroundImage: (hw.teacher?.teacherProfile != null &&
+                          hw.teacher!.teacherProfile!.isNotEmpty)
+                          ? NetworkImage(hw.teacher!.teacherProfile!)
+                          : null,
+                      child: (hw.teacher?.teacherProfile == null ||
+                          hw.teacher!.teacherProfile!.isEmpty)
+                          ? Text(
+                        (hw.teacherDisplayName.isNotEmpty
+                            ? hw.teacherDisplayName[0]
+                            : 'T')
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.indigo,
+                        ),
+                      )
+                          : null,
+                    ),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        hw.teacherName ?? 'Teacher',
+                        hw.teacherDisplayName,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[600],
@@ -651,14 +631,12 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
       ),
     );
   }
-  Widget _statusChip({
-    required bool completed,
-  }) {
-    final Color color = completed ? Colors.green : Colors.orange;
-    final String text = completed ? 'Completed' : 'Pending';
-    final IconData icon = completed
-        ? Icons.check_circle_rounded
-        : Icons.pending_actions_rounded;
+
+  Widget _statusChip({required bool completed}) {
+    final color = completed ? Colors.green : Colors.orange;
+    final text = completed ? 'Completed' : 'Pending';
+    final icon =
+    completed ? Icons.check_circle_rounded : Icons.pending_actions_rounded;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -684,8 +662,295 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
       ),
     );
   }
+
   // ══════════════════════════════════════════════════════
-  // Details Bottom Sheet
+  // ✅ NEW: FULL TEACHER CARD (bottom sheet)
+  // ══════════════════════════════════════════════════════
+  Widget _buildTeacherCard(TeacherData? teacher, String fallbackName) {
+    final hasTeacher = teacher != null;
+    final name = hasTeacher ? teacher.fullName : fallbackName;
+    final profileUrl = teacher?.teacherProfile;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.indigo.withOpacity(0.06),
+            Colors.indigo.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.indigo.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Top row: avatar + name + ID ──
+          Row(
+            children: [
+              // Teacher profile pic
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.indigo, width: 1.5),
+                ),
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.indigo.withOpacity(0.12),
+                  backgroundImage:
+                  (profileUrl != null && profileUrl.isNotEmpty)
+                      ? NetworkImage(profileUrl)
+                      : null,
+                  child: (profileUrl == null || profileUrl.isEmpty)
+                      ? Text(
+                    name.isNotEmpty
+                        ? name.substring(0, 1).toUpperCase()
+                        : 'T',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.indigo,
+                    ),
+                  )
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Name + ID card + qualification
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name.isNotEmpty ? name : 'Teacher',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'TEACHER',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        // Teacher ID chip
+                        if (hasTeacher &&
+                            (teacher.teacherIdCard ?? '').isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.badge_rounded,
+                                    size: 10, color: Colors.indigo),
+                                const SizedBox(width: 3),
+                                Text(
+                                  teacher.teacherIdCard!,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.indigo,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        // Experience chip
+                        if (hasTeacher && (teacher.experience ?? 0) > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.workspace_premium_rounded,
+                                    size: 10, color: Colors.green.shade700),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${teacher.experience} yr',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // ── Detail rows ──
+          if (hasTeacher) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+
+            if ((teacher.qualification ?? '').isNotEmpty)
+              _teacherInfoRow(
+                icon: Icons.school_outlined,
+                label: 'Qualification',
+                value: teacher.qualification!,
+              ),
+
+            if ((teacher.phone ?? '').isNotEmpty)
+              _teacherInfoRow(
+                icon: Icons.phone_rounded,
+                label: 'Phone',
+                value: teacher.phone!,
+              ),
+
+            if ((teacher.email ?? '').isNotEmpty)
+              _teacherInfoRow(
+                icon: Icons.email_outlined,
+                label: 'Email',
+                value: teacher.email!,
+              ),
+
+            if (teacher.school != null &&
+                (teacher.school!.schoolName ?? '').isNotEmpty)
+              _teacherInfoRow(
+                icon: Icons.business_rounded,
+                label: 'School',
+                value: teacher.school!.schoolName!,
+              ),
+
+            // ── Subjects chips ──
+            if (teacher.subjects.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.menu_book_rounded,
+                      size: 13, color: Colors.grey[600]),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Subjects:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: teacher.subjects.map((s) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.indigo.withOpacity(0.25)),
+                    ),
+                    child: Text(
+                      s,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.indigo,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _teacherInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 13, color: Colors.indigo),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 90,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════
+  // Bottom Sheet
   // ══════════════════════════════════════════════════════
   void _showHomeworkDetails(HomeworkModel hw) {
     showModalBottomSheet(
@@ -693,7 +958,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
+        initialChildSize: 0.85,
         minChildSize: 0.4,
         maxChildSize: 0.95,
         builder: (_, scrollCtrl) => Container(
@@ -717,20 +982,17 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
               ),
               const SizedBox(height: 16),
 
+              // ── Subject header ──
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color:
-                      _subjectColor(hw.subjectName).withOpacity(0.15),
+                      color: _subjectColor(hw.subjectName).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.menu_book_sharp,
-                      color: _subjectColor(hw.subjectName),
-                      size: 26,
-                    ),
+                    child: Icon(Icons.menu_book_sharp,
+                        color: _subjectColor(hw.subjectName), size: 26),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -740,17 +1002,13 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                         Text(
                           hw.subjectName ?? '-',
                           style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
+                              fontSize: 20, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           hw.subjectTopic ?? '-',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
+                              fontSize: 13, color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -759,6 +1017,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
               ),
               const SizedBox(height: 20),
 
+              // ── Dates + Class ──
               _detailTile(
                 icon: Icons.event_available_rounded,
                 label: 'Issue Date',
@@ -775,43 +1034,61 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 value: hw.className ?? '-',
               ),
               _detailTile(
-                icon: Icons.person_rounded,
-                label: 'Teacher',
-                value: hw.teacherName ?? '-',
-              ),
-              _detailTile(
-                icon: Icons.school_rounded,
-                label: 'School Type',
-                value: hw.schoolType ?? '-',
+                icon: Icons.business_rounded,
+                label: 'School',
+                value: hw.teacherSchoolName ??
+                    (hw.students.isNotEmpty
+                        ? (hw.students.first.schoolName ?? '-')
+                        : '-'),
               ),
 
-              const SizedBox(height: 16),
-              const Text(
-                'Students',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
+              const SizedBox(height: 18),
+
+              // ✅ NEW: FULL TEACHER CARD
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.indigo,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Assigned By',
+                    style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
+              const SizedBox(height: 10),
+              _buildTeacherCard(
+                hw.teacher,
+                hw.teacherName ?? 'Teacher',
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Students ──
+              const Text('Students',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
 
               if (hw.studentIdsList.isEmpty)
-                const Text(
-                  'No students assigned',
-                  style: TextStyle(color: Colors.grey),
-                )
+                const Text('No students assigned',
+                    style: TextStyle(color: Colors.grey))
               else
                 ...hw.studentIdsList.map((entry) {
-                  // ✅ Match against loaded students
-                  final student = _findStudent(entry.studentIdcard);
+                  final student = _findStudent(hw, entry.studentIdcard);
                   final isMe = entry.studentIdcard == studentId;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
+                        horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: isMe
                           ? Colors.indigo.withOpacity(0.06)
@@ -825,13 +1102,13 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                     ),
                     child: Row(
                       children: [
-                        // ── Avatar ──
                         CircleAvatar(
                           radius: 18,
                           backgroundColor: isMe
                               ? Colors.indigo.withOpacity(0.15)
                               : Colors.grey.shade200,
-                          backgroundImage: (student?.studentProfile != null &&
+                          backgroundImage:
+                          (student?.studentProfile != null &&
                               student!.studentProfile!.isNotEmpty)
                               ? NetworkImage(student.studentProfile!)
                               : null,
@@ -855,12 +1132,9 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                               : null,
                         ),
                         const SizedBox(width: 10),
-
-                        // ── Name + ID + class ──
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
@@ -884,8 +1158,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                   if (isMe) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding:
-                                      const EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 1),
                                       decoration: BoxDecoration(
                                         color: Colors.indigo,
@@ -907,24 +1180,21 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                               const SizedBox(height: 2),
                               Row(
                                 children: [
-                                  // ID chip
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 5, vertical: 1),
                                     decoration: BoxDecoration(
-                                      color: Colors.indigo
-                                          .withOpacity(0.1),
+                                      color:
+                                      Colors.indigo.withOpacity(0.1),
                                       borderRadius:
                                       BorderRadius.circular(5),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
-                                          Icons.badge_rounded,
-                                          size: 9,
-                                          color: Colors.indigo,
-                                        ),
+                                        const Icon(Icons.badge_rounded,
+                                            size: 9,
+                                            color: Colors.indigo),
                                         const SizedBox(width: 2),
                                         Text(
                                           entry.studentIdcard,
@@ -937,13 +1207,12 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                       ],
                                     ),
                                   ),
-                                  // Class chip
                                   if (student != null &&
-                                      student.studentClass.isNotEmpty) ...[
+                                      student.studentClass
+                                          .isNotEmpty) ...[
                                     const SizedBox(width: 5),
                                     Container(
-                                      padding:
-                                      const EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                           horizontal: 5, vertical: 1),
                                       decoration: BoxDecoration(
                                         color: Colors.orange
@@ -955,8 +1224,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                                         "Class ${student.studentClass.replaceAll('Class ', '')}",
                                         style: TextStyle(
                                           fontSize: 9,
-                                          color:
-                                          Colors.orange.shade800,
+                                          color: Colors.orange.shade800,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -967,8 +1235,6 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                             ],
                           ),
                         ),
-
-                        // ── Status chip ──
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
@@ -997,14 +1263,11 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
 
               const SizedBox(height: 16),
 
+              // ── Attachment ──
               if ((hw.image ?? '').isNotEmpty) ...[
-                const Text(
-                  'Attachment',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                const Text('Attachment',
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => _showFullImage(hw.image!),
@@ -1068,22 +1331,15 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
         children: [
           Icon(icon, size: 16, color: Colors.indigo),
           const SizedBox(width: 10),
-          Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text('$label:',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+              style:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -1101,9 +1357,7 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Center(
-                child: Image.network(url, fit: BoxFit.contain),
-              ),
+              child: Center(child: Image.network(url, fit: BoxFit.contain)),
             ),
             Positioned(
               top: 8,
@@ -1143,18 +1397,11 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 size: 56, color: Colors.indigo),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Homework Assigned',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const Text('No Homework Assigned',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text(
-            'Check back later for new homework',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          ),
+          Text('Check back later for new homework',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           const SizedBox(height: 18),
           OutlinedButton.icon(
             onPressed: _load,
@@ -1188,18 +1435,11 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
                 size: 56, color: Colors.orange),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Results',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          const Text('No Results',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text(
-            'No homework matches your filters',
-            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          ),
+          Text('No homework matches your filters',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           const SizedBox(height: 18),
           OutlinedButton.icon(
             onPressed: _clearFilters,
@@ -1228,19 +1468,12 @@ class _StudentHomeworkScreenState extends State<StudentHomeworkScreen> {
             const Icon(Icons.error_outline_rounded,
                 size: 56, color: Colors.red),
             const SizedBox(height: 12),
-            const Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            const Text('Something went wrong',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text(
-              msg,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
+            Text(msg,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _load,

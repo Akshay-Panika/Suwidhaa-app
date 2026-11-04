@@ -6,17 +6,18 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controller/student_leave_controller.dart';
 import '../model/student_leave_list_model.dart';
+import '../widget/profile_avatar.dart';
 
 class StudentLeaveRequestScreen extends StatelessWidget {
   const StudentLeaveRequestScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(StudentLeaveController());
+    final controller = Get.find<StudentLeaveController>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(controller),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -32,10 +33,9 @@ class StudentLeaveRequestScreen extends StatelessWidget {
               child: controller.filteredRequests.isEmpty
                   ? _buildEmptyState()
                   : RefreshIndicator(
-                onRefresh: controller.fetchStudentLeaveList,
+                onRefresh: controller.refresh,
                 child: ListView.builder(
-                  padding:
-                  const EdgeInsets.fromLTRB(12, 4, 12, 20),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
                   itemCount: controller.filteredRequests.length,
                   itemBuilder: (_, i) => _buildRequestCard(
                     controller,
@@ -50,8 +50,7 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     );
   }
 
-  // ==================== APP BAR ====================
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(StudentLeaveController controller) {
     return AppBar(
       backgroundColor: Colors.indigo,
       elevation: 0,
@@ -71,15 +70,13 @@ class StudentLeaveRequestScreen extends StatelessWidget {
       centerTitle: false,
       actions: [
         IconButton(
-          onPressed: () =>
-              Get.find<StudentLeaveController>().fetchStudentLeaveList(),
+          onPressed: controller.refresh,
           icon: const Icon(Icons.refresh_rounded, color: Colors.white),
         ),
       ],
     );
   }
 
-  // ==================== COMBINED FILTER BAR ====================
   Widget _buildCombinedFilterBar(StudentLeaveController controller) {
     return Obx(() {
       final hasDate = controller.selectedDate.value != null;
@@ -139,13 +136,11 @@ class StudentLeaveRequestScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                // CLASS SELECTOR
                 GestureDetector(
                   onTap: () => _showClassFilterSheet(controller),
                   child: Container(
                     height: 42,
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: selectedClass == 'All'
                           ? Colors.grey.shade50
@@ -196,15 +191,12 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                // DATE SELECTOR
                 Expanded(
                   child: GestureDetector(
                     onTap: () => _showCalendarPicker(controller),
                     child: Container(
                       height: 42,
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         color: hasDate
                             ? Colors.indigo.withOpacity(0.08)
@@ -264,9 +256,7 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     });
   }
 
-  // ==================== STATUS HEADER ====================
   Widget _buildStatusHeader(StudentLeaveController controller) {
-    // ✅ Only 3 statuses + All
     final statuses = ['All', 'Pending', 'Approved', 'Rejected'];
 
     return Obx(() {
@@ -279,11 +269,11 @@ class StudentLeaveRequestScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: [
-                const Icon(Icons.filter_alt_rounded,
+              children: const [
+                Icon(Icons.filter_alt_rounded,
                     size: 16, color: Colors.indigo),
-                const SizedBox(width: 6),
-                const Text(
+                SizedBox(width: 6),
+                Text(
                   'Filter by Status',
                   style: TextStyle(
                     fontSize: 12,
@@ -354,7 +344,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     });
   }
 
-  // ==================== HELPERS ====================
   Color _statusColor(String status) {
     switch (status) {
       case 'Approved':
@@ -383,9 +372,7 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     }
   }
 
-  // ==================== CALENDAR PICKER ====================
-  Future<void> _showCalendarPicker(
-      StudentLeaveController controller) async {
+  Future<void> _showCalendarPicker(StudentLeaveController controller) async {
     final now = DateTime.now();
     DateTime tempPicked = controller.selectedDate.value ?? now;
 
@@ -429,8 +416,7 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                         const Spacer(),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close_rounded,
-                              size: 20),
+                          icon: const Icon(Icons.close_rounded, size: 20),
                         ),
                       ],
                     ),
@@ -457,14 +443,12 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                               Navigator.pop(context);
                             },
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12),
+                              padding:
+                              const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              side:
-                              BorderSide(color: Colors.grey[300]!),
+                              side: BorderSide(color: Colors.grey[300]!),
                             ),
                             child: Text(
                               'Clear',
@@ -487,15 +471,12 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                             child: const Text(
                               'Apply',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -515,7 +496,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     }
   }
 
-  // ==================== CLASS FILTER SHEET ====================
   void _showClassFilterSheet(StudentLeaveController controller) {
     final classes = controller.getUniqueClasses();
     showModalBottomSheet(
@@ -562,8 +542,8 @@ class StudentLeaveRequestScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.bold),
+            style:
+            const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -592,7 +572,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     );
   }
 
-  // ==================== FULL SCREEN IMAGE VIEWER ====================
   void _showFullImage(String imageUrl) {
     Get.dialog(
       Dialog(
@@ -610,8 +589,7 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
                     return const Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white),
+                      child: CircularProgressIndicator(color: Colors.white),
                     );
                   },
                   errorBuilder: (_, __, ___) => const Center(
@@ -652,7 +630,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     );
   }
 
-  // ==================== REQUEST CARD ====================
   Widget _buildRequestCard(
       StudentLeaveController controller,
       StudentLeaveData req,
@@ -665,35 +642,21 @@ class StudentLeaveRequestScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: statusColor.withOpacity(0.25), width: 1.2),
+        border:
+        Border.all(color: statusColor.withOpacity(0.25), width: 1.2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ────── Header: student + status ──────
+            // ─── Student header with profile ───
             Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    req.studentName.isNotEmpty
-                        ? req.studentName[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo.shade700,
-                    ),
-                  ),
+                LeaveProfileAvatar(
+                  imageUrl: req.studentProfileImage,
+                  name: req.studentName,
+                  size: 48,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -707,34 +670,43 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           color: Colors.black87,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Text(
-                            'ID: ${req.studentIdCard}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[600],
+                          Icon(Icons.badge_outlined,
+                              size: 11, color: Colors.grey[600]),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              req.studentIdCard,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.indigo.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Class ${req.studentClass}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.indigo,
+                          if (req.studentClass.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Class ${req.studentClass}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.indigo,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ],
@@ -769,8 +741,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-
-            // ────── Leave info ──────
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -825,24 +795,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (req.teacherName != null &&
-                      req.teacherName!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.person_rounded,
-                            size: 12, color: Colors.grey[500]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Handled by: ${req.teacherName}',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -858,8 +810,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-
-                  // ✅ Image (only if available)
                   if (req.hasImage) ...[
                     const SizedBox(height: 10),
                     Align(
@@ -893,16 +843,14 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                               height: 200,
                               width: double.infinity,
                               fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, progress) {
+                              loadingBuilder: (context, child, progress) {
                                 if (progress == null) return child;
                                 return Container(
                                   height: 200,
                                   color: Colors.grey.shade100,
                                   child: const Center(
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
+                                        strokeWidth: 2),
                                   ),
                                 );
                               },
@@ -910,23 +858,8 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                                 height: 200,
                                 color: Colors.grey.shade100,
                                 child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                          Icons.broken_image_rounded,
-                                          color: Colors.grey[400],
-                                          size: 32),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Image not available',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey[500],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  child: Icon(Icons.broken_image_rounded,
+                                      color: Colors.grey[400], size: 32),
                                 ),
                               ),
                             ),
@@ -937,17 +870,14 @@ class StudentLeaveRequestScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color:
-                                  Colors.black.withOpacity(0.6),
-                                  borderRadius:
-                                  BorderRadius.circular(12),
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(Icons.zoom_in_rounded,
-                                        size: 12,
-                                        color: Colors.white),
+                                        size: 12, color: Colors.white),
                                     SizedBox(width: 4),
                                     Text(
                                       'View',
@@ -970,7 +900,61 @@ class StudentLeaveRequestScreen extends StatelessWidget {
               ),
             ),
 
-            // ────── Action buttons (API call) ──────
+            // ─── Teacher info (if reviewed) ───
+            if (req.hasTeacher) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    LeaveProfileAvatar(
+                      imageUrl: req.teacherProfileImage,
+                      name: req.teacherName,
+                      size: 32,
+                      fallbackColor: Colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reviewed by',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            req.teacherName,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            req.teacher?.teacherIdCard ?? '',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // ─── Action buttons ───
             if (isPending) ...[
               const SizedBox(height: 10),
               Obx(() {
@@ -1042,7 +1026,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
     );
   }
 
-  // ==================== PATCH API CALL ====================
   Future<void> _updateStatus(
       StudentLeaveController controller,
       StudentLeaveData req,
@@ -1050,7 +1033,6 @@ class StudentLeaveRequestScreen extends StatelessWidget {
       ) async {
     HapticFeedback.mediumImpact();
 
-    // Confirmation dialog
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         shape:

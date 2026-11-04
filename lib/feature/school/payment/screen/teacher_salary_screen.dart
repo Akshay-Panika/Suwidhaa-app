@@ -1,7 +1,7 @@
+// lib/feature/school/salary/screen/teacher_salary_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_salary_controller.dart';
 import '../model/teacher_salary_model.dart';
 
@@ -14,13 +14,13 @@ class TeacherSalaryScreen extends StatefulWidget {
 
 class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
   late final TeacherSalaryController controller;
-  final teacherController = Get.find<TeacherController>();
 
   @override
   void initState() {
     super.initState();
     controller = Get.put(TeacherSalaryController());
-    controller.fetchSalary(teacherController.teacherIdCard);
+    // ✅ No params — controller reads teacher_id from SharedPrefs
+    controller.fetchSalary();
   }
 
   // ==================== FORMAT CURRENCY ====================
@@ -36,6 +36,17 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
     }
     buf.write(rest);
     return "₹ $buf,$last3";
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '-';
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      return "${d.day.toString().padLeft(2, '0')}/"
+          "${d.month.toString().padLeft(2, '0')}/${d.year}";
+    } catch (_) {
+      return iso;
+    }
   }
 
   // ==================== BUILD ====================
@@ -57,13 +68,12 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
         ),
       ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.summary.value == null) {
+        if (controller.isLoading.value &&
+            controller.visibleMonths.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-
         return RefreshIndicator(
-          onRefresh: () =>
-              controller.refreshData(teacherController.teacherIdCard),
+          onRefresh: controller.refreshData,
           child: _buildMonthlyTab(),
         );
       }),
@@ -75,7 +85,6 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        // ==================== TOP SECTION ====================
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
@@ -128,14 +137,17 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 Obx(() => Wrap(
                   spacing: 8,
                   children: ["All", "Paid", "Pending"].map((f) {
-                    final selected = controller.statusFilter.value == f;
+                    final selected =
+                        controller.statusFilter.value == f;
                     return ChoiceChip(
                       label: Text(f),
                       selected: selected,
-                      onSelected: (_) => controller.onStatusChanged(f),
+                      onSelected: (_) =>
+                          controller.onStatusChanged(f),
                       selectedColor: Colors.indigo,
                       labelStyle: TextStyle(
-                        color: selected ? Colors.white : Colors.black87,
+                        color:
+                        selected ? Colors.white : Colors.black87,
                         fontWeight: FontWeight.w500,
                         fontSize: 12,
                       ),
@@ -175,13 +187,11 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
         // ==================== SALARY LIST ====================
         Obx(() {
           final list = controller.visibleMonths;
-
           if (list.isEmpty) {
             return SliverToBoxAdapter(
               child: _emptyState("No salary records found"),
             );
           }
-
           return SliverList(
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -239,17 +249,16 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 );
               } else if (controller.visibleMonths.isEmpty) {
                 return const SizedBox.shrink();
-              } else {
-                return Center(
-                  child: Text(
-                    "All ${controller.selectedYear.value} records loaded",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                );
               }
+              return Center(
+                child: Text(
+                  "All ${controller.selectedYear.value} records loaded",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              );
             }),
           ),
         ),
@@ -296,18 +305,12 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
   }
 
   // ==================== SUMMARY CARD ====================
-// ==================== SUMMARY CARD ====================
   Widget _buildSummaryCard() {
     return Obx(() {
-      final summary = controller.summary.value;
-      final totalSalary = summary?.totalSalary ?? 0;
-      final paidAmount = summary?.paidAmount ?? 0;
-      final pendingAmount = summary?.pendingAmount ?? 0;
-      final latest = summary?.latestSalary;
-
-      // Monthly salary from teacher profile
-      final monthlySalary =
-          double.tryParse(teacherController.salary) ?? 0;
+      final monthlySalary = controller.baseSalary;
+      final currentPaid = controller.currentMonthPaid;
+      final currentPending = controller.currentMonthPending;
+      final latest = controller.latestTransaction;
 
       return Container(
         width: double.infinity,
@@ -319,7 +322,6 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ============ MONTHLY SALARY (from teacher profile) ============
             const Text(
               "Monthly Salary",
               style: TextStyle(color: Colors.white70, fontSize: 11),
@@ -333,18 +335,16 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 12),
             const Divider(color: Colors.white24, height: 1),
             const SizedBox(height: 12),
 
-            // ============ TOTALS ROW ============
             Row(
               children: [
                 Expanded(
                   child: _summaryMini(
-                    label: "Total Paid",
-                    value: _formatCurrency(paidAmount),
+                    label: "This Month Paid",
+                    value: _formatCurrency(currentPaid),
                   ),
                 ),
                 Container(
@@ -354,15 +354,30 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 ),
                 Expanded(
                   child: _summaryMini(
-                    label: "Total Pending",
-                    value: _formatCurrency(pendingAmount),
+                    label: "This Month Pending",
+                    value: _formatCurrency(currentPending),
                     valueColor: Colors.orange.shade200,
                   ),
                 ),
               ],
             ),
 
-            // ============ LATEST RECORD ============
+            // All-time
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white24, height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _summaryMini(
+                    label: "All-time Paid",
+                    value: _formatCurrency(controller.totalPaidAllTime),
+                  ),
+                ),
+              ],
+            ),
+
+            // Latest record
             if (latest != null) ...[
               const SizedBox(height: 12),
               const Divider(color: Colors.white24, height: 1),
@@ -370,7 +385,7 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
               Row(
                 children: [
                   Text(
-                    "Latest: ${latest.month} ${latest.year}",
+                    "Latest: ${latest.monthName} ${latest.year}",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -379,7 +394,7 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    _formatCurrency(latest.amount),
+                    _formatCurrency(latest.amountPaid),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -391,14 +406,12 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: latest.isPaid
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.orange.withOpacity(0.3),
+                      color: Colors.green.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      latest.status,
-                      style: const TextStyle(
+                    child: const Text(
+                      "Paid",
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -414,7 +427,6 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
     });
   }
 
-// ==================== MINI STAT ====================
   Widget _summaryMini({
     required String label,
     required String value,
@@ -459,18 +471,9 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
   }
 
   // ==================== MONTH TILE ====================
-// ==================== MONTH TILE ====================
   Widget _buildMonthTile(SalaryMonth month) {
-    final totalPaid = month.records.every((r) => r.isPaid);
-    final statusColor = totalPaid ? Colors.green : Colors.orange;
-    final statusText = totalPaid ? "Paid" : "Pending";
-
-    // Collect unique payment methods for this month
-    final methods = month.records
-        .map((r) => r.paymentMethod)
-        .where((m) => m.isNotEmpty)
-        .toSet()
-        .join(', ');
+    final statusColor = month.isPaid ? Colors.green : Colors.orange;
+    final statusText = month.status;
 
     return InkWell(
       borderRadius: BorderRadius.circular(10),
@@ -489,39 +492,31 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "${month.month} ${controller.selectedYear.value}",
+                    "${month.monthName} ${month.year}",
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Payment method chips row
                   Row(
                     children: [
-                      Icon(
-                        _iconForMethod(month.records.first.paymentMethod),
-                        size: 12,
-                        color: Colors.indigo,
-                      ),
+                      const Icon(Icons.payments_outlined,
+                          size: 12, color: Colors.indigo),
                       const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          methods.isNotEmpty ? methods : 'N/A',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.indigo,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        "${month.records.length} payment(s)",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.indigo,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    "${month.records.length} record(s)",
+                    "Base: ${_formatCurrency(month.baseSalary)}",
                     style: TextStyle(
                       fontSize: 10,
                       color: Colors.grey[500],
@@ -534,7 +529,7 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _formatCurrency(month.totalSalary),
+                  _formatCurrency(month.totalPaid),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -555,23 +550,6 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
         ),
       ),
     );
-  }
-
-// ==================== ICON FOR PAYMENT METHOD ====================
-  IconData _iconForMethod(String method) {
-    switch (method.toLowerCase()) {
-      case 'cash':
-        return Icons.payments_outlined;
-      case 'bank':
-      case 'bank transfer':
-        return Icons.account_balance_outlined;
-      case 'upi':
-        return Icons.qr_code_rounded;
-      case 'cheque':
-        return Icons.receipt_long_outlined;
-      default:
-        return Icons.payment_outlined;
-    }
   }
 
   // ==================== SALARY DETAIL SHEET ====================
@@ -605,7 +583,7 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "${month.month} ${controller.selectedYear.value}",
+                  "${month.monthName} ${month.year}",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -614,21 +592,18 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                 const SizedBox(height: 3),
                 Text(
                   "${month.records.length} payment(s)",
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey[600]),
+                  style:
+                  TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
 
-                // TOTALS
-                _simpleRow("Total Salary",
-                    _formatCurrency(month.totalSalary)),
-                _simpleRow("Paid",
-                    _formatCurrency(month.paidAmount),
+                _simpleRow("Base Salary",
+                    _formatCurrency(month.baseSalary)),
+                _simpleRow("Total Paid",
+                    _formatCurrency(month.totalPaid),
                     valueColor: Colors.green),
-                _simpleRow("Pending",
-                    _formatCurrency(month.pendingAmount),
-                    valueColor: Colors.orange,
-                    bold: true),
+                _simpleRow("Pending", _formatCurrency(month.pending),
+                    valueColor: Colors.orange, bold: true),
 
                 const SizedBox(height: 16),
                 const Divider(height: 1),
@@ -650,7 +625,7 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
     );
   }
 
-  Widget _buildRecordRow(SalaryRecord r) {
+  Widget _buildRecordRow(SalaryTransaction r) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -662,7 +637,6 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ============ METHOD + STATUS ROW ============
           Row(
             children: [
               Container(
@@ -671,8 +645,8 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
                   color: Colors.indigo.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  _iconForMethod(r.paymentMethod),
+                child: const Icon(
+                  Icons.payments_outlined,
                   size: 14,
                   color: Colors.indigo,
                 ),
@@ -680,48 +654,29 @@ class _TeacherSalaryScreenState extends State<TeacherSalaryScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  r.paymentMethod.isNotEmpty
-                      ? r.paymentMethod
-                      : 'N/A',
+                  'Payment #${r.id}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: r.isPaid
-                      ? Colors.green.withOpacity(0.12)
-                      : Colors.orange.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  r.status,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: r.isPaid ? Colors.green : Colors.orange,
-                  ),
+              Text(
+                _formatCurrency(r.amountPaid),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // ============ AMOUNT DETAILS ============
-          _simpleRow("Amount", _formatCurrency(r.amount)),
-          _simpleRow("Paid", _formatCurrency(r.paidAmount),
-              valueColor: Colors.green),
-          if (r.pendingAmount > 0)
-            _simpleRow("Pending", _formatCurrency(r.pendingAmount),
-                valueColor: Colors.orange),
-          if (r.paidDate != null && r.paidDate!.isNotEmpty)
-            _simpleRow("Paid on", r.paidDate!),
-          if (r.remark != null && r.remark!.isNotEmpty)
-            _simpleRow("Remark", r.remark!),
+          if (r.paymentDate != null && r.paymentDate!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _simpleRow("Paid on", _formatDate(r.paymentDate)),
+          ],
+          if (r.remarks != null && r.remarks!.isNotEmpty)
+            _simpleRow("Remarks", r.remarks!),
         ],
       ),
     );

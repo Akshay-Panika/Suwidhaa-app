@@ -1,10 +1,13 @@
+// lib/feature/school/student_leave/screen/student_leave_list_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/leave/screen/student_leave_details_screen.dart';
-import 'package:untitled/feature/school/leave/screen/student_leave_form_screen.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
+import '../widget/profile_avatar.dart';
+import 'student_leave_details_screen.dart';
+import 'student_leave_form_screen.dart';
 
-import '../../profile/controller/student_controller.dart';
 import '../controller/student_leave_controller.dart';
 import '../model/student_leave_list_model.dart';
 
@@ -16,12 +19,10 @@ class StudentLeaveListScreen extends StatefulWidget {
 }
 
 class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
-  final studentController = Get.find<StudentController>();
   final studentLeaveController = Get.find<StudentLeaveController>();
 
-  // ==================== STATE ====================
   String selectedStatus = 'All';
-  DateTime? selectedDate; // null = no date filter
+  DateTime? selectedDate;
 
   final List<String> statusOptions = const [
     'All',
@@ -37,15 +38,13 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
   }
 
   Future<void> _loadLeaves({bool force = false}) async {
-    final idCard = studentController.studentData.value?.studentIdCard ??
-        studentController.studentIdCard;
-
+    final idCard =
+        await SchoolAuthSharedPrefService.getStudentIdCard() ?? '';
     if (idCard.isNotEmpty) {
       await studentLeaveController.fetchStudentLeaveByCardId(idCard);
     }
   }
 
-  // ==================== HELPERS ====================
   List<StudentLeaveData> get _allLeaves =>
       studentLeaveController.allRequests;
 
@@ -60,12 +59,9 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
 
   bool _matchesDateFilter(StudentLeaveData leave) {
     if (selectedDate == null) return true;
-
-    final dateStr = leave.startDate;
-    if (dateStr.isEmpty) return false;
-
+    if (leave.startDate.isEmpty) return false;
     try {
-      final date = DateTime.parse(dateStr);
+      final date = DateTime.parse(leave.startDate);
       return date.year == selectedDate!.year &&
           date.month == selectedDate!.month &&
           date.day == selectedDate!.day;
@@ -74,10 +70,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
     }
   }
 
-  int get _pendingCount =>
-      _allLeaves.where((r) => r.isPending).length;
-
-  // ==================== STATUS HELPERS ====================
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -106,7 +98,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
     }
   }
 
-  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,7 +171,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
     );
   }
 
-  // ==================== STATUS HEADER ====================
   Widget _buildStatusHeader() {
     return Container(
       color: Colors.white,
@@ -263,7 +253,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
     );
   }
 
-  // ==================== DATE FILTER BAR ====================
   Widget _buildDateFilterBar() {
     final hasDate = selectedDate != null;
 
@@ -445,8 +434,8 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
                               Navigator.pop(context);
                             },
                             style: OutlinedButton.styleFrom(
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -471,8 +460,8 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.indigo,
                               foregroundColor: Colors.white,
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -501,7 +490,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
     }
   }
 
-  // ==================== REQUEST CARD ====================
   Widget _buildRequestCard(StudentLeaveData leave) {
     final status = leave.displayStatus;
     final statusColor = _statusColor(status);
@@ -516,42 +504,23 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
       ),
       child: InkWell(
         onTap: () async {
-          // 👇 Details screen open karo
-          final changed = await Get.to<bool>(
+          await Get.to<bool>(
                 () => StudentLeaveDetailsScreen(
               leaveId: leave.id,
               initialData: leave,
             ),
           );
-          // Agar delete/update hua to list refresh
-          if (changed == true) {
-            // already controller ne local list update kar di hai
-          }
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ─── Header: Profile + name + card id + status ───
             Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    leave.studentName.isNotEmpty
-                        ? leave.studentName[0].toUpperCase()
-                        : 'S',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo.shade700,
-                    ),
-                  ),
+                LeaveProfileAvatar(
+                  imageUrl: leave.studentProfileImage,
+                  name: leave.studentName,
+                  size: 46,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -566,23 +535,39 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
                           color: Colors.black87,
                         ),
                       ),
+                      if (leave.studentClass.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Class ${leave.studentClass}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.indigo.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                          Icon(Icons.badge_outlined,
+                              size: 11, color: Colors.grey[600]),
+                          const SizedBox(width: 3),
+                          Expanded(
                             child: Text(
-                              'Class ${leave.studentClass}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.indigo,
+                              leave.studentIdCard,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -590,7 +575,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
                     ],
                   ),
                 ),
-                // Status badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 4),
@@ -619,8 +603,6 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
               ],
             ),
             const SizedBox(height: 10),
-
-            // Leave info
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -682,29 +664,73 @@ class _StudentLeaveListScreenState extends State<StudentLeaveListScreen> {
                       ],
                     ),
                   ],
-                  if (leave.teacherName != null &&
-                      leave.teacherName!.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline_rounded,
-                            size: 13, color: Colors.grey[500]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Reviewed by: ${leave.teacherName}',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
 
-            // Image
+            // ─── Reviewed by (teacher profile) ───
+            if (leave.hasTeacher) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    LeaveProfileAvatar(
+                      imageUrl: leave.teacherProfileImage,
+                      name: leave.teacherName,
+                      size: 32,
+                      fallbackColor: Colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reviewed by',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            leave.teacherName,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Row(
+                            children: [
+                              Icon(Icons.badge_outlined,
+                                  size: 10, color: Colors.grey[600]),
+                              const SizedBox(width: 3),
+                              Text(
+                                leave.teacher?.teacherIdCard ?? '',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // ─── Attachment image ───
             if (leave.hasImage) ...[
               const SizedBox(height: 10),
               ClipRRect(

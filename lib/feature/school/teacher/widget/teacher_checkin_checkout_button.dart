@@ -28,23 +28,17 @@ class _TeacherCheckinCheckoutButtonState
   void initState() {
     super.initState();
 
-    // Live clock tick (updates every second)
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
 
-    // Fetch today's attendance once teacher id is available
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadToday());
-
-    // Re-fetch whenever teacher data becomes available / changes
     ever(teacherController.teacherData, (_) => _loadToday());
   }
 
+  /// ✅ No teacherId param — controller resolves from SharedPrefs
   void _loadToday() {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isNotEmpty) {
-      checkInOutController.fetchToday(teacherId: teacherId);
-    }
+    checkInOutController.fetchToday();
   }
 
   @override
@@ -53,8 +47,7 @@ class _TeacherCheckinCheckoutButtonState
     super.dispose();
   }
 
-  // ---------- Helpers ----------
-
+  // ── Formatters ──
   String _formatDate(DateTime dt) {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -69,8 +62,6 @@ class _TeacherCheckinCheckoutButtonState
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $ampm';
   }
-
-  // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +88,7 @@ class _TeacherCheckinCheckoutButtonState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---------- Date & Time Row ----------
+              // ── Date & clock ──
               Row(
                 children: [
                   Icon(Icons.calendar_today,
@@ -128,16 +119,16 @@ class _TeacherCheckinCheckoutButtonState
 
               const SizedBox(height: 12),
 
-              // ---------- API-driven Check-in / Check-out ----------
+              // ── Check-in / Check-out ──
               Obx(() {
-                // Loading state
                 if (checkInOutController.isLoading.value) {
                   return Row(
                     children: [
                       const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child:
+                        CircularProgressIndicator(strokeWidth: 2),
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -155,7 +146,6 @@ class _TeacherCheckinCheckoutButtonState
 
                 return Row(
                   children: [
-                    // -------- Check-in --------
                     Expanded(
                       child: _statusTile(
                         icon: Icons.login,
@@ -168,8 +158,6 @@ class _TeacherCheckinCheckoutButtonState
                       ),
                     ),
                     const SizedBox(width: 10),
-
-                    // -------- Check-out --------
                     Expanded(
                       child: _statusTile(
                         icon: Icons.logout,
@@ -213,7 +201,8 @@ class _TeacherCheckinCheckoutButtonState
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: active ? activeColor : Colors.grey),
+          Icon(icon,
+              size: 18, color: active ? activeColor : Colors.grey),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -222,9 +211,7 @@ class _TeacherCheckinCheckoutButtonState
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
+                      fontSize: 11, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 2),
                 Text(

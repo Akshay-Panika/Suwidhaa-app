@@ -1,19 +1,16 @@
+// lib/feature/school/report/screen/teacher_assign_report_card_screen.dart
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/root/parse_route.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-import 'package:untitled/core/widget/flutter_toast.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/widget/flutter_toast.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../../profile/controller/teacher_controller.dart';
 import '../../student/controller/student_list_controller.dart';
 import '../../student/model/student_list_model.dart';
 import '../controller/report_card_controller.dart';
 import '../model/report_card_model.dart';
 
-// ==================== FILTER OPTIONS ====================
-// ReportFilters class REMOVED as requested
-
+// ==================== SHARED CONSTANTS ====================
 const List<String> kSubjects = [
   "Mathematics", "Science", "English", "Social Studies", "Computer",
 ];
@@ -36,21 +33,6 @@ Color gradeColor(String grade) {
   }
 }
 
-String? _readString(dynamic v) {
-  if (v == null) return null;
-  if (v is String) return v;
-  try {
-    final inner = (v as dynamic).value;
-    if (inner is String) return inner;
-    if (inner != null) return inner.toString();
-  } catch (_) {}
-  try {
-    return v.toString();
-  } catch (_) {
-    return null;
-  }
-}
-
 // ============================================================
 //                    LIST SCREEN
 // ============================================================
@@ -68,7 +50,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
   final reportController = Get.find<ReportCardController>();
 
   String _selectedClass = 'All Classes';
-  // Exam is now a free-text filter
   final TextEditingController _examFilterController = TextEditingController();
   DateTime? _selectedDate;
 
@@ -85,50 +66,33 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
     super.dispose();
   }
 
-  String? _resolveAdminId() {
+  /// ✅ Get teacher's id_card from SharedPrefs
+  Future<String?> _resolveTeacherIdCard() async {
     try {
-      final fromCard = _readString(teacherController.teacherIdCard);
-      if (fromCard != null && fromCard.trim().isNotEmpty) {
-        return fromCard.trim();
-      }
-      final dynamic t = teacherController;
-      final candidates = <dynamic>[
-        (() { try { return (t as dynamic).adminId; } catch (_) { return null; } })(),
-        (() { try { return (t as dynamic).idCard; } catch (_) { return null; } })(),
-        (() { try { return (t as dynamic).userId; } catch (_) { return null; } })(),
-      ];
-      for (final c in candidates) {
-        final s = _readString(c);
-        if (s != null && s.trim().isNotEmpty) return s.trim();
-      }
-      return null;
+      final card = await SchoolAuthSharedPrefService.getTeacherIdCard();
+      final trimmed = (card ?? '').trim();
+      return trimmed.isEmpty ? null : trimmed;
     } catch (_) {
       return null;
     }
   }
 
-  void _loadIfReady() {
-    final adminId = _resolveAdminId();
-    if (adminId != null && adminId.isNotEmpty) {
-      reportController.loadReportCards(adminId);
-    } else {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        final retry = _resolveAdminId();
-        if (retry != null && retry.isNotEmpty) {
-          reportController.loadReportCards(retry);
-        }
-      });
+  Future<void> _loadIfReady() async {
+    final teacherId = await _resolveTeacherIdCard();
+    if (teacherId != null) {
+      await reportController.loadReportCards(teacherId);
     }
   }
 
   List<ReportCardData> get _filteredReports {
     final examQuery = _examFilterController.text.trim().toLowerCase();
     return reportController.reportCards.where((r) {
-      final classOk = _selectedClass == 'All Classes' || r.className == _selectedClass;
-      final examOk = examQuery.isEmpty ||
-          r.examName.toLowerCase().contains(examQuery);
-      final dateOk = _selectedDate == null || _matchesDate(r.createdAt, _selectedDate!);
+      final classOk =
+          _selectedClass == 'All Classes' || r.className == _selectedClass;
+      final examOk =
+          examQuery.isEmpty || r.examName.toLowerCase().contains(examQuery);
+      final dateOk =
+          _selectedDate == null || _matchesDate(r.createdAt, _selectedDate!);
       return classOk && examOk && dateOk;
     }).toList();
   }
@@ -192,9 +156,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                         const Text(
                           'Select Date',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                              fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         const Spacer(),
                         IconButton(
@@ -219,9 +181,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                           initialDate: tempPicked,
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2030),
-                          onDateChanged: (date) {
-                            setModalState(() => tempPicked = date);
-                          },
+                          onDateChanged: (date) =>
+                              setModalState(() => tempPicked = date),
                         ),
                       ),
                     ),
@@ -268,9 +229,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                             ),
                             child: const Text(
                               'Apply',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -285,9 +244,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
       },
     );
 
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
+    if (picked != null) setState(() => _selectedDate = picked);
   }
 
   String _fmtDate(DateTime d) =>
@@ -300,31 +257,23 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
         builder: (_) => const TeacherAssignReportFormScreen(),
       ),
     );
-    final adminId = _resolveAdminId();
-    if (adminId != null && adminId.isNotEmpty) {
-      reportController.loadReportCards(adminId);
+    final teacherId = await _resolveTeacherIdCard();
+    if (teacherId != null) {
+      await reportController.loadReportCards(teacherId);
     }
     if (mounted) setState(() {});
   }
 
   String _resolveStudentName(ReportCardData r) {
-    final match = studentController.studentList.firstWhereOrNull(
-          (s) => s.studentIdCard == r.studentId,
-    );
+    if (r.student?.fullName.trim().isNotEmpty == true) {
+      return r.student!.fullName;
+    }
+    final match = studentController.studentList
+        .firstWhereOrNull((s) => s.id.toString() == r.studentId);
     if (match != null && match.fullName.trim().isNotEmpty) {
       return match.fullName;
     }
-    return r.studentId;
-  }
-
-  int _resolveRoll(ReportCardData r) {
-    final match = studentController.studentList.firstWhereOrNull(
-          (s) => s.studentIdCard == r.studentId,
-    );
-    if (match != null) {
-      return int.tryParse(match.rollNumber) ?? 0;
-    }
-    return 0;
+    return 'Student #${r.studentId}';
   }
 
   @override
@@ -343,24 +292,24 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
           InkWell(
-              child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 0.3),
-                  ),
-                  child: const Icon(Icons.add, size: 20,)),
-              onTap: _openForm),
-          SizedBox(width: 20,)
+            onTap: _openForm,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 0.3),
+              ),
+              child: const Icon(Icons.add, size: 20),
+            ),
+          ),
+          const SizedBox(width: 20),
         ],
       ),
       body: Obx(() {
         if (reportController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-
         final classes = _uniqueClasses();
-
         return reportController.reportCards.isEmpty
             ? _emptyState()
             : Column(
@@ -401,9 +350,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
 
   Widget _buildFilterBar(List<String> classes) {
     final classItems = ['All Classes', ...classes];
-    final safeClass = classItems.contains(_selectedClass)
-        ? _selectedClass
-        : classItems.first;
+    final safeClass =
+    classItems.contains(_selectedClass) ? _selectedClass : classItems.first;
 
     return Container(
       color: Colors.white,
@@ -423,7 +371,6 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Exam is now a text field
               Expanded(
                 child: Container(
                   height: 42,
@@ -431,7 +378,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                   decoration: BoxDecoration(
                     color: Colors.teal.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.teal.withOpacity(0.25)),
+                    border:
+                    Border.all(color: Colors.teal.withOpacity(0.25)),
                   ),
                   child: Row(
                     children: [
@@ -458,8 +406,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                       ),
                       if (_examFilterController.text.isNotEmpty)
                         GestureDetector(
-                          onTap: () =>
-                              setState(() => _examFilterController.clear()),
+                          onTap: () => setState(
+                                  () => _examFilterController.clear()),
                           child: const Icon(Icons.close_rounded,
                               size: 16, color: Colors.teal),
                         ),
@@ -533,7 +481,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border:
+                      Border.all(color: Colors.red.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
@@ -636,8 +585,12 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
   Widget _reportTile(ReportCardData r) {
     final c = gradeColor(r.grade);
     final name = _resolveStudentName(r);
-    final StudentListData? student = studentController.studentList
-        .firstWhereOrNull((s) => s.studentIdCard == r.studentId);
+
+    // Prefer nested student; fallback to lookup by DB int id
+    final StudentListData? student = r.student ??
+        studentController.studentList
+            .firstWhereOrNull((s) => s.id.toString() == r.studentId);
+
     final String profileUrl = (student?.studentProfile ?? '').trim();
     final bool hasProfile = profileUrl.isNotEmpty;
 
@@ -674,9 +627,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
               ),
               child: hasProfile
                   ? null
-                  : Center(
-                  child: Icon(Icons.image)
-              ),
+                  : const Center(child: Icon(Icons.image)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -691,7 +642,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                       style: TextStyle(
                           fontSize: 12, color: Colors.grey[600])),
                   const SizedBox(height: 3),
-                  Text("${r.className} • ${r.studentId}",
+                  Text("Class ${r.className} • ID ${r.studentId}",
                       style: TextStyle(
                           fontSize: 12, color: Colors.grey[500])),
                 ],
@@ -701,8 +652,8 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: c.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -714,13 +665,12 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
                           fontSize: 12)),
                 ),
                 const SizedBox(height: 4),
-                Text("${r.studentMarks}/${r.subjectMaxMarks}",
+                Text("${r.studentMarks}/${r.totalMarks}",
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600)),
               ],
             ),
-            Icon(Icons.chevron_right_rounded,
-                color: Colors.grey.shade400),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
           ],
         ),
       ),
@@ -795,7 +745,7 @@ class _TeacherAssignReportScreenState extends State<TeacherAssignReportScreen> {
 }
 
 // ============================================================
-//                    DETAIL SCREEN (with edit + delete)
+//                    DETAIL SCREEN
 // ============================================================
 class ReportCardDetailScreen extends StatelessWidget {
   final ReportCardData report;
@@ -807,26 +757,26 @@ class ReportCardDetailScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Delete Report Card?"),
         content: Text(
           "This will permanently delete ${report.subjectName} "
-              "(${report.examName}) for ${report.studentId}. "
+              "(${report.examName}) for ${report.studentDisplayName}. "
               "This action cannot be undone.",
           style: const TextStyle(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel",
-                style: TextStyle(color: Colors.grey)),
+            child:
+            const Text("Cancel", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete",
-                style: TextStyle(color: Colors.white)),
+            child:
+            const Text("Delete", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -852,12 +802,17 @@ class ReportCardDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gColor = gradeColor(report.grade);
     final controller = Get.find<ReportCardController>();
-    final StudentListData? student = Get.find<StudentListController>()
-        .studentList
-        .firstWhereOrNull((s) => s.studentIdCard == report.studentId);
+
+    // ✅ Prefer nested student model
+    final StudentListData? student = report.student ??
+        Get.find<StudentListController>()
+            .studentList
+            .firstWhereOrNull((s) => s.id.toString() == report.studentId);
 
     final String profileUrl = (student?.studentProfile ?? '').trim();
     final bool hasProfile = profileUrl.isNotEmpty;
+    final studentName = report.studentDisplayName;
+    final teacherName = report.teacherDisplayName;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -915,12 +870,15 @@ class ReportCardDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(report.studentId,
+                        Text(studentName,
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w700)),
-                        Text("${report.className} • ${report.schoolType}",
+                                fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
+                        Text("Class ${report.className} • ID ${report.studentId}",
                             style: TextStyle(
                                 color: Colors.white.withOpacity(0.85),
                                 fontSize: 12)),
@@ -948,22 +906,19 @@ class ReportCardDetailScreen extends StatelessWidget {
               _kv("Exam", report.examName),
               _kv("Subject", report.subjectName),
               _kv("Class", report.className),
+              _kv("Submitted By", teacherName),
               _kv("Submitted On", _formatDate(report.createdAt)),
             ]),
             const SizedBox(height: 12),
             _section("Marks & Grade", [
               _kv("Marks Obtained", "${report.studentMarks}"),
-              _kv("Max Marks", "${report.subjectMaxMarks}"),
-              _kv("Pass Marks", "${report.passingMaxMarks}"),
-              _kv(
-                  "Percentage",
-                  report.subjectMaxMarks > 0
-                      ? "${(report.studentMarks / report.subjectMaxMarks * 100).toStringAsFixed(1)}%"
-                      : "-"),
+              _kv("Max Marks", "${report.totalMarks}"),
+              _kv("Pass Marks", "${report.passingMarks}"),
+              _kv("Percentage", "${report.percentage.toStringAsFixed(1)}%"),
               _kv("Grade", report.grade),
               _kv("Result", report.isPass ? "PASS" : "FAIL"),
             ]),
-            if (report.remark.isNotEmpty) ...[
+            if ((report.description ?? '').isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -987,7 +942,7 @@ class ReportCardDetailScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(report.remark,
+                    Text(report.description!,
                         style: const TextStyle(fontSize: 13)),
                   ],
                 ),
@@ -1019,9 +974,8 @@ class ReportCardDetailScreen extends StatelessWidget {
                   child: Obx(() {
                     final deleting = controller.isDeleting.value;
                     return OutlinedButton.icon(
-                      onPressed: deleting
-                          ? null
-                          : () => _confirmDelete(context),
+                      onPressed:
+                      deleting ? null : () => _confirmDelete(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         side: BorderSide(color: Colors.red.shade300),
@@ -1070,8 +1024,8 @@ class ReportCardDetailScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700)),
+              style:
+              const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
           ...children,
         ],
@@ -1086,9 +1040,12 @@ class ReportCardDetailScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(k, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
-          Text(v,
-              style: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(v,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
@@ -1097,7 +1054,9 @@ class ReportCardDetailScreen extends StatelessWidget {
   String _formatDate(String iso) {
     try {
       final d = DateTime.parse(iso).toLocal();
-      return "${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+      return "${d.day}/${d.month}/${d.year} "
+          "${d.hour.toString().padLeft(2, '0')}:"
+          "${d.minute.toString().padLeft(2, '0')}";
     } catch (_) {
       return iso;
     }
@@ -1105,10 +1064,10 @@ class ReportCardDetailScreen extends StatelessWidget {
 }
 
 // ============================================================
-//   FORM SCREEN — supports CREATE and EDIT (via `existing`)
+//   FORM SCREEN — CREATE (bulk) and EDIT
 // ============================================================
 class TeacherAssignReportFormScreen extends StatefulWidget {
-  /// If non-null → EDIT mode (pre-fills fields, calls update API)
+  /// If non-null → EDIT mode
   final ReportCardData? existing;
 
   const TeacherAssignReportFormScreen({super.key, this.existing});
@@ -1131,7 +1090,6 @@ class _TeacherAssignReportFormScreenState
   final reportController = Get.find<ReportCardController>();
 
   String? _selectedClass;
-  // Exam is now a free-text field
   final TextEditingController _examController = TextEditingController();
   String? _selectedSubject;
 
@@ -1146,43 +1104,37 @@ class _TeacherAssignReportFormScreenState
   final Map<int, TextEditingController> _remarkControllers = {};
   final Map<int, String> _grades = {};
 
-  /// In EDIT mode we only handle this one student
   StudentListData? _editStudent;
-  int _editStudentIndex = -1;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isEditMode) {
-      _hydrateFromExisting(widget.existing!);
-    }
+    if (widget.isEditMode) _hydrateFromExisting(widget.existing!);
   }
 
   void _hydrateFromExisting(ReportCardData r) {
     _selectedClass = r.className;
     _examController.text = r.examName;
-    _selectedSubject = _subjects.contains(r.subjectName)
-        ? r.subjectName
-        : r.subjectName;
-    _maxMarksController.text = r.subjectMaxMarks.toString();
-    _passMarksController.text = r.passingMaxMarks.toString();
+    _selectedSubject =
+    _subjects.contains(r.subjectName) ? r.subjectName : r.subjectName;
+    _maxMarksController.text = r.totalMarks.toString();
+    _passMarksController.text = r.passingMarks.toString();
 
-    final idx = studentController.studentList
-        .indexWhere((s) => s.studentIdCard == r.studentId);
-    if (idx >= 0) {
-      _editStudent = studentController.studentList[idx];
-      _editStudentIndex = idx;
-    } else {
-      _editStudent = null;
+    StudentListData? editStu = r.student;
+    if (editStu == null) {
+      final match = studentController.studentList
+          .where((s) => s.id.toString() == r.studentId)
+          .toList();
+      if (match.isNotEmpty) editStu = match.first;
     }
 
+    _editStudent = editStu;
     if (_editStudent != null) {
       _selectedStudentIds[_editStudent!.id] = true;
       _ensureControllers(_editStudent!.id);
       _marksControllers[_editStudent!.id]!.text = r.studentMarks.toString();
-      _remarkControllers[_editStudent!.id]!.text = r.remark;
+      _remarkControllers[_editStudent!.id]!.text = r.description ?? '';
       _grades[_editStudent!.id] = _calcGrade(r.studentMarks);
-
       _step = 2;
     } else {
       _step = 0;
@@ -1203,23 +1155,12 @@ class _TeacherAssignReportFormScreenState
     super.dispose();
   }
 
-  String? _resolveAdminId() {
+  /// ✅ Teacher id_card from SharedPrefs
+  Future<String?> _resolveTeacherIdCard() async {
     try {
-      final fromCard = _readString(teacherController.teacherIdCard);
-      if (fromCard != null && fromCard.trim().isNotEmpty) {
-        return fromCard.trim();
-      }
-      final dynamic t = teacherController;
-      final candidates = <dynamic>[
-        (() { try { return (t as dynamic).adminId; } catch (_) { return null; } })(),
-        (() { try { return (t as dynamic).idCard; } catch (_) { return null; } })(),
-        (() { try { return (t as dynamic).userId; } catch (_) { return null; } })(),
-      ];
-      for (final c in candidates) {
-        final s = _readString(c);
-        if (s != null && s.trim().isNotEmpty) return s.trim();
-      }
-      return null;
+      final card = await SchoolAuthSharedPrefService.getTeacherIdCard();
+      final trimmed = (card ?? '').trim();
+      return trimmed.isEmpty ? null : trimmed;
     } catch (_) {
       return null;
     }
@@ -1309,7 +1250,8 @@ class _TeacherAssignReportFormScreenState
       if (_selectedClass == null ||
           _examController.text.trim().isEmpty ||
           _selectedSubject == null) {
-        FlutterToast.error("Please select Class, Subject and enter Exam name");
+        FlutterToast.error(
+            "Please select Class, Subject and enter Exam name");
         return;
       }
       final maxText = _maxMarksController.text.trim();
@@ -1357,7 +1299,6 @@ class _TeacherAssignReportFormScreenState
   }
 
   void _submit() {
-    // EDIT MODE — one student, direct submit
     if (widget.isEditMode && _editStudent != null) {
       final id = _editStudent!.id;
       _ensureControllers(id);
@@ -1375,7 +1316,6 @@ class _TeacherAssignReportFormScreenState
       return;
     }
 
-    // CREATE MODE — many students
     int missing = 0;
     int invalid = 0;
     for (final s in _selectedStudents) {
@@ -1407,7 +1347,8 @@ class _TeacherAssignReportFormScreenState
         backgroundColor: Colors.white,
         shape:
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(isEdit ? "Update Report Card?" : "Submit Report Cards?"),
+        title:
+        Text(isEdit ? "Update Report Card?" : "Submit Report Cards?"),
         content: Text(
           isEdit
               ? "Save changes to $_selectedSubject ($examLabel)?"
@@ -1417,8 +1358,8 @@ class _TeacherAssignReportFormScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel",
-                style: TextStyle(color: Colors.grey)),
+            child:
+            const Text("Cancel", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
@@ -1438,86 +1379,86 @@ class _TeacherAssignReportFormScreenState
     );
   }
 
-  // ================== CREATE ==================
+  // ================== CREATE (BULK) ==================
   Future<void> _saveAndSubmit() async {
-    final adminId = _resolveAdminId();
-    if (adminId == null || adminId.isEmpty) {
-      FlutterToast.error("Admin ID missing — cannot submit");
+    final teacherId = await _resolveTeacherIdCard();
+    if (teacherId == null) {
+      FlutterToast.error("Teacher ID missing — cannot submit");
       return;
     }
-    final schoolType = teacherController.teacherList;
 
-    final requests = <CreateReportCardRequest>[];
+    final rows = <CreateReportCardRequest>[];
     for (final s in _selectedStudents) {
       _ensureControllers(s.id);
       final marks = int.tryParse(_marksControllers[s.id]!.text) ?? 0;
-      final sid = s.studentIdCard.isNotEmpty
-          ? s.studentIdCard
-          : 'STU${s.id.toString().padLeft(3, '0')}';
       final result = marks >= _passMarks ? 'pass' : 'fail';
 
-      requests.add(
+      rows.add(
         CreateReportCardRequest(
-          adminId: adminId,
-          studentId: sid,
-          schoolType: schoolType.first.teacherIdCard,
+          teacherId: teacherId,
+          studentId: s.id.toString(),
           className: _selectedClass!,
           subjectName: _selectedSubject!,
           examName: _examController.text.trim(),
-          subjectMaxMarks: _maxMarks,
-          passingMaxMarks: _passMarks,
+          totalMarks: _maxMarks,
+          passingMarks: _passMarks,
           studentMarks: marks,
           result: result,
           description: _remarkControllers[s.id]!.text.trim().isEmpty
-              ? ''
+              ? null
               : _remarkControllers[s.id]!.text.trim(),
         ),
       );
     }
 
-    final bulk = await reportController.createReportCards(requests);
+    final bulk = await reportController.createReportCards(
+      teacherId: teacherId,
+      className: _selectedClass!,
+      subjectName: _selectedSubject!,
+      examName: _examController.text.trim(),
+      totalMarks: _maxMarks,
+      passingMarks: _passMarks,
+      rows: rows,
+    );
+
     if (!mounted) return;
 
     if (bulk.hasFailures) {
       _showResult(
-        successCount: bulk.created.length,
+        successCount: bulk.successCount,
         failures: bulk.failures,
       );
     } else {
-      _showSuccess(bulk.created.length);
+      _showSuccess(bulk.successCount);
     }
   }
 
   // ================== UPDATE ==================
   Future<void> _saveAndUpdate() async {
-    final adminId = _resolveAdminId();
-    if (adminId == null || adminId.isEmpty) {
-      FlutterToast.error("Admin ID missing — cannot update");
+    final teacherId = await _resolveTeacherIdCard();
+    if (teacherId == null) {
+      FlutterToast.error("Teacher ID missing — cannot update");
       return;
     }
     final s = _editStudent!;
     _ensureControllers(s.id);
     final marks = int.tryParse(_marksControllers[s.id]!.text) ?? 0;
-    final sid = s.studentIdCard.isNotEmpty
-        ? s.studentIdCard
-        : 'STU${s.id.toString().padLeft(3, '0')}';
     final result = marks >= _passMarks ? 'pass' : 'fail';
 
     final req = CreateReportCardRequest(
-      adminId: adminId,
-      studentId: sid,
-      schoolType: teacherController.id.toString(),
+      teacherId: teacherId,
+      studentId: s.id.toString(),
       className: _selectedClass ?? widget.existing!.className,
       subjectName: _selectedSubject ?? widget.existing!.subjectName,
       examName: _examController.text.trim().isEmpty
           ? widget.existing!.examName
           : _examController.text.trim(),
-      subjectMaxMarks: _maxMarks,
-      passingMaxMarks: _passMarks,
+      totalMarks: _maxMarks,
+      passingMarks: _passMarks,
       studentMarks: marks,
       result: result,
       description: _remarkControllers[s.id]!.text.trim().isEmpty
-          ? ''
+          ? null
           : _remarkControllers[s.id]!.text.trim(),
     );
 
@@ -1527,7 +1468,6 @@ class _TeacherAssignReportFormScreenState
     );
 
     if (!mounted) return;
-
     if (ok) {
       Navigator.pop(context);
       Navigator.pop(context);
@@ -1560,8 +1500,8 @@ class _TeacherAssignReportFormScreenState
             ),
             const SizedBox(height: 16),
             const Text("Report Cards Submitted!",
-                style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w700)),
+                style:
+                TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
               "$count report card${count == 1 ? '' : 's'} submitted for ${_examController.text.trim()}.",
@@ -1642,8 +1582,8 @@ class _TeacherAssignReportFormScreenState
             ...failures.take(5).map((f) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text("• $f",
-                  style: const TextStyle(
-                      fontSize: 11, color: Colors.red)),
+                  style:
+                  const TextStyle(fontSize: 11, color: Colors.red)),
             )),
             if (failures.length > 5)
               Text("…and ${failures.length - 5} more",
@@ -1691,8 +1631,8 @@ class _TeacherAssignReportFormScreenState
         ),
         title: Text(
           widget.isEditMode ? "Edit Report Card" : "Assign Report Card",
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 17),
+          style:
+          const TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
         ),
       ),
       body: Column(
@@ -1761,9 +1701,7 @@ class _TeacherAssignReportFormScreenState
   }
 
   Widget _buildStepContent() {
-    if (widget.isEditMode) {
-      return _step1()..toString();
-    }
+    if (widget.isEditMode) return _step1();
     switch (_step) {
       case 0:
         return _step1();
@@ -1803,15 +1741,14 @@ class _TeacherAssignReportFormScreenState
           const SizedBox(height: 16),
           _label("Exam / Term"),
           const SizedBox(height: 8),
-          // Exam is now a text field (description/message box style)
           TextField(
             controller: _examController,
             maxLines: 3,
             minLines: 3,
             keyboardType: TextInputType.multiline,
             textInputAction: TextInputAction.newline,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600),
+            style:
+            const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: 'e.g. Unit Test 1, Half Yearly, Final Term...',
               hintStyle: TextStyle(
@@ -1820,7 +1757,8 @@ class _TeacherAssignReportFormScreenState
                   fontWeight: FontWeight.w400),
               filled: true,
               fillColor: Colors.grey.shade50,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade200),
@@ -1831,8 +1769,7 @@ class _TeacherAssignReportFormScreenState
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                const BorderSide(color: Colors.indigo, width: 1.4),
+                borderSide: const BorderSide(color: Colors.indigo, width: 1.4),
               ),
             ),
           ),
@@ -1897,7 +1834,8 @@ class _TeacherAssignReportFormScreenState
           if (_selectedClass != null && !widget.isEditMode) ...[
             const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.indigo.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
@@ -2005,6 +1943,8 @@ class _TeacherAssignReportFormScreenState
             itemBuilder: (_, i) {
               final s = students[i];
               final sel = _selectedStudentIds[s.id] == true;
+              final hasProfile = (s.studentProfile ?? '').isNotEmpty;
+
               return InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => setState(() {
@@ -2014,8 +1954,9 @@ class _TeacherAssignReportFormScreenState
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color:
-                    sel ? Colors.indigo.withOpacity(0.06) : Colors.white,
+                    color: sel
+                        ? Colors.indigo.withOpacity(0.06)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: sel
@@ -2030,13 +1971,26 @@ class _TeacherAssignReportFormScreenState
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                            color: sel ? Colors.indigo : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(10),
-                            image: DecorationImage(image: NetworkImage(s.studentProfile!))
+                          color: sel
+                              ? Colors.indigo
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(10),
+                          image: hasProfile
+                              ? DecorationImage(
+                            image: NetworkImage(
+                                s.studentProfile!),
+                            fit: BoxFit.cover,
+                            onError: (_, __) {},
+                          )
+                              : null,
                         ),
-                        child: s.studentProfile!.isNotEmpty ?null :Center(
+                        child: hasProfile
+                            ? null
+                            : Center(
                           child: Text(
-                            s.rollNumber.isNotEmpty ? s.rollNumber : '${i + 1}',
+                            s.rollNumber.isNotEmpty
+                                ? s.rollNumber
+                                : '${i + 1}',
                             style: TextStyle(
                               color: sel
                                   ? Colors.white
@@ -2056,18 +2010,14 @@ class _TeacherAssignReportFormScreenState
                                 style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600)),
-                            Text(
-                              '${'ID: ${s.studentIdCard}'}',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700),
-                            ),
-                            Text(
-                              '${'Class: ${s.studentClass}th'}',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700),
-                            ),
+                            Text('ID: ${s.studentIdCard}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700)),
+                            Text('Class: ${s.studentClass}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700)),
                           ],
                         ),
                       ),
@@ -2146,6 +2096,7 @@ class _TeacherAssignReportFormScreenState
   Widget _markCard(StudentListData s) {
     _ensureControllers(s.id);
     final grade = _grades[s.id] ?? "-";
+    final hasProfile = (s.studentProfile ?? '').isNotEmpty;
 
     final rollText = s.rollNumber.isNotEmpty
         ? s.rollNumber
@@ -2167,11 +2118,19 @@ class _TeacherAssignReportFormScreenState
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                    color:  Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(image: NetworkImage(s.studentProfile!))
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
+                  image: hasProfile
+                      ? DecorationImage(
+                    image: NetworkImage(s.studentProfile!),
+                    fit: BoxFit.cover,
+                    onError: (_, __) {},
+                  )
+                      : null,
                 ),
-                child: s.studentProfile!.isNotEmpty ?null :Center(
+                child: hasProfile
+                    ? null
+                    : Center(
                   child: Text(
                     rollText,
                     style: TextStyle(
@@ -2189,24 +2148,16 @@ class _TeacherAssignReportFormScreenState
                   children: [
                     Text(s.fullName,
                         style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600)),
-                    Text(
-                      '${'ID: ${s.studentIdCard}'}',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700),
-                    ),
-                    Text(
-                      '${'Class: ${s.studentClass}th'}',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700),
-                    ),
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    Text('ID: ${s.studentIdCard}',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade700)),
+                    Text('Class: ${s.studentClass}',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade700)),
                   ],
                 ),
               ),
-
               Container(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -2222,7 +2173,7 @@ class _TeacherAssignReportFormScreenState
               ),
             ],
           ),
-          const SizedBox(height:20),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -2233,8 +2184,8 @@ class _TeacherAssignReportFormScreenState
                   onChanged: (_) => _onMarksChanged(s.id),
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600),
-                  decoration: _inputDeco("Marks", "0 - $_maxMarks",
-                      Icons.grade_rounded),
+                  decoration: _inputDeco(
+                      "Marks", "0 - $_maxMarks", Icons.grade_rounded),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2263,7 +2214,8 @@ class _TeacherAssignReportFormScreenState
       filled: true,
       fillColor: Colors.grey.shade50,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding:
+      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.grey.shade200),

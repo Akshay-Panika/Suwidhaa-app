@@ -5,31 +5,34 @@ import '../model/report_card_model.dart';
 import '../repository/report_card_repository.dart';
 
 class ReportCardController extends GetxController {
-  final ReportCardRepository _repository = ReportCardRepository();
+  final ReportCardRepository _repo = ReportCardRepository();
 
   final isLoading = false.obs;
   final isSubmitting = false.obs;
-  final isDeleting = false.obs;
   final isUpdating = false.obs;
-  final reportCards = <ReportCardData>[].obs;
-  final errorMessage = ''.obs;
-  final studentReportCards = <ReportCardData>[].obs;
+  final isDeleting = false.obs;
   final isLoadingStudent = false.obs;
+  final errorMessage = ''.obs;
 
-  Future<void> loadReportCards(String adminId) async {
-    if (adminId.trim().isEmpty) {
-      errorMessage.value = 'Admin ID is empty';
+  final reportCards = <ReportCardData>[].obs;
+  final studentReportCards = <ReportCardData>[].obs;
+
+  // ══════════════════════════════════════════════════════
+  // TEACHER-WISE LIST
+  // ══════════════════════════════════════════════════════
+  Future<void> loadReportCards(String teacherId) async {
+    if (teacherId.trim().isEmpty) {
+      errorMessage.value = 'Teacher ID is empty';
       return;
     }
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      final response =
-      await _repository.getReportCardsByAdmin(adminId.trim());
-      if (response.status) {
-        reportCards.value = response.data;
+      final res = await _repo.getReportCardsByTeacher(teacherId.trim());
+      if (res.status) {
+        reportCards.value = res.data;
       } else {
-        errorMessage.value = response.message;
+        reportCards.value = [];
       }
     } catch (e) {
       errorMessage.value = e.toString();
@@ -39,23 +42,23 @@ class ReportCardController extends GetxController {
     }
   }
 
-
-  /// Load report cards filtered by student_id
-  Future<void> loadReportCardsByStudent(String studentId) async {
-    if (studentId.trim().isEmpty) {
+  // ══════════════════════════════════════════════════════
+  // STUDENT-WISE LIST  (student DB integer id)
+  // ══════════════════════════════════════════════════════
+  Future<void> loadReportCardsByStudent(String studentDbId) async {
+    if (studentDbId.trim().isEmpty) {
       errorMessage.value = 'Student ID is empty';
       return;
     }
     try {
       isLoadingStudent.value = true;
       errorMessage.value = '';
-      final response =
-      await _repository.getReportCardsByStudentId(studentId.trim());
-      if (response.status) {
-        studentReportCards.value = response.data;
+      final res =
+      await _repo.getReportCardsByStudentId(studentDbId.trim());
+      if (res.status) {
+        studentReportCards.value = res.data;
       } else {
         studentReportCards.value = [];
-        errorMessage.value = response.message;
       }
     } catch (e) {
       studentReportCards.value = [];
@@ -65,30 +68,49 @@ class ReportCardController extends GetxController {
       isLoadingStudent.value = false;
     }
   }
-  Future<bool> createReportCard(CreateReportCardRequest req) async {
+
+  // ══════════════════════════════════════════════════════
+  // BULK CREATE — multi-student in ONE call
+  // ══════════════════════════════════════════════════════
+  Future<BulkCreateResult> createReportCards({
+    required String teacherId,
+    required String className,
+    required String subjectName,
+    required String examName,
+    required int totalMarks,
+    required int passingMarks,
+    required List<CreateReportCardRequest> rows,
+  }) async {
     try {
       isSubmitting.value = true;
-      await _repository.createReportCard(req);
-      return true;
+      final result = await _repo.bulkCreate(
+        teacherId: teacherId,
+        className: className,
+        subjectName: subjectName,
+        examName: examName,
+        totalMarks: totalMarks,
+        passingMarks: passingMarks,
+        rows: rows,
+      );
+      // Refresh teacher's own list
+      await loadReportCards(teacherId);
+      return result;
     } catch (e) {
-      FlutterToast.error('Failed: $e');
-      return false;
+      FlutterToast.error('Failed to submit: $e');
+      return BulkCreateResult(created: [], failures: ['$e']);
     } finally {
       isSubmitting.value = false;
     }
   }
 
-  /// Update an existing report card by id.
-  /// Replaces it in the local list on success.
+  // ══════════════════════════════════════════════════════
+  // UPDATE (single)
+  // ══════════════════════════════════════════════════════
   Future<bool> updateReportCard(
-      int id,
-      CreateReportCardRequest req,
-      ) async {
+      int id, CreateReportCardRequest req) async {
     try {
       isUpdating.value = true;
-      final res = await _repository.updateReportCard(id, req);
-
-      // Refresh that one entry in memory
+      final res = await _repo.updateReportCard(id, req);
       final data = res['data'];
       if (data is Map<String, dynamic>) {
         try {
@@ -96,14 +118,10 @@ class ReportCardController extends GetxController {
           final idx = reportCards.indexWhere((r) => r.id == id);
           if (idx >= 0) {
             reportCards[idx] = updated;
-          } else {
-            reportCards.insert(0, updated);
+            reportCards.refresh();
           }
-        } catch (_) {
-          // If parsing fails, just reload from server later
-        }
+        } catch (_) {}
       }
-
       FlutterToast.success('Report card updated');
       return true;
     } catch (e) {
@@ -114,25 +132,15 @@ class ReportCardController extends GetxController {
     }
   }
 
-  Future<BulkCreateResult> createReportCards(
-      List<CreateReportCardRequest> requests,
-      ) async {
-    try {
-      isSubmitting.value = true;
-      return await _repository.createReportCards(requests);
-    } catch (e) {
-      FlutterToast.error('Failed to submit: $e');
-      return BulkCreateResult(created: [], failures: ['$e']);
-    } finally {
-      isSubmitting.value = false;
-    }
-  }
-
+  // ══════════════════════════════════════════════════════
+  // DELETE
+  // ══════════════════════════════════════════════════════
   Future<bool> deleteReportCard(int id) async {
     try {
       isDeleting.value = true;
-      await _repository.deleteReportCard(id);
+      await _repo.deleteReportCard(id);
       reportCards.removeWhere((r) => r.id == id);
+      studentReportCards.removeWhere((r) => r.id == id);
       FlutterToast.success('Report card deleted');
       return true;
     } catch (e) {
@@ -141,25 +149,5 @@ class ReportCardController extends GetxController {
     } finally {
       isDeleting.value = false;
     }
-  }
-
-  List<ReportCardData> getByStudentIdCard(String studentIdCard) {
-    if (studentIdCard.isEmpty) return [];
-    return reportCards.where((r) => r.studentId == studentIdCard).toList();
-  }
-
-  List<String> get uniqueStudentIds {
-    final set = <String>{};
-    for (final r in reportCards) {
-      if (r.studentId.isNotEmpty && r.studentId != 'NA') {
-        set.add(r.studentId);
-      }
-    }
-    return set.toList();
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
   }
 }

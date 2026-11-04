@@ -17,6 +17,7 @@ import '../../meeting/screen/school_meeting_screen.dart';
 import '../../notice/controller/notice_controller.dart';
 import '../../notice/screen/teacher_assign_notice_screen.dart';
 import '../../notice/widget/notice_pined_card.dart';
+import '../../payment/screen/student_fee_screen.dart';
 import '../../payment/screen/teacher_salary_screen.dart';
 import '../../report/screen/student_report_card_screen.dart';
 import '../widget/student_profile_card.dart';
@@ -262,7 +263,7 @@ class _SchoolStudentHomeScreenState extends State<SchoolStudentHomeScreen> {
                   _push(const StudentLeaveListScreen());
                   break;
                 case "Fee":
-                  _push(TeacherSalaryScreen());
+                  _push(StudentFeeScreen());
                   break;
                 case "Homework":
                   _push(const StudentHomeworkScreen());

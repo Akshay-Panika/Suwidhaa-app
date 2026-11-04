@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import '../../../../core/utils/app_color.dart';
 import '../../../../core/widget/flutter_toast.dart';
-import '../../student/controller/student_list_controller.dart';
 import '../../student/model/student_list_model.dart';
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
@@ -21,9 +20,7 @@ class TeacherHomeworkDetailsScreen extends StatefulWidget {
 
 class _TeacherHomeworkDetailsScreenState
     extends State<TeacherHomeworkDetailsScreen> {
-
   final hwController = Get.find<HomeworkController>();
-  final studentListController = Get.find<StudentListController>();
 
   HomeworkModel? _homework;
   bool _loading = true;
@@ -32,26 +29,21 @@ class _TeacherHomeworkDetailsScreenState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _load();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
-    // 1. Load homework
     final hw = await hwController.fetchHomeworkById(widget.homeworkId);
-
-    // 2. Ensure student list is available for name/photo lookup
-    if (hw != null && hw.schoolType != null && hw.schoolType!.isNotEmpty) {
-      // Load students for the same school type
-      // await studentListController.loadStudentListBySchoolType(hw.schoolType!);
-    }
-
     if (!mounted) return;
     setState(() {
       _homework = hw;
       _loading = false;
     });
+  }
+
+  // ✅ Lookup student from hw.students (full objects in API response)
+  StudentListData? _findStudent(HomeworkModel hw, String idCard) {
+    return hw.findStudent(idCard);
   }
 
   Future<void> _toggleStudentStatus(
@@ -61,7 +53,6 @@ class _TeacherHomeworkDetailsScreenState
     final cardKey = entry.studentIdcard;
     final newValue = !entry.status;
 
-    // ✅ Show loading on this card
     setState(() => _togglingCards.add(cardKey));
 
     try {
@@ -72,7 +63,6 @@ class _TeacherHomeworkDetailsScreenState
       );
 
       if (ok) {
-        // ✅ Update local entry
         final idx = hw.studentIdsList.indexWhere(
               (e) => e.studentIdcard == entry.studentIdcard,
         );
@@ -82,7 +72,6 @@ class _TeacherHomeworkDetailsScreenState
             status: newValue,
           );
         }
-
         FlutterToast.success(
           newValue ? 'Homework is done' : 'Homework is pending',
         );
@@ -92,17 +81,8 @@ class _TeacherHomeworkDetailsScreenState
     } catch (e) {
       FlutterToast.error('Error: $e');
     } finally {
-      // ✅ Always remove loading
       if (mounted) setState(() => _togglingCards.remove(cardKey));
     }
-  }
-
-  // ── Match a homework entry's studentIdCard with loaded students ──
-  StudentListData? _findStudent(String idCard) {
-    for (final s in studentListController.studentList) {
-      if (s.studentIdCard == idCard) return s;
-    }
-    return null;
   }
 
   Color _subjectColor(String? s) {
@@ -197,7 +177,8 @@ class _TeacherHomeworkDetailsScreenState
               const SizedBox(height: 8),
               _buildInfoSection(hw),
               const SizedBox(height: 16),
-              _buildSectionTitle('Students (${hw.studentIdsList.length})'),
+              _buildSectionTitle(
+                  'Students (${hw.studentIdsList.length})'),
               const SizedBox(height: 8),
               _buildStudentsList(hw),
               const SizedBox(height: 16),
@@ -215,7 +196,8 @@ class _TeacherHomeworkDetailsScreenState
                 child: OutlinedButton(
                   onPressed: () => Get.back(),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding:
+                    const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -230,9 +212,6 @@ class _TeacherHomeworkDetailsScreenState
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  // ✅ UPDATED: Students list with matched full data
-  // ══════════════════════════════════════════════════════
   Widget _buildStudentsList(HomeworkModel hw) {
     if (hw.studentIdsList.isEmpty) {
       return Container(
@@ -254,7 +233,7 @@ class _TeacherHomeworkDetailsScreenState
       ),
       child: Column(
         children: hw.studentIdsList.map((entry) {
-          final student = _findStudent(entry.studentIdcard);
+          final student = _findStudent(hw, entry.studentIdcard);
           final isToggling = _togglingCards.contains(entry.studentIdcard);
 
           return Container(
@@ -266,12 +245,11 @@ class _TeacherHomeworkDetailsScreenState
                     ? Colors.green.shade200
                     : Colors.grey[200]!,
               ),
-              color: entry.status ? Colors.white : Colors.white,
+              color: Colors.white,
             ),
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-                // ── Avatar ──
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: student != null
@@ -300,8 +278,6 @@ class _TeacherHomeworkDetailsScreenState
                       : null,
                 ),
                 const SizedBox(width: 12),
-
-                // ── Name + ID + class ──
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +295,6 @@ class _TeacherHomeworkDetailsScreenState
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          // ID chip
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
@@ -330,11 +305,8 @@ class _TeacherHomeworkDetailsScreenState
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.badge_rounded,
-                                  size: 10,
-                                  color: Colors.indigo,
-                                ),
+                                const Icon(Icons.badge_rounded,
+                                    size: 10, color: Colors.indigo),
                                 const SizedBox(width: 3),
                                 Text(
                                   entry.studentIdcard,
@@ -360,11 +332,9 @@ class _TeacherHomeworkDetailsScreenState
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    Icons.class_rounded,
-                                    size: 10,
-                                    color: Colors.orange.shade700,
-                                  ),
+                                  Icon(Icons.class_rounded,
+                                      size: 10,
+                                      color: Colors.orange.shade700),
                                   const SizedBox(width: 3),
                                   Text(
                                     "Class ${student.studentClass.replaceAll('Class ', '')}",
@@ -383,8 +353,6 @@ class _TeacherHomeworkDetailsScreenState
                     ],
                   ),
                 ),
-
-                // ── Status label ──
                 Text(
                   entry.status ? 'Done' : 'Pending',
                   style: TextStyle(
@@ -394,8 +362,6 @@ class _TeacherHomeworkDetailsScreenState
                   ),
                 ),
                 const SizedBox(width: 4),
-
-                // ── Toggle Switch ──
                 SizedBox(
                   height: 28,
                   child: isToggling
@@ -419,7 +385,7 @@ class _TeacherHomeworkDetailsScreenState
                     Colors.orange.withOpacity(0.3),
                     materialTapTargetSize:
                     MaterialTapTargetSize.shrinkWrap,
-                    onChanged: (value) =>
+                    onChanged: (_) =>
                         _toggleStudentStatus(hw, entry),
                   ),
                 ),
@@ -482,7 +448,11 @@ class _TeacherHomeworkDetailsScreenState
       _buildDetailRow('📅 Due Date', hw.endDate ?? '-'),
       _buildDetailRow(
         '⏰ Days Remaining',
-        d > 0 ? '$d days' : d == 0 ? 'Due today' : 'Overdue by ${d.abs()} days',
+        d > 0
+            ? '$d days'
+            : d == 0
+            ? 'Due today'
+            : 'Overdue by ${d.abs()} days',
       ),
     ]);
   }
@@ -561,7 +531,8 @@ class _TeacherHomeworkDetailsScreenState
         height: 220,
         color: Colors.grey[200],
         child: const Center(
-            child: Icon(Icons.error_outline, color: Colors.grey, size: 40)),
+            child: Icon(Icons.error_outline,
+                color: Colors.grey, size: 40)),
       ),
     ),
   );
@@ -576,9 +547,7 @@ class _TeacherHomeworkDetailsScreenState
             InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Center(
-                child: Image.network(url, fit: BoxFit.contain),
-              ),
+              child: Center(child: Image.network(url, fit: BoxFit.contain)),
             ),
             Positioned(
               top: 8,

@@ -3,19 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/widget/flutter_toast.dart';
-import '../../profile/controller/teacher_controller.dart';
-import '../../profile/controller/student_controller.dart';  // ✅ ADD
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../model/student_leave_list_model.dart';
 import '../repository/student_leave_repository.dart';
 
 class StudentLeaveController extends GetxController {
   final StudentLeaveRepository _repository = StudentLeaveRepository();
-
-  // ────── Teacher info source ──────
-  final TeacherController _teacherController = Get.find<TeacherController>();
-
-  // ────── Student info source (card id ke liye) ──────
-  final StudentController _studentController = Get.find<StudentController>();
 
   // ==================== STATE ====================
   final RxList<StudentLeaveData> allRequests = <StudentLeaveData>[].obs;
@@ -34,19 +27,33 @@ class StudentLeaveController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
-    // ✅ Student card id lo — StudentController se
-    final studentCardId = _studentController.studentData.value?.studentIdCard;
-
-    if (studentCardId != null && studentCardId.isNotEmpty) {
-      fetchStudentLeaveByCardId(studentCardId);
-    } else {
-      // fallback: agar student card id nahi mili to all list
-      fetchStudentLeaveList();
-    }
+    refresh();
   }
 
-  // ==================== GET BY CARD ID ✅ NEW ====================
+  // ==================== SMART REFRESH ====================
+  Future<void> refresh() async {
+    final userType = await SchoolAuthSharedPrefService.getUserType();
+
+    if (userType == 'teacher') {
+      final teacherClass =
+          await SchoolAuthSharedPrefService.getTeacherClass() ?? '';
+      if (teacherClass.isNotEmpty) {
+        await fetchStudentLeaveByClass(teacherClass);
+        return;
+      }
+    } else if (userType == 'student') {
+      final studentCardId =
+          await SchoolAuthSharedPrefService.getStudentIdCard() ?? '';
+      if (studentCardId.isNotEmpty) {
+        await fetchStudentLeaveByCardId(studentCardId);
+        return;
+      }
+    }
+
+    await fetchStudentLeaveList();
+  }
+
+  // ==================== GET BY CARD (Student) ====================
   Future<void> fetchStudentLeaveByCardId(String studentCardId) async {
     try {
       isLoading.value = true;
@@ -70,125 +77,32 @@ class StudentLeaveController extends GetxController {
     }
   }
 
-
-  Future<StudentLeaveData?> getLeaveById(int leaveId) async {
+  // ==================== GET BY CLASS (Teacher) ====================
+  Future<void> fetchStudentLeaveByClass(String className) async {
     try {
-      isFetchingDetail.value = true;
+      isLoading.value = true;
+      errorMessage.value = '';
 
-      final response = await _repository.getLeaveById(leaveId);
-
-      if (response.status && response.data != null) {
-        // local list me update karo (agar already hai)
-        final index = allRequests.indexWhere((r) => r.id == leaveId);
-        if (index != -1) {
-          allRequests[index] = response.data!;
-          allRequests.refresh();
-          _applyFilters();
-        } else {
-          allRequests.insert(0, response.data!);
-          _applyFilters();
-        }
-        return response.data;
-      } else {
-        FlutterToast.error(response.message ?? 'Leave not found');
-        return null;
-      }
-    } catch (e) {
-      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
-      return null;
-    } finally {
-      isFetchingDetail.value = false;
-    }
-  }
-
-// ═══════════════════════════════════════════════════
-// UPDATE LEAVE
-// ═══════════════════════════════════════════════════
-  Future<bool> updateLeave({
-    required int leaveId,
-    required String studentIdCard,
-    required String studentName,
-    required String studentClass,
-    required String schoolType,
-    required String reasonMsg,
-    required String startDate,
-    required String endDate,
-    String? imagePath,
-    bool removeOldImage = false,
-  }) async {
-    try {
-      isUpdating.value = true;
-
-      final response = await _repository.updateLeave(
-        leaveId: leaveId,
-        studentIdCard: studentIdCard,
-        studentName: studentName,
-        studentClass: studentClass,
-        schoolType: schoolType,
-        reasonMsg: reasonMsg,
-        startDate: startDate,
-        endDate: endDate,
-        imagePath: imagePath,
-        removeOldImage: removeOldImage,
-      );
-
-      if (response.status && response.data != null) {
-        // local list update
-        final index = allRequests.indexWhere((r) => r.id == leaveId);
-        if (index != -1) {
-          allRequests[index] = response.data!;
-          allRequests.refresh();
-          _applyFilters();
-        }
-
-        FlutterToast.success(response.message ?? 'Leave updated successfully');
-        return true;
-      } else {
-        FlutterToast.error(response.message ?? 'Failed to update leave');
-        return false;
-      }
-    } catch (e) {
-      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
-      return false;
-    } finally {
-      isUpdating.value = false;
-    }
-  }
-
-// ═══════════════════════════════════════════════════
-// DELETE LEAVE
-// ═══════════════════════════════════════════════════
-  Future<bool> deleteLeave(StudentLeaveData leave) async {
-    if (isDeleting.value) return false;
-
-    try {
-      isDeleting.value = true;
-
-      final response = await _repository.deleteLeave(leave.id);
+      final response = await _repository.getStudentLeaveByClass(className);
 
       if (response.status) {
-        // local list se hata do
-        allRequests.removeWhere((r) => r.id == leave.id);
+        allRequests.assignAll(response.data);
         _applyFilters();
-
-        FlutterToast.success(
-          response.message ?? 'Leave deleted successfully',
-        );
-        return true;
       } else {
-        FlutterToast.error(response.message ?? 'Failed to delete leave');
-        return false;
+        errorMessage.value = response.message ?? 'Failed to load data';
+        if (response.message?.toLowerCase().contains('no leaves') != true) {
+          FlutterToast.error(errorMessage.value);
+        }
       }
     } catch (e) {
-      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
-      return false;
+      errorMessage.value = e.toString().replaceAll('Exception: ', '');
+      FlutterToast.error(errorMessage.value);
     } finally {
-      isDeleting.value = false;
+      isLoading.value = false;
     }
   }
 
-
-  // ==================== GET LIST (All) ====================
+  // ==================== GET ALL ====================
   Future<void> fetchStudentLeaveList() async {
     try {
       isLoading.value = true;
@@ -211,11 +125,111 @@ class StudentLeaveController extends GetxController {
     }
   }
 
+  // ==================== DETAIL ====================
+  Future<StudentLeaveData?> getLeaveById(int leaveId) async {
+    try {
+      isFetchingDetail.value = true;
+
+      final response = await _repository.getLeaveById(leaveId);
+
+      if (response.status && response.data != null) {
+        final index = allRequests.indexWhere((r) => r.id == leaveId);
+        if (index != -1) {
+          allRequests[index] = response.data!;
+          allRequests.refresh();
+          _applyFilters();
+        } else {
+          allRequests.insert(0, response.data!);
+          _applyFilters();
+        }
+        return response.data;
+      } else {
+        FlutterToast.error(response.message ?? 'Leave not found');
+        return null;
+      }
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
+      return null;
+    } finally {
+      isFetchingDetail.value = false;
+    }
+  }
+
+  // ==================== UPDATE ====================
+  Future<bool> updateLeave({
+    required int leaveId,
+    required String studentIdCard,
+    required String reasonMsg,
+    required String startDate,
+    required String endDate,
+    String? imagePath,
+    bool removeOldImage = false,
+  }) async {
+    try {
+      isUpdating.value = true;
+
+      final response = await _repository.updateLeave(
+        leaveId: leaveId,
+        studentIdCard: studentIdCard,
+        reasonMsg: reasonMsg,
+        startDate: startDate,
+        endDate: endDate,
+        imagePath: imagePath,
+        removeOldImage: removeOldImage,
+      );
+
+      if (response.status && response.data != null) {
+        final index = allRequests.indexWhere((r) => r.id == leaveId);
+        if (index != -1) {
+          allRequests[index] = response.data!;
+          allRequests.refresh();
+          _applyFilters();
+        }
+
+        FlutterToast.success(response.message ?? 'Leave updated successfully');
+        return true;
+      } else {
+        FlutterToast.error(response.message ?? 'Failed to update leave');
+        return false;
+      }
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  // ==================== DELETE ====================
+  Future<bool> deleteLeave(StudentLeaveData leave) async {
+    if (isDeleting.value) return false;
+
+    try {
+      isDeleting.value = true;
+
+      final response = await _repository.deleteLeave(leave.id);
+
+      if (response.status) {
+        allRequests.removeWhere((r) => r.id == leave.id);
+        _applyFilters();
+
+        FlutterToast.success(response.message ?? 'Leave deleted successfully');
+        return true;
+      } else {
+        FlutterToast.error(response.message ?? 'Failed to delete leave');
+        return false;
+      }
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceAll('Exception: ', ''));
+      return false;
+    } finally {
+      isDeleting.value = false;
+    }
+  }
+
+  // ==================== CREATE ====================
   Future<bool> createLeave({
     required String studentIdCard,
-    required String studentName,
-    required String studentClass,
-    required String schoolType,
     required String reasonMsg,
     required String startDate,
     required String endDate,
@@ -227,9 +241,6 @@ class StudentLeaveController extends GetxController {
 
       final response = await _repository.createLeave(
         studentIdCard: studentIdCard,
-        studentName: studentName,
-        studentClass: studentClass,
-        schoolType: schoolType,
         reasonMsg: reasonMsg,
         startDate: startDate,
         endDate: endDate,
@@ -237,11 +248,8 @@ class StudentLeaveController extends GetxController {
       );
 
       if (response.status) {
-        FlutterToast.success(
-          response.message ?? 'Leave applied successfully',
-        );
+        FlutterToast.success(response.message ?? 'Leave applied successfully');
 
-        // 🔹 Naya leave list me add kar do (turant UI update)
         if (response.data != null) {
           allRequests.insert(0, response.data!);
           _applyFilters();
@@ -260,15 +268,18 @@ class StudentLeaveController extends GetxController {
       isLoading.value = false;
     }
   }
-  // ==================== PATCH APPROVAL ====================
+
+  // ==================== APPROVAL ====================
   Future<void> updateLeaveApproval({
     required StudentLeaveData request,
     required String newStatus,
   }) async {
     if (isUpdating.value) return;
 
-    final teacherCardId = _teacherController.teacherIdCard;
-    final teacherName = _teacherController.fullName;
+    final teacherCardId =
+        await SchoolAuthSharedPrefService.getTeacherIdCard() ?? '';
+    final teacherName =
+        await SchoolAuthSharedPrefService.getTeacherName() ?? '';
 
     if (teacherCardId.isEmpty || teacherName.isEmpty) {
       FlutterToast.error('Teacher info not available. Please try again.');

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../../profile/controller/student_controller.dart';
 import '../controller/report_card_controller.dart';
 import '../model/report_card_model.dart';
@@ -11,16 +12,19 @@ class StudentReportCardScreen extends StatefulWidget {
   const StudentReportCardScreen({super.key});
 
   @override
-  State<StudentReportCardScreen> createState() => _StudentReportCardScreenState();
+  State<StudentReportCardScreen> createState() =>
+      _StudentReportCardScreenState();
 }
 
 class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
   final studentController = Get.find<StudentController>();
   final reportController = Get.find<ReportCardController>();
 
-  // ✅ Screen-level filters
+  /// ✅ Student DB integer id (from SharedPrefs)
+  String _studentDbId = '';
+
   final selectedDate = Rxn<DateTime>();
-  final selectedResult = 'All'.obs; // All / Pass / Fail
+  final selectedResult = 'All'.obs;
   final resultFilters = const ['All', 'Pass', 'Fail'];
 
   @override
@@ -29,29 +33,21 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadIfPossible());
   }
 
-  void _loadIfPossible() {
-    if (studentController.hasData) {
-      final id = studentController.studentIdCard;
-      if (id.isNotEmpty) {
-        reportController.loadReportCardsByStudent(id);
-      }
-    }
+  Future<void> _loadIfPossible() async {
+    final id = await SchoolAuthSharedPrefService.getStudentId();
+    _studentDbId = (id ?? '').toString();
+    if (_studentDbId.isEmpty) return;
+    await reportController.loadReportCardsByStudent(_studentDbId);
+    if (mounted) setState(() {});
   }
 
-  // ============================================================
-  // Apply date + result filters
-  // ============================================================
   List<ReportCardData> get _filteredList {
     final all = reportController.studentReportCards;
-
     return all.where((r) {
-      // Result filter
       if (selectedResult.value != 'All') {
         final wantPass = selectedResult.value == 'Pass';
         if (r.isPass != wantPass) return false;
       }
-
-      // Date filter — match yyyy-MM-dd
       if (selectedDate.value != null) {
         if (r.createdAt.isEmpty) return false;
         try {
@@ -65,7 +61,6 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
           return false;
         }
       }
-
       return true;
     }).toList();
   }
@@ -84,74 +79,47 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: Obx(() {
-        // 1. Student profile still loading
         if (studentController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-
-        // 2. No student data
         if (!studentController.hasData) {
           return _buildEmptyState(
             message: 'No student data available',
             icon: Icons.person_off_outlined,
           );
         }
-
-        // 3. Student available → show filters + list
-        final studentId = studentController.studentIdCard;
-
-        // Kick off load if not yet started
-        if (!reportController.isLoadingStudent.value &&
-            reportController.studentReportCards.isEmpty &&
-            studentId.isNotEmpty) {
-          Future.microtask(
-                () => reportController.loadReportCardsByStudent(studentId),
-          );
-        }
-
         return Column(
           children: [
             _buildFilterBar(),
             const SizedBox(height: 4),
-            Expanded(child: _buildBody(studentId)),
+            Expanded(child: _buildBody()),
           ],
         );
       }),
     );
   }
 
-  // ============================================================
-  // App bar
-  // ============================================================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Report Card'),
-      titleTextStyle: TextStyle(fontWeight: FontWeight.w500,fontSize: 18),
+      title: const Text('Report Card',
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18)),
       centerTitle: false,
-      leading: IconButton(onPressed: () {
-        Navigator.pop(context);
-      }, icon: Icon(Icons.arrow_back_ios, color: Colors.white,)),
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+      ),
       elevation: 0,
       backgroundColor: Colors.indigo,
-      foregroundColor: Colors.indigo,
+      foregroundColor: Colors.white,
       actions: [
         IconButton(
-          onPressed: () {
-            if (studentController.hasData) {
-              reportController.loadReportCardsByStudent(
-                studentController.studentIdCard,
-              );
-            }
-          },
-          icon: const Icon(Icons.refresh_rounded, color: Colors.white,),
+          onPressed: _loadIfPossible,
+          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // Combined filter bar (Date + Result)
-  // ============================================================
   Widget _buildFilterBar() {
     return Container(
       color: Colors.white,
@@ -159,28 +127,24 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
           Row(
             children: [
               const Icon(Icons.tune_rounded, size: 16, color: Colors.indigo),
               const SizedBox(width: 6),
-              const Text(
-                'Filters',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black54,
-                  letterSpacing: 0.3,
-                ),
-              ),
+              const Text('Filters',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black54,
+                      letterSpacing: 0.3)),
               const Spacer(),
               Obx(() {
                 if (!_hasActiveFilters) return const SizedBox.shrink();
                 return GestureDetector(
                   onTap: _clearFilters,
                   child: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -191,14 +155,11 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                         Icon(Icons.close_rounded,
                             size: 12, color: Colors.red),
                         SizedBox(width: 3),
-                        Text(
-                          'Clear',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.red,
-                          ),
-                        ),
+                        Text('Clear',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red)),
                       ],
                     ),
                   ),
@@ -207,8 +168,6 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
             ],
           ),
           const SizedBox(height: 8),
-
-          // Date picker
           Obx(() {
             final hasDate = selectedDate.value != null;
             return GestureDetector(
@@ -230,11 +189,10 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: hasDate ? Colors.indigo : Colors.grey[500],
-                    ),
+                    Icon(Icons.calendar_today_rounded,
+                        size: 16,
+                        color:
+                        hasDate ? Colors.indigo : Colors.grey[500]),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -244,8 +202,9 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                             : 'Filter by Date',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight:
-                          hasDate ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: hasDate
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           color:
                           hasDate ? Colors.indigo : Colors.grey[600],
                         ),
@@ -260,34 +219,27 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                               size: 16, color: Colors.indigo),
                         ),
                       ),
-                    Icon(
-                      Icons.arrow_drop_down_rounded,
-                      size: 20,
-                      color: hasDate ? Colors.indigo : Colors.grey[500],
-                    ),
+                    Icon(Icons.arrow_drop_down_rounded,
+                        size: 20,
+                        color:
+                        hasDate ? Colors.indigo : Colors.grey[500]),
                   ],
                 ),
               ),
             );
           }),
-
           const SizedBox(height: 10),
-
-          // Result chips
           Row(
             children: [
               const Icon(Icons.filter_alt_rounded,
                   size: 14, color: Colors.indigo),
               const SizedBox(width: 6),
-              const Text(
-                'Result',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black54,
-                  letterSpacing: 0.3,
-                ),
-              ),
+              const Text('Result',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black54,
+                      letterSpacing: 0.3)),
               const SizedBox(width: 10),
               Expanded(
                 child: Obx(
@@ -306,7 +258,8 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                           child: GestureDetector(
                             onTap: () => selectedResult.value = f,
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
+                              duration:
+                              const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 7),
                               decoration: BoxDecoration(
@@ -344,9 +297,6 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
     );
   }
 
-  // ============================================================
-  // Calendar picker sheet
-  // ============================================================
   Future<void> _showCalendarPicker() async {
     final now = DateTime.now();
     DateTime temp = selectedDate.value ?? now;
@@ -381,13 +331,10 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                         const Icon(Icons.calendar_month_rounded,
                             color: Colors.indigo, size: 20),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Select Date',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        const Text('Select Date',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700)),
                         const Spacer(),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
@@ -403,7 +350,8 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                         initialDate: temp,
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
-                        onDateChanged: (d) => setModalState(() => temp = d),
+                        onDateChanged: (d) =>
+                            setModalState(() => temp = d),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -416,20 +364,17 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                               Navigator.pop(context);
                             },
                             style: OutlinedButton.styleFrom(
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               side: BorderSide(color: Colors.grey[300]!),
                             ),
-                            child: Text(
-                              'Clear',
-                              style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: Text('Clear',
+                                style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.w600)),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -441,18 +386,15 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.indigo,
                               foregroundColor: Colors.white,
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: const Text(
-                              'Apply',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: const Text('Apply',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600)),
                           ),
                         ),
                       ],
@@ -469,10 +411,7 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
     if (picked != null) selectedDate.value = picked;
   }
 
-  // ============================================================
-  // Body
-  // ============================================================
-  Widget _buildBody(String studentId) {
+  Widget _buildBody() {
     return Obx(() {
       if (reportController.isLoadingStudent.value) {
         return const Center(child: CircularProgressIndicator());
@@ -480,22 +419,19 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
 
       final list = _filteredList;
 
-      // Empty state (also covers active filter = no match)
       if (list.isEmpty) {
         return RefreshIndicator(
-          onRefresh: () =>
-              reportController.loadReportCardsByStudent(studentId),
+          onRefresh: _loadIfPossible,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               SizedBox(
-                height: MediaQuery.of(Get.context!).size.height * 0.22,
-              ),
+                  height: MediaQuery.of(Get.context!).size.height * 0.22),
               _buildEmptyState(
                 message: _hasActiveFilters
                     ? 'No report cards match the selected filters'
                     : (reportController.errorMessage.value.isEmpty
-                    ? 'No report cards found for $studentId'
+                    ? 'No report cards found'
                     : reportController.errorMessage.value),
                 icon: Icons.description_outlined,
               ),
@@ -505,8 +441,7 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
       }
 
       return RefreshIndicator(
-        onRefresh: () =>
-            reportController.loadReportCardsByStudent(studentId),
+        onRefresh: _loadIfPossible,
         child: ListView.builder(
           padding: const EdgeInsets.all(10),
           itemCount: list.length,
@@ -516,9 +451,6 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
     });
   }
 
-  // ============================================================
-  // Empty / error state
-  // ============================================================
   Widget _buildEmptyState({
     required String message,
     required IconData icon,
@@ -531,11 +463,9 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
+            child: Text(message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600)),
           ),
         ],
       ),
@@ -559,14 +489,13 @@ class _ReportCardTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.indigo,width: 0.3)
+        border: Border.all(color: Colors.indigo, width: 0.3),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: subject + result chip
             Row(
               children: [
                 Expanded(
@@ -576,17 +505,13 @@ class _ReportCardTile extends StatelessWidget {
                       Text(
                         data.subjectName,
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${data.examName} • Class ${data.className}',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 13,
-                        ),
+                            color: Colors.grey.shade600, fontSize: 13),
                       ),
                     ],
                   ),
@@ -597,8 +522,6 @@ class _ReportCardTile extends StatelessWidget {
             const SizedBox(height: 14),
             const Divider(height: 1),
             const SizedBox(height: 14),
-
-            // Stats
             Row(
               children: [
                 _StatBox(
@@ -608,12 +531,12 @@ class _ReportCardTile extends StatelessWidget {
                 ),
                 _StatBox(
                   label: 'Total',
-                  value: '${data.subjectMaxMarks}',
+                  value: '${data.totalMarks}',
                   color: Colors.blueGrey,
                 ),
                 _StatBox(
                   label: 'Passing',
-                  value: '${data.passingMaxMarks}',
+                  value: '${data.passingMarks}',
                   color: Colors.blueGrey,
                 ),
                 _StatBox(
@@ -623,8 +546,7 @@ class _ReportCardTile extends StatelessWidget {
                 ),
               ],
             ),
-
-            if (data.remark.isNotEmpty) ...[
+            if ((data.description ?? '').isNotEmpty) ...[
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
@@ -634,28 +556,31 @@ class _ReportCardTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  data.remark,
-                  style: TextStyle(
-                      color: Colors.grey.shade800, fontSize: 13),
+                  data.description!,
+                  style:
+                  TextStyle(color: Colors.grey.shade800, fontSize: 13),
                 ),
               ),
             ],
-
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Admin: ${data.adminId}',
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 11),
+                Expanded(
+                  child: Text(
+                    'Teacher: ${data.teacherDisplayName}',
+                    style: TextStyle(
+                        color: Colors.grey.shade500, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Text(
                   data.createdAt.isNotEmpty
                       ? data.createdAt.split('T').first
                       : '',
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 11),
+                  style:
+                  TextStyle(color: Colors.grey.shade500, fontSize: 11),
                 ),
               ],
             ),
@@ -684,10 +609,7 @@ class _ResultChip extends StatelessWidget {
       child: Text(
         result.toUpperCase(),
         style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+            color: color, fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }
@@ -708,19 +630,15 @@ class _StatBox extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-          ),
+          Text(label,
+              style:
+              TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         ],
       ),
     );

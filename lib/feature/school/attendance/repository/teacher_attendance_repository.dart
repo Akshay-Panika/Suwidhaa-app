@@ -1,5 +1,4 @@
 // lib/feature/school/attendance/repository/teacher_attendance_repository.dart
-
 import 'package:dio/dio.dart';
 import 'package:untitled/core/network/api_urls.dart';
 import '../../../../core/network/api_client.dart';
@@ -10,22 +9,25 @@ class TeacherAttendanceRepository {
 
   Future<TeacherAttendanceModel> getTeacherAttendance({
     required String teacherId,
+    String? from,
+    String? to,
   }) async {
     try {
+      final query = <String, String>{'teacher_id': teacherId};
+      if (from != null && from.isNotEmpty) query['from'] = from;
+      if (to != null && to.isNotEmpty) query['to'] = to;
+
       final response = await _dio.get(
         ApiUrls.teacherAttendanceHistory,
-        queryParameters: {
-          'teacher_id': teacherId,
-        },
+        queryParameters: query,
       );
 
       if (response.statusCode == 200 && response.data != null) {
         return TeacherAttendanceModel.fromJson(
           response.data as Map<String, dynamic>,
         );
-      } else {
-        throw Exception('Failed to load attendance: ${response.statusCode}');
       }
+      throw Exception('Failed to load attendance: ${response.statusCode}');
     } on DioException catch (e) {
       throw Exception(
         e.response?.data['message'] ??

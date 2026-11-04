@@ -1,26 +1,20 @@
 // lib/feature/school/attendance/controller/teacher_checkin_checkout_controller.dart
-
 import 'package:get/get.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../model/teacher_checkin_checkout_model.dart';
 import '../repository/teacher_checkin_checkout_repository.dart';
 
 class TeacherCheckInOutController extends GetxController {
-  final TeacherCheckInOutRepository _repository = TeacherCheckInOutRepository();
+  final TeacherCheckInOutRepository _repository =
+  TeacherCheckInOutRepository();
 
-  // ─────────────────────────────────────────────
-  // Reactive state
-  // ─────────────────────────────────────────────
   final RxBool isLoading = false.obs;
   final RxBool isCheckingIn = false.obs;
   final RxBool isCheckingOut = false.obs;
   final RxString errorMessage = ''.obs;
 
-  /// Today's attendance data (check-in/out time + status)
   final Rxn<CheckInOutData> todayData = Rxn<CheckInOutData>();
 
-  // ─────────────────────────────────────────────
-  // Getters
-  // ─────────────────────────────────────────────
   bool get hasCheckedIn => todayData.value?.hasCheckedIn ?? false;
   bool get hasCheckedOut => todayData.value?.hasCheckedOut ?? false;
   bool get hasTodayRecord => todayData.value != null;
@@ -28,18 +22,27 @@ class TeacherCheckInOutController extends GetxController {
   String? get checkInTime => todayData.value?.checkInTime;
   String? get checkOutTime => todayData.value?.checkOutTime;
 
-  // ─────────────────────────────────────────────
-  // Fetch Today's Attendance
-  // ─────────────────────────────────────────────
-  Future<void> fetchToday({required String teacherId}) async {
-    if (teacherId.isEmpty) return;
+  // ─────────────────────────────────────────────────────
+  Future<String?> _resolveTeacherId() async {
+    final id = await SchoolAuthSharedPrefService.getTeacherId();
+    if (id == null || id <= 0) return null;
+    return id.toString();
+  }
+
+  // ══════════════════════════════════════════════════════
+  // FETCH TODAY
+  // ══════════════════════════════════════════════════════
+  Future<void> fetchToday() async {
+    final teacherId = await _resolveTeacherId();
+    if (teacherId == null) {
+      errorMessage.value = 'Teacher ID not found. Please login again.';
+      return;
+    }
 
     try {
       isLoading.value = true;
       errorMessage.value = '';
-
       final result = await _repository.getToday(teacherId: teacherId);
-
       todayData.value = result.data;
     } catch (e) {
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
@@ -48,14 +51,17 @@ class TeacherCheckInOutController extends GetxController {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Check In
-  // ─────────────────────────────────────────────
-  Future<bool> checkIn({
-    required String teacherId,
-    String remarks = 'self',
-  }) async {
+  // ══════════════════════════════════════════════════════
+  // CHECK IN
+  // ══════════════════════════════════════════════════════
+  Future<bool> checkIn({String remarks = 'self'}) async {
     if (isCheckingIn.value) return false;
+
+    final teacherId = await _resolveTeacherId();
+    if (teacherId == null) {
+      errorMessage.value = 'Teacher ID not found. Please login again.';
+      return false;
+    }
 
     try {
       isCheckingIn.value = true;
@@ -80,14 +86,17 @@ class TeacherCheckInOutController extends GetxController {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Check Out
-  // ─────────────────────────────────────────────
-  Future<bool> checkOut({
-    required String teacherId,
-    String remarks = 'self',
-  }) async {
+  // ══════════════════════════════════════════════════════
+  // CHECK OUT
+  // ══════════════════════════════════════════════════════
+  Future<bool> checkOut({String remarks = 'self'}) async {
     if (isCheckingOut.value) return false;
+
+    final teacherId = await _resolveTeacherId();
+    if (teacherId == null) {
+      errorMessage.value = 'Teacher ID not found. Please login again.';
+      return false;
+    }
 
     try {
       isCheckingOut.value = true;

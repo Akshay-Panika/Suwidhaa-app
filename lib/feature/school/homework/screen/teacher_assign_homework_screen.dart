@@ -1,8 +1,8 @@
+// lib/feature/school/homework/view/teacher_assign_homework_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../core/utils/app_color.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/homework_controller.dart';
 import '../model/homework_model.dart';
@@ -13,12 +13,16 @@ class TeacherAssignHomeworkScreen extends StatefulWidget {
   const TeacherAssignHomeworkScreen({super.key});
 
   @override
-  State<TeacherAssignHomeworkScreen> createState() => _TeacherAssignHomeworkScreenState();
+  State<TeacherAssignHomeworkScreen> createState() =>
+      _TeacherAssignHomeworkScreenState();
 }
 
-class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScreen> {
+class _TeacherAssignHomeworkScreenState
+    extends State<TeacherAssignHomeworkScreen> {
   final hwController = Get.find<HomeworkController>();
   final teacherController = Get.find<TeacherController>();
+
+  String _teacherIdCard = '';
 
   String _selectedClass = 'All';
   DateTime? _selectedDate;
@@ -26,20 +30,24 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
   @override
   void initState() {
     super.initState();
-    _loadTeacherHomework();
+    _initTeacher();
+  }
+
+  Future<void> _initTeacher() async {
+    // ✅ Teacher ID from SharedPrefs
+    final card = await SchoolAuthSharedPrefService.getTeacherIdCard();
+    _teacherIdCard = (card ?? '').trim();
+    print('🟣 teacher_id_card="$card"');
+    await _loadTeacherHomework();
   }
 
   Future<void> _loadTeacherHomework() async {
-    final id = teacherController.teacherIdCard;
-    if (id.isEmpty) {
+    if (_teacherIdCard.isEmpty) {
       await hwController.fetchAllHomework();
     } else {
-      await hwController.fetchHomeworkByTeacher(id);
+      await hwController.fetchHomeworkByTeacher(_teacherIdCard);
     }
   }
-
-  static String _fmt(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   bool get _hasActiveFilters =>
       _selectedClass != 'All' || _selectedDate != null;
@@ -115,7 +123,8 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     itemCount: list.length,
-                    itemBuilder: (_, i) => _buildHomeworkItem(context, list[i]),
+                    itemBuilder: (_, i) =>
+                        _buildHomeworkItem(context, list[i]),
                   ),
                 );
               }),
@@ -147,11 +156,11 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
           onPressed: _loadTeacherHomework,
           icon: const Icon(Icons.refresh_rounded, color: Colors.white),
         ),
-        SizedBox(width: 10,),
+        const SizedBox(width: 10),
         InkWell(
           onTap: () async {
             await Get.to(() => const TeacherAssignAddHomeworkScreen());
-            // _loadTeacherHomework();
+            await _loadTeacherHomework();
           },
           child: Container(
             padding: const EdgeInsets.all(4),
@@ -361,9 +370,7 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
                     const Text(
                       'Select Date',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                          fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     const Spacer(),
                     IconButton(
@@ -422,10 +429,8 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
-                          'Apply',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        child: const Text('Apply',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -468,10 +473,9 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Select Class',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            const Text('Select Class',
+                style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -506,9 +510,13 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
   Widget _buildHomeworkItem(BuildContext context, HomeworkModel hw) {
     final subjectColor = _subjectColor(hw.subjectName);
     final hasImage = hw.image != null && hw.image!.isNotEmpty;
+    final studentCount = hw.studentIdsList.length;
 
     return GestureDetector(
-      onTap: () => Get.to(() => TeacherHomeworkDetailsScreen(homeworkId: hw.id ?? 0),),
+      onTap: () async {
+        await Get.to(() => TeacherHomeworkDetailsScreen(homeworkId: hw.id ?? 0));
+        await _loadTeacherHomework();
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(10),
@@ -553,20 +561,14 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
                   },
                   errorBuilder: (_, __, ___) => Container(
                     color: subjectColor.withOpacity(0.12),
-                    child: Icon(
-                      Icons.menu_book_sharp,
-                      color: subjectColor,
-                      size: 32,
-                    ),
+                    child: Icon(Icons.menu_book_sharp,
+                        color: subjectColor, size: 32),
                   ),
                 )
                     : Container(
                   color: subjectColor.withOpacity(0.12),
-                  child: Icon(
-                    Icons.menu_book_sharp,
-                    color: subjectColor,
-                    size: 32,
-                  ),
+                  child: Icon(Icons.menu_book_sharp,
+                      color: subjectColor, size: 32),
                 ),
               ),
             ),
@@ -601,6 +603,15 @@ class _TeacherAssignHomeworkScreenState extends State<TeacherAssignHomeworkScree
                         const SizedBox(width: 3),
                         Text(
                           'Class ${hw.className ?? '-'}',
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey[600]),
+                        ),
+                        const SizedBox(width: 10),
+                        Icon(Icons.people_alt_rounded,
+                            size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$studentCount',
                           style: TextStyle(
                               fontSize: 11, color: Colors.grey[600]),
                         ),

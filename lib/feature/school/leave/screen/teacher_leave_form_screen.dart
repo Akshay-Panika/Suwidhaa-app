@@ -1,3 +1,4 @@
+// lib/feature/school/leave/screen/teacher_leave_form_screen.dart
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -7,12 +8,19 @@ import 'package:intl/intl.dart';
 
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_leave_controller.dart';
+import '../model/teacher_leave_model.dart';
 
 class TeacherLeaveFormScreen extends StatefulWidget {
-  const TeacherLeaveFormScreen({super.key});
+  /// If non-null → EDIT mode
+  final TeacherLeaveModel? existing;
+
+  const TeacherLeaveFormScreen({super.key, this.existing});
+
+  bool get isEditMode => existing != null;
 
   @override
-  State<TeacherLeaveFormScreen> createState() => _TeacherLeaveFormScreenState();
+  State<TeacherLeaveFormScreen> createState() =>
+      _TeacherLeaveFormScreenState();
 }
 
 class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
@@ -23,14 +31,30 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
   final reasonController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  String? leaveType;
   DateTime? fromDate;
   DateTime? toDate;
-  bool isHalfDay = false;
   File? _pickedImage;
+  bool _keepExistingImage = true;
 
-  // ================= PRIMARY COLOR =================
   static const Color _primary = Colors.indigo;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditMode) _hydrateFromExisting(widget.existing!);
+  }
+
+  void _hydrateFromExisting(TeacherLeaveModel leave) {
+    fromDate = DateTime.tryParse(leave.startDate);
+    toDate = DateTime.tryParse(leave.endDate);
+    reasonController.text = leave.reasonMsg ?? '';
+  }
+
+  @override
+  void dispose() {
+    reasonController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +67,9 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios, color: Colors.indigo),
         ),
-        title: const Text(
-          "Apply for Leave",
-          style: TextStyle(
+        title: Text(
+          widget.isEditMode ? "Edit Leave" : "Apply for Leave",
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             color: Colors.indigo,
@@ -59,12 +83,10 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             child: CircularProgressIndicator(color: _primary),
           );
         }
-
         if (teacherController.errorMessage.value.isNotEmpty) {
           return const SizedBox.shrink();
         }
-
-        if (teacherController.hasData) {
+        if (teacherController.hasData || widget.isEditMode) {
           return Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -91,12 +113,32 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildSwitchTile(
-                    'Apply as Half Day',
-                    isHalfDay,
-                        (val) => setState(() => isHalfDay = val),
-                  ),
+                  if (fromDate != null && toDate != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.date_range_rounded,
+                              size: 16, color: Colors.indigo),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Total: ${toDate!.difference(fromDate!).inDays + 1} day(s)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.indigo,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   _buildTextField(
                     'Reason Text...',
@@ -112,14 +154,13 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             ),
           );
         }
-
         return const SizedBox.shrink();
       }),
     );
   }
 
-  // ────────────────────────────────  DATE FIELD
-  Widget _buildDateField(String label, DateTime? date, VoidCallback onTap) {
+  Widget _buildDateField(
+      String label, DateTime? date, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -136,7 +177,8 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(10),
@@ -151,8 +193,9 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                         : 'Select date',
                     style: TextStyle(
                       fontSize: 13,
-                      color:
-                      date != null ? Colors.black87 : Colors.grey.shade500,
+                      color: date != null
+                          ? Colors.black87
+                          : Colors.grey.shade500,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -160,7 +203,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                 const Icon(
                   Icons.calendar_today,
                   size: 18,
-                  color: _primary, // ← indigo
+                  color: _primary,
                 ),
               ],
             ),
@@ -170,26 +213,6 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  SWITCH TILE
-  Widget _buildSwitchTile(
-      String label, bool value, Function(bool) onChanged) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: _primary, // ← indigo
-        ),
-      ],
-    );
-  }
-
-  // ────────────────────────────────  TEXT FIELD
   Widget _buildTextField(
       String label, String hint, TextEditingController controller) {
     return Column(
@@ -197,7 +220,8 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style:
+          const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -215,7 +239,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             ),
             focusedBorder: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
-              borderSide: BorderSide(color: _primary), // ← indigo
+              borderSide: BorderSide(color: _primary),
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -228,18 +252,22 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  UPLOAD TILE
   Widget _buildUploadTile() {
+    final existingImage = widget.existing?.image ?? '';
+    final hasExistingImage = widget.isEditMode &&
+        _keepExistingImage &&
+        existingImage.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Show preview if image picked
-        if (_pickedImage != null) ...[
+        if (_pickedImage != null || hasExistingImage) ...[
           Stack(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.file(
+                child: _pickedImage != null
+                    ? Image.file(
                   _pickedImage!,
                   height: 180,
                   width: double.infinity,
@@ -248,19 +276,30 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                     height: 180,
                     color: Colors.grey.shade200,
                     child: const Center(
-                      child: Icon(Icons.broken_image),
-                    ),
+                        child: Icon(Icons.broken_image)),
+                  ),
+                )
+                    : Image.network(
+                  existingImage,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 180,
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                        child: Icon(Icons.broken_image)),
                   ),
                 ),
               ),
-              // Remove (X) button
               Positioned(
                 top: 8,
                 right: 8,
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() => _pickedImage = null);
-                  },
+                  onTap: () => setState(() {
+                    _pickedImage = null;
+                    _keepExistingImage = false;
+                  }),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -279,14 +318,15 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
           ),
           const SizedBox(height: 10),
         ],
-
-        // Upload tile (tap to pick)
         GestureDetector(
           onTap: () async {
             final XFile? picked =
             await _picker.pickImage(source: ImageSource.gallery);
             if (picked != null) {
-              setState(() => _pickedImage = File(picked.path));
+              setState(() {
+                _pickedImage = File(picked.path);
+                _keepExistingImage = false;
+              });
             }
           },
           child: Container(
@@ -304,9 +344,11 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _pickedImage == null
-                            ? "Upload Attachment (Optional)"
-                            : "Change Attachment",
+                        _pickedImage != null
+                            ? "Change Attachment"
+                            : hasExistingImage
+                            ? "Replace Attachment"
+                            : "Upload Attachment (Optional)",
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -329,14 +371,14 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.shade50, // ← indigo
+                    color: Colors.indigo.shade50,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     _pickedImage == null
                         ? Icons.upload_file
                         : Icons.refresh,
-                    color: Colors.indigo.shade700, // ← indigo
+                    color: Colors.indigo.shade700,
                     size: 24,
                   ),
                 ),
@@ -348,7 +390,6 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  ACTION BUTTONS
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -356,7 +397,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
           child: OutlinedButton(
             onPressed: _resetForm,
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.indigo.shade300), // ← indigo
+              side: BorderSide(color: Colors.indigo.shade300),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -367,7 +408,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: _primary, // ← indigo
+                color: _primary,
               ),
             ),
           ),
@@ -379,7 +420,7 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
             return ElevatedButton(
               onPressed: loading ? null : _submitLeave,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primary, // ← indigo
+                backgroundColor: _primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -394,9 +435,9 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
                   color: Colors.white,
                 ),
               )
-                  : const Text(
-                "Submit Leave",
-                style: TextStyle(
+                  : Text(
+                widget.isEditMode ? "Update Leave" : "Submit Leave",
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -409,17 +450,17 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  DATE PICKER
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: isFrom
+          ? (fromDate ?? DateTime.now())
+          : (toDate ?? fromDate ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: _primary), // ← indigo
-        ),
+        data: Theme.of(context)
+            .copyWith(colorScheme: const ColorScheme.light(primary: _primary)),
         child: child!,
       ),
     );
@@ -437,20 +478,18 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     }
   }
 
-  // ────────────────────────────────  RESET
   void _resetForm() {
     setState(() {
-      leaveType = null;
       fromDate = toDate = null;
-      isHalfDay = false;
       _pickedImage = null;
+      _keepExistingImage = widget.isEditMode;
       reasonController.clear();
+      if (widget.isEditMode) _hydrateFromExisting(widget.existing!);
     });
     _formKey.currentState?.reset();
     _showSnack('Form has been reset', Colors.grey);
   }
 
-  // ────────────────────────────────  SUBMIT (API CALL) — UNCHANGED
   Future<void> _submitLeave() async {
     if (!_formKey.currentState!.validate()) return;
     if (fromDate == null) {
@@ -462,21 +501,18 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
       return;
     }
 
-    final teacherId = teacherController.id.toString();
-    final teacherIdCard = teacherController.teacherIdCard;
-
-    if (teacherId.isEmpty || teacherId == '0' || teacherIdCard.isEmpty) {
-      _showSnack('Teacher profile not loaded', Colors.red);
-      return;
-    }
-
     final startStr = DateFormat('yyyy-MM-dd').format(fromDate!);
     final endStr = DateFormat('yyyy-MM-dd').format(toDate!);
 
-    final success = await teacherLeaveController.createLeave(
-      teacherId: teacherId,
-      teacherIdCard: teacherIdCard,
-      applyStatus: true,
+    final success = widget.isEditMode
+        ? await teacherLeaveController.updateLeave(
+      id: widget.existing!.id!,
+      reasonMsg: reasonController.text.trim(),
+      startDate: startStr,
+      endDate: endStr,
+      imagePath: _pickedImage?.path,
+    )
+        : await teacherLeaveController.createLeave(
       reasonMsg: reasonController.text.trim(),
       startDate: startStr,
       endDate: endStr,
@@ -486,55 +522,13 @@ class _TeacherLeaveFormScreenState extends State<TeacherLeaveFormScreen> {
     if (!success) return;
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Leave Applied Successfully!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Your leave request has been submitted for approval.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context, true);
-            },
-            child: const Text(
-              'Done',
-              style: TextStyle(
-                color: _primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // Return true so caller refreshes
+    Navigator.pop(context, true);
   }
 
-  // ────────────────────────────────  SNACKBAR
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: color),
     );
-  }
-
-  @override
-  void dispose() {
-    reasonController.dispose();
-    super.dispose();
   }
 }

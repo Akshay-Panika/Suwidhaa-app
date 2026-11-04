@@ -1,8 +1,8 @@
+// lib/feature/school/leave/widget/teacher_current_leave_request_card.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_leave_controller.dart';
 import '../model/teacher_leave_model.dart';
 import '../screen/teacher_leave_form_screen.dart';
@@ -18,10 +18,8 @@ class TeacherCurrentLeaveRequestCard extends StatefulWidget {
 
 class _TeacherCurrentLeaveRequestCardState
     extends State<TeacherCurrentLeaveRequestCard> {
-  final teacherController = Get.find<TeacherController>();
   final teacherLeaveController = Get.find<TeacherLeaveController>();
 
-  // ================= PRIMARY COLOR =================
   static const Color _primary = Colors.indigo;
   static const Color _primaryDark = Color(0xFF283593);
   static const Color _primaryLight = Color(0xFFE8EAF6);
@@ -32,11 +30,9 @@ class _TeacherCurrentLeaveRequestCardState
     _loadLeaves();
   }
 
+  /// ✅ No param — controller reads teacher_id from SharedPrefs
   Future<void> _loadLeaves() async {
-    final idCard = teacherController.teacherIdCard;
-    if (idCard.isNotEmpty) {
-      await teacherLeaveController.fetchLeavesByTeacherIdCard(idCard);
-    }
+    await teacherLeaveController.fetchLeavesByTeacherId();
   }
 
   Future<void> _openNewRequest() async {
@@ -47,10 +43,7 @@ class _TeacherCurrentLeaveRequestCardState
       ),
     );
     if (result == true) {
-      await teacherLeaveController.fetchLeavesByTeacherIdCard(
-        teacherController.teacherIdCard,
-        forceRefresh: true,
-      );
+      await teacherLeaveController.fetchLeavesByTeacherId(forceRefresh: true);
     }
   }
 
@@ -65,10 +58,8 @@ class _TeacherCurrentLeaveRequestCardState
   }
 
   // ================= STATUS HELPERS =================
-  String _status(TeacherLeaveModel leave) {
-    // Example: return leave.status ?? 'Pending';
-    return 'Pending';
-  }
+  /// ✅ Model's statusLabel: 'Approved' / 'Rejected' / 'Pending'
+  String _status(TeacherLeaveModel leave) => leave.statusLabel;
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
@@ -76,8 +67,6 @@ class _TeacherCurrentLeaveRequestCardState
         return Colors.green;
       case 'rejected':
         return Colors.red;
-      case 'ignored':
-        return Colors.grey;
       case 'pending':
         return Colors.orange;
       default:
@@ -91,8 +80,6 @@ class _TeacherCurrentLeaveRequestCardState
         return Icons.check_circle_rounded;
       case 'rejected':
         return Icons.cancel_rounded;
-      case 'ignored':
-        return Icons.visibility_off_rounded;
       default:
         return Icons.hourglass_top_rounded;
     }
@@ -103,7 +90,7 @@ class _TeacherCurrentLeaveRequestCardState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
+        // ── Header ──
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -154,7 +141,7 @@ class _TeacherCurrentLeaveRequestCardState
         ),
         const SizedBox(height: 12),
 
-        // Body
+        // ── Body ──
         Obx(() {
           if (teacherLeaveController.isLoading.value &&
               teacherLeaveController.leaves.isEmpty) {
@@ -186,8 +173,8 @@ class _TeacherCurrentLeaveRequestCardState
         child: SizedBox(
           height: 22,
           width: 22,
-          child: CircularProgressIndicator(
-              strokeWidth: 2, color: _primary),
+          child:
+          CircularProgressIndicator(strokeWidth: 2, color: _primary),
         ),
       ),
     );
@@ -214,7 +201,7 @@ class _TeacherCurrentLeaveRequestCardState
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: _primaryLight,
               shape: BoxShape.circle,
             ),
@@ -240,16 +227,21 @@ class _TeacherCurrentLeaveRequestCardState
     );
   }
 
-  // ────────────────────────────  SINGLE LEAVE CARD (MATCHED WITH LIST SCREEN)
+  // ────────────────────────────  SINGLE LEAVE CARD
   Widget _buildSingleLeaveCard(TeacherLeaveModel leave) {
-    final isFullDay = leave.applyStatus;
-    final typeColor =
-    isFullDay ? const Color(0xFF2563EB) : const Color(0xFFEA580C);
-    final typeText = isFullDay ? "Full Day" : "Half Day";
-    final typeIcon = isFullDay ? Icons.wb_sunny : Icons.brightness_2;
+    // ✅ Multi/Single Day from totalDays (no more apply_status as bool)
+    final multiDay = leave.isMultiDay;
+    final typeColor = multiDay
+        ? const Color(0xFF2563EB)
+        : const Color(0xFFEA580C);
+    final typeText = multiDay ? "Multi Day" : "Single Day";
+    final typeIcon = multiDay ? Icons.date_range : Icons.wb_sunny;
 
     final status = _status(leave);
     final statusColor = _statusColor(status);
+
+    // ✅ Teacher avatar from nested teacher
+    final hasProfile = (leave.teacherProfile ?? '').isNotEmpty;
 
     return GestureDetector(
       onTap: _openList,
@@ -266,7 +258,7 @@ class _TeacherCurrentLeaveRequestCardState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: avatar + Leave # + status badge
+              // ── Header row ──
               Row(
                 children: [
                   Container(
@@ -275,16 +267,27 @@ class _TeacherCurrentLeaveRequestCardState
                     decoration: BoxDecoration(
                       color: Colors.indigo.shade50,
                       borderRadius: BorderRadius.circular(10),
+                      image: hasProfile
+                          ? DecorationImage(
+                        image: NetworkImage(leave.teacherProfile!),
+                        fit: BoxFit.cover,
+                        onError: (_, __) {},
+                      )
+                          : null,
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'T',
-                      style: TextStyle(
+                    child: !hasProfile
+                        ? Text(
+                      leave.teacherDisplayName.isNotEmpty
+                          ? leave.teacherDisplayName[0].toUpperCase()
+                          : 'T',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: _primary,
                       ),
-                    ),
+                    )
+                        : null,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -318,6 +321,20 @@ class _TeacherCurrentLeaveRequestCardState
                                 ),
                               ),
                             ),
+                            if ((leave.schoolName ?? '').isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  leave.schoolName!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -325,8 +342,8 @@ class _TeacherCurrentLeaveRequestCardState
                   ),
                   // Status badge
                   Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -354,7 +371,7 @@ class _TeacherCurrentLeaveRequestCardState
               ),
               const SizedBox(height: 10),
 
-              // Info box
+              // ── Info box ──
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -393,8 +410,7 @@ class _TeacherCurrentLeaveRequestCardState
                         ),
                       ],
                     ),
-                    if (leave.reasonMsg != null &&
-                        leave.reasonMsg!.isNotEmpty) ...[
+                    if ((leave.reasonMsg ?? '').isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,8 +433,7 @@ class _TeacherCurrentLeaveRequestCardState
                         ],
                       ),
                     ],
-                    if (leave.createdDate != null &&
-                        leave.createdDate!.isNotEmpty) ...[
+                    if ((leave.createdDate ?? '').isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -439,8 +454,8 @@ class _TeacherCurrentLeaveRequestCardState
                 ),
               ),
 
-              // Image
-              if (leave.image != null && leave.image!.isNotEmpty) ...[
+              // ── Image ──
+              if ((leave.image ?? '').isNotEmpty) ...[
                 const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),

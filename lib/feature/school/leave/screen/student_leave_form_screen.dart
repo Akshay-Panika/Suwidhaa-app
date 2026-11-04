@@ -6,13 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-
-import '../../profile/controller/student_controller.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../controller/student_leave_controller.dart';
 import '../model/student_leave_list_model.dart';
 
 class StudentLeaveFormScreen extends StatefulWidget {
-  /// 🔹 Null = create mode, Non-null = edit mode
   final StudentLeaveData? editLeave;
 
   const StudentLeaveFormScreen({super.key, this.editLeave});
@@ -20,12 +18,10 @@ class StudentLeaveFormScreen extends StatefulWidget {
   bool get isEditMode => editLeave != null;
 
   @override
-  State<StudentLeaveFormScreen> createState() =>
-      _StudentLeaveFormScreenState();
+  State<StudentLeaveFormScreen> createState() => _StudentLeaveFormScreenState();
 }
 
 class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
-  final studentController = Get.find<StudentController>();
   final studentLeaveController = Get.find<StudentLeaveController>();
 
   final _formKey = GlobalKey<FormState>();
@@ -36,9 +32,12 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
   DateTime? toDate;
   File? _pickedImage;
 
-  // Edit mode: existing image
   String? _existingImageUrl;
   bool _removeExistingImage = false;
+
+  // ✅ Student info — only id card needed (backend auto-fills)
+  bool _studentInfoLoaded = false;
+  String _studentIdCard = '';
 
   static const Color _primary = Colors.indigo;
 
@@ -47,7 +46,21 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
   @override
   void initState() {
     super.initState();
-    _prefillIfEdit();
+    if (_isEdit) {
+      _prefillIfEdit();
+      _studentInfoLoaded = true;
+    } else {
+      _loadStudentInfo();
+    }
+  }
+
+  Future<void> _loadStudentInfo() async {
+    final idCard = await SchoolAuthSharedPrefService.getStudentIdCard() ?? '';
+    if (!mounted) return;
+    setState(() {
+      _studentIdCard = idCard;
+      _studentInfoLoaded = true;
+    });
   }
 
   void _prefillIfEdit() {
@@ -72,9 +85,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,61 +106,53 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
         ),
         centerTitle: true,
       ),
-      body: Obx(() {
-        final studentLoading = studentController.isLoading.value;
-
-        if (!_isEdit && studentLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: _primary),
-          );
-        }
-
-
-        return Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDateField(
-                        'From Date',
-                        fromDate,
-                            () => _pickDate(true),
-                      ),
+      body: !_studentInfoLoaded
+          ? const Center(
+        child: CircularProgressIndicator(color: _primary),
+      )
+          : Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDateField(
+                      'From Date',
+                      fromDate,
+                          () => _pickDate(true),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildDateField(
-                        'To Date',
-                        toDate,
-                            () => _pickDate(false),
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDateField(
+                      'To Date',
+                      toDate,
+                          () => _pickDate(false),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  'Reason Text...',
-                  'Leave Reason / Message',
-                  reasonController,
-                ),
-                const SizedBox(height: 16),
-                _buildUploadTile(),
-                const SizedBox(height: 30),
-                _buildActionButtons(),
-              ],
-            ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                'Reason Text...',
+                'Leave Reason / Message',
+                reasonController,
+              ),
+              const SizedBox(height: 16),
+              _buildUploadTile(),
+              const SizedBox(height: 30),
+              _buildActionButtons(),
+            ],
           ),
-        );
-      }),
+        ),
+      ),
     );
   }
 
-  // ────────────────────────────────  DATE FIELD
   Widget _buildDateField(String label, DateTime? date, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +206,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  TEXT FIELD
   Widget _buildTextField(
       String label, String hint, TextEditingController controller) {
     return Column(
@@ -243,12 +244,10 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  UPLOAD TILE
   Widget _buildUploadTile() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔹 Naya picked image (local file)
         if (_pickedImage != null) ...[
           Stack(
             children: [
@@ -270,9 +269,7 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
                 top: 8,
                 right: 8,
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() => _pickedImage = null);
-                  },
+                  onTap: () => setState(() => _pickedImage = null),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -290,9 +287,7 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
             ],
           ),
           const SizedBox(height: 10),
-        ]
-        // 🔹 Edit mode me existing image (agar naya pick nahi kiya)
-        else if (_isEdit &&
+        ] else if (_isEdit &&
             _existingImageUrl != null &&
             _existingImageUrl!.isNotEmpty &&
             !_removeExistingImage) ...[
@@ -312,16 +307,11 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
                   ),
                 ),
               ),
-              // Remove button
               Positioned(
                 top: 8,
                 right: 8,
                 child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _removeExistingImage = true;
-                    });
-                  },
+                  onTap: () => setState(() => _removeExistingImage = true),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -336,13 +326,12 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
                   ),
                 ),
               ),
-              // "Current" badge
               Positioned(
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.indigo,
                     borderRadius: BorderRadius.circular(6),
@@ -361,8 +350,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
           ),
           const SizedBox(height: 10),
         ],
-
-        // 🔹 Pick button
         GestureDetector(
           onTap: () async {
             final XFile? picked =
@@ -420,9 +407,7 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    _pickedImage == null
-                        ? Icons.upload_file
-                        : Icons.refresh,
+                    _pickedImage == null ? Icons.upload_file : Icons.refresh,
                     color: Colors.indigo.shade700,
                     size: 24,
                   ),
@@ -435,7 +420,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  ACTION BUTTONS
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -498,7 +482,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  DATE PICKER
   Future<void> _pickDate(bool isFrom) async {
     final picked = await showDatePicker(
       context: context,
@@ -528,10 +511,8 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     }
   }
 
-  // ────────────────────────────────  RESET
   void _resetForm() {
     if (_isEdit) {
-      // Edit mode: purane values pe wapas
       _prefillIfEdit();
       setState(() {
         _pickedImage = null;
@@ -548,7 +529,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     _showSnack('Form has been reset', Colors.grey);
   }
 
-  // ────────────────────────────────  SUBMIT (CREATE / UPDATE)
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (fromDate == null) {
@@ -563,46 +543,23 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     final startStr = DateFormat('yyyy-MM-dd').format(fromDate!);
     final endStr = DateFormat('yyyy-MM-dd').format(toDate!);
 
-    // 🔹 Student info
+    // ✅ Only student_id_card needed — backend auto-fills name, class, school
     final String studentIdCard;
-    final String studentName;
-    final String studentClass;
-    final String schoolType;
-
     if (_isEdit) {
-      final e = widget.editLeave!;
-      studentIdCard = e.studentIdCard;
-      studentName = e.studentName;
-      studentClass = e.studentClass;
-      schoolType = e.schoolType.isNotEmpty ? e.schoolType : 'A';
+      studentIdCard = widget.editLeave!.studentIdCard;
     } else {
-      final studentData = studentController.studentData.value;
-      if (studentData == null) {
-        _showSnack('Student profile not loaded', Colors.red);
-        return;
-      }
-      studentIdCard = studentData.studentIdCard;
-      studentName = studentData.fullName;
-      studentClass = studentData.studentClass;
-      schoolType =
-      studentData.schoolType.isNotEmpty ? studentData.schoolType : 'A';
-
-      if (studentIdCard.isEmpty || studentName.isEmpty) {
+      studentIdCard = _studentIdCard;
+      if (studentIdCard.isEmpty) {
         _showSnack('Student profile incomplete', Colors.red);
         return;
       }
     }
 
     final bool success;
-
     if (_isEdit) {
-      // 🔹 UPDATE
       success = await studentLeaveController.updateLeave(
         leaveId: widget.editLeave!.id,
         studentIdCard: studentIdCard,
-        studentName: studentName,
-        studentClass: studentClass,
-        schoolType: schoolType,
         reasonMsg: reasonController.text.trim(),
         startDate: startStr,
         endDate: endStr,
@@ -610,12 +567,8 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
         removeOldImage: _removeExistingImage,
       );
     } else {
-      // 🔹 CREATE
       success = await studentLeaveController.createLeave(
         studentIdCard: studentIdCard,
-        studentName: studentName,
-        studentClass: studentClass,
-        schoolType: schoolType,
         reasonMsg: reasonController.text.trim(),
         startDate: startStr,
         endDate: endStr,
@@ -626,7 +579,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     if (!success) return;
     if (!mounted) return;
 
-    // Success dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -661,8 +613,8 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // close dialog
-              Navigator.pop(context, true); // close screen with result
+              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             child: const Text(
               'Done',
@@ -677,7 +629,6 @@ class _StudentLeaveFormScreenState extends State<StudentLeaveFormScreen> {
     );
   }
 
-  // ────────────────────────────────  SNACKBAR
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: color),

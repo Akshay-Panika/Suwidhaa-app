@@ -35,7 +35,6 @@ class _TeacherAttendanceDashboardCardState
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Animate 0 → 1. Actual value multiplied by real `ratio` in build.
     _progressAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -59,15 +58,14 @@ class _TeacherAttendanceDashboardCardState
 
     _animationController.forward();
 
-    // Fetch attendance once teacher id is available
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttendance());
     ever(teacherController.teacherData, (_) => _loadAttendance());
   }
 
+  /// ✅ No teacherId param — controller reads from SharedPrefs
   void _loadAttendance() {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isNotEmpty && !attendanceController.hasData) {
-      attendanceController.fetchAttendance(teacherId: teacherId);
+    if (!attendanceController.hasData) {
+      attendanceController.fetchAttendance();
     }
   }
 
@@ -78,9 +76,7 @@ class _TeacherAttendanceDashboardCardState
   }
 
   int _countByStatus(
-      List<AttendanceRecord> records,
-      AttendanceStatusType type,
-      ) {
+      List<AttendanceRecord> records, AttendanceStatusType type) {
     return records.where((r) => r.statusType == type).length;
   }
 
@@ -112,52 +108,28 @@ class _TeacherAttendanceDashboardCardState
           attendanceController.attendanceData.value?.allRecords ??
               <AttendanceRecord>[];
 
-      // Use ALL records (no month filter) — graph shows lifetime stats
-      // Week-off & running excluded (not attendable)
-      final attendableRecords = records.where((r) {
-        return r.statusType != AttendanceStatusType.weekOff &&
-            r.statusType != AttendanceStatusType.running;
-      }).toList();
+      // ✅ Only 3 statuses — present / absent / leave
+      final presentDays =
+      _countByStatus(records, AttendanceStatusType.present);
+      final absentDays =
+      _countByStatus(records, AttendanceStatusType.absent);
+      final leaveDays =
+      _countByStatus(records, AttendanceStatusType.leave);
 
-      final presentDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.present,
-      );
-      final absentDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.absent,
-      );
-      final halfDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.halfDay,
-      );
-      final leaveDays = _countByStatus(
-        attendableRecords,
-        AttendanceStatusType.leave,
-      );
+      final totalAttendable = presentDays + absentDays + leaveDays;
 
-      final totalAttendable = presentDays + absentDays + halfDays + leaveDays;
-
-      // ✅ Percentage logic:
-      //   PRESENT    → 1.0 weight
-      //   HALF_DAY   → 0.5 weight
-      //   LEAVE      → 0.0 weight
-      //   ABSENT     → 0.0 weight
-      final attended = presentDays + (halfDays * 0.5);
-
+      // ✅ Percentage: present / total
       final double ratio = totalAttendable > 0
-          ? (attended / totalAttendable).clamp(0.0, 1.0)
+          ? (presentDays / totalAttendable).clamp(0.0, 1.0)
           : 0.0;
 
-      // Debug (remove in production)
-      debugPrint('📊 Attendance → present=$presentDays, absent=$absentDays, '
-          'half=$halfDays, leave=$leaveDays, total=$totalAttendable, '
-          'attended=$attended, ratio=$ratio');
+      debugPrint(
+          '📊 Dashboard attendance → present=$presentDays, absent=$absentDays, '
+              'leave=$leaveDays, total=$totalAttendable, ratio=$ratio');
 
       return AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          // Animate 0 → ratio smoothly
           final double animatedValue = _progressAnimation.value * ratio;
           final int animatedPercent = (animatedValue * 100).round();
 
@@ -222,8 +194,7 @@ class _TeacherAttendanceDashboardCardState
                                 backgroundColor: Colors.grey.shade300,
                                 valueColor:
                                 const AlwaysStoppedAnimation<Color>(
-                                  Colors.blue,
-                                ),
+                                    Colors.blue),
                               ),
                             ),
                           ),
@@ -329,7 +300,8 @@ class _TeacherAttendanceDashboardCardState
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 8, color: Colors.grey.shade700),
+                  style: TextStyle(
+                      fontSize: 8, color: Colors.grey.shade700),
                 ),
                 Text(
                   value,

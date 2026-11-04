@@ -1,5 +1,4 @@
 // lib/feature/school/attendance/screen/teacher_checkin_checkout_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,7 +8,8 @@ import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_attendance_controller.dart';
 import '../controller/teacher_checkin_checkout_controller.dart';
 
-class TeacherCheckinCheckoutScreen extends StatefulWidget {const TeacherCheckinCheckoutScreen({super.key});
+class TeacherCheckinCheckoutScreen extends StatefulWidget {
+  const TeacherCheckinCheckoutScreen({super.key});
 
   @override
   State<TeacherCheckinCheckoutScreen> createState() =>
@@ -22,32 +22,26 @@ class _TeacherCheckinCheckoutScreenState
   DateTime _now = DateTime.now();
 
   final TeacherController teacherController = Get.find<TeacherController>();
-  final TeacherCheckInOutController checkInOutController = Get.find<TeacherCheckInOutController>();
-  final TeacherAttendanceController attendanceController = Get.find<TeacherAttendanceController>();
+  final TeacherCheckInOutController checkInOutController =
+  Get.find<TeacherCheckInOutController>();
+  final TeacherAttendanceController attendanceController =
+  Get.find<TeacherAttendanceController>();
 
   @override
   void initState() {
     super.initState();
 
-    // Clock tick
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
 
-    // ✅ Fetch today's attendance once teacher id is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadToday();
-    });
-
-    // Re-fetch when teacher data becomes available
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadToday());
     ever(teacherController.teacherData, (_) => _loadToday());
   }
 
+  /// ✅ No teacherId param — controller resolves from SharedPrefs
   void _loadToday() {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isNotEmpty) {
-      checkInOutController.fetchToday(teacherId: teacherId);
-    }
+    checkInOutController.fetchToday();
   }
 
   @override
@@ -56,8 +50,7 @@ class _TeacherCheckinCheckoutScreenState
     super.dispose();
   }
 
-  // ---------- Helpers ----------
-
+  // ── Formatters ──
   String _formatTime(DateTime dt) {
     final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
     final m = dt.minute.toString().padLeft(2, '0');
@@ -74,28 +67,13 @@ class _TeacherCheckinCheckoutScreenState
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
-  String _formatClock(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $ampm';
-  }
-
-  // ---------- API Calls ----------
-
+  // ── Handlers ──
   Future<void> _handleCheckIn() async {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isEmpty) {
-      FlutterToast.error("Teacher ID not found");
-      return;
-    }
-
-    final ok = await checkInOutController.checkIn(teacherId: teacherId);
+    final ok = await checkInOutController.checkIn();
     if (ok) {
       FlutterToast.success("Checked in successfully");
-      await attendanceController.fetchAttendance(
-        teacherId: teacherId,
-      );
+      // Refresh history so calendar updates
+      await attendanceController.fetchAttendance();
     } else {
       FlutterToast.error(
         checkInOutController.errorMessage.value.isNotEmpty
@@ -106,18 +84,10 @@ class _TeacherCheckinCheckoutScreenState
   }
 
   Future<void> _handleCheckOut() async {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isEmpty) {
-      FlutterToast.error("Teacher ID not found");
-      return;
-    }
-
-    final ok = await checkInOutController.checkOut(teacherId: teacherId);
+    final ok = await checkInOutController.checkOut();
     if (ok) {
       FlutterToast.success("Checked out successfully");
-      await attendanceController.fetchAttendance(
-        teacherId: teacherId,
-      );
+      await attendanceController.fetchAttendance();
     } else {
       FlutterToast.error(
         checkInOutController.errorMessage.value.isNotEmpty
@@ -126,8 +96,6 @@ class _TeacherCheckinCheckoutScreenState
       );
     }
   }
-
-  // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
@@ -141,17 +109,15 @@ class _TeacherCheckinCheckoutScreenState
           onPressed: () => Get.back(),
           icon: const Icon(Icons.arrow_back_ios),
         ),
-        title: const Text(
-          'Self Attendance',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Self Attendance',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ Teacher info
+            // ── Teacher card ──
             Obx(() {
               if (teacherController.isLoading.value) {
                 return const SizedBox(
@@ -170,13 +136,12 @@ class _TeacherCheckinCheckoutScreenState
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.indigo.shade200,
-                          width: 2,
-                        ),
+                            color: Colors.indigo.shade200, width: 2),
                         image: teacher.teacherProfile != null &&
                             teacher.teacherProfile!.isNotEmpty
                             ? DecorationImage(
-                          image: NetworkImage(teacher.teacherProfile!),
+                          image:
+                          NetworkImage(teacher.teacherProfile!),
                           fit: BoxFit.cover,
                         )
                             : null,
@@ -210,18 +175,15 @@ class _TeacherCheckinCheckoutScreenState
                                 ? teacherController.teacherIdCard
                                 : "--",
                             style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
+                                fontSize: 12, color: Colors.black54),
                           ),
                           Text(
                             teacherController.fullName.isNotEmpty
                                 ? teacherController.fullName
                                 : "Teacher Name",
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -231,10 +193,9 @@ class _TeacherCheckinCheckoutScreenState
                                 ? teacherController.qualification
                                 : "Teacher",
                             style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w600,
-                            ),
+                                fontSize: 14,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -243,7 +204,6 @@ class _TeacherCheckinCheckoutScreenState
                 );
               }
 
-              // Fallback
               return Row(
                 children: [
                   CircleAvatar(
@@ -256,20 +216,12 @@ class _TeacherCheckinCheckoutScreenState
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "--",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      Text(
-                        "Teacher Name",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      Text("--",
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.black54)),
+                      Text("Teacher Name",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],
@@ -278,7 +230,7 @@ class _TeacherCheckinCheckoutScreenState
 
             const SizedBox(height: 20),
 
-            // Clock
+            // ── Live clock ──
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(
@@ -290,18 +242,15 @@ class _TeacherCheckinCheckoutScreenState
                   Text(
                     _formatTime(_now),
                     style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _formatDate(_now),
                     style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
+                        fontSize: 13, color: Colors.black54),
                   ),
                 ],
               ),
@@ -309,10 +258,9 @@ class _TeacherCheckinCheckoutScreenState
 
             const SizedBox(height: 20),
 
-            // ✅ Check-in / Check-out times (from API)
+            // ── Check-in / out times (from API) ──
             Obx(() {
               final data = checkInOutController.todayData.value;
-
               return Row(
                 children: [
                   Expanded(
@@ -334,17 +282,15 @@ class _TeacherCheckinCheckoutScreenState
 
             const Expanded(child: SizedBox(height: 24)),
 
-            // ✅ Buttons (loading-aware + state-aware)
+            // ── Action buttons ──
             Obx(() {
               final isCheckingIn = checkInOutController.isCheckingIn.value;
-              final isCheckingOut = checkInOutController.isCheckingOut.value;
+              final isCheckingOut =
+                  checkInOutController.isCheckingOut.value;
               final hasIn = checkInOutController.hasCheckedIn;
               final hasOut = checkInOutController.hasCheckedOut;
 
-              // Check-in disabled if already checked-in OR loading
               final canCheckIn = !hasIn && !isCheckingIn && !isCheckingOut;
-
-              // Check-out disabled if not checked-in OR already checked-out OR loading
               final canCheckOut =
                   hasIn && !hasOut && !isCheckingIn && !isCheckingOut;
 
@@ -358,12 +304,11 @@ class _TeacherCheckinCheckoutScreenState
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                            strokeWidth: 2, color: Colors.white),
                       )
                           : const Icon(Icons.login),
-                      label: Text(isCheckingIn ? 'Checking in...' : 'Check In'),
+                      label: Text(
+                          isCheckingIn ? 'Checking in...' : 'Check In'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo,
                         foregroundColor: Colors.white,
@@ -385,13 +330,11 @@ class _TeacherCheckinCheckoutScreenState
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                            strokeWidth: 2, color: Colors.white),
                       )
                           : const Icon(Icons.logout),
-                      label:
-                      Text(isCheckingOut ? 'Checking out...' : 'Check Out'),
+                      label: Text(
+                          isCheckingOut ? 'Checking out...' : 'Check Out'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo.shade700,
                         foregroundColor: Colors.white,
@@ -424,18 +367,13 @@ class _TeacherCheckinCheckoutScreenState
       ),
       child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 6),
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(time,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600)),
         ],
       ),
     );

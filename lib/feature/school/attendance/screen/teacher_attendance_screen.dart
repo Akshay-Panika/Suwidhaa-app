@@ -1,11 +1,8 @@
 // lib/feature/school/attendance/screen/teacher_attendance_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:untitled/feature/school/leave/screen/teacher_leave_form_screen.dart';
-import 'package:untitled/feature/school/leave/screen/teacher_leave_list_screen.dart';
 
 import '../../profile/controller/teacher_controller.dart';
 import '../controller/teacher_attendance_controller.dart';
@@ -24,7 +21,6 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
   late final TeacherController teacherController;
   late final TeacherAttendanceController attendanceController;
 
-  // ================= PRIMARY COLOR =================
   static const Color _primary = Colors.indigo;
   static const Color _primaryDark = Color(0xFF283593);
   static const Color _primaryLight = Color(0xFFE8EAF6);
@@ -35,19 +31,15 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     teacherController = Get.find<TeacherController>();
     attendanceController = Get.find<TeacherAttendanceController>();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAttendance();
-    });
-
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAttendance());
     ever(teacherController.teacherData, (_) => _loadAttendance());
   }
 
+  /// ✅ No teacherId param — controller reads from SharedPrefs
   void _loadAttendance() {
-    final teacherId = teacherController.teacherIdCard;
-    if (teacherId.isNotEmpty &&
-        !attendanceController.isLoading.value &&
+    if (!attendanceController.isLoading.value &&
         !attendanceController.hasData) {
-      attendanceController.fetchAttendance(teacherId: teacherId);
+      attendanceController.fetchAttendance();
     }
   }
 
@@ -69,47 +61,35 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                 color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                Icons.calendar_month,
-                size: 24,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.calendar_month,
+                  size: 24, color: Colors.white),
             ),
-
             const SizedBox(width: 10),
-
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    "My Attendance",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text("My Attendance",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600)),
                   SizedBox(height: 2),
-                  Text(
-                    "School Portal",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  Text("School Portal",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400)),
                 ],
               ),
             ),
           ],
         ),
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -117,16 +97,10 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
-                  onPressed: () {
-                    // Notification screen
-                  },
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Colors.white,
-                    size: 25,
-                  ),
+                  onPressed: () {},
+                  icon: const Icon(Icons.notifications_none_rounded,
+                      color: Colors.white, size: 25),
                 ),
-
                 Positioned(
                   right: 7,
                   top: 7,
@@ -136,10 +110,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                     decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.blue,
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: Colors.blue, width: 1.5),
                     ),
                   ),
                 ),
@@ -153,11 +124,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             teacherController.isLoading.value) {
           return const TeacherAttendanceShimmer();
         }
-
         if (attendanceController.errorMessage.value.isNotEmpty) {
           return _buildErrorState();
         }
-
         if (!attendanceController.hasData) {
           return _buildEmptyState();
         }
@@ -179,7 +148,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                       const SizedBox(height: 20),
                       _buildLegend(),
                       const SizedBox(height: 24),
-                      TeacherCurrentLeaveRequestCard(),
+                      // const TeacherCurrentLeaveRequestCard(),
                       const SizedBox(height: 150),
                     ],
                   ),
@@ -192,17 +161,19 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     );
   }
 
+  // ══════════════════════════════════════════════════════
+  // SUMMARY — only present / absent / leave
+  // ══════════════════════════════════════════════════════
   Widget _buildSummaryCard() {
     return Obx(() {
       final map = attendanceController.attendanceMap;
       final focused = attendanceController.focusedDay.value;
 
-      int present = 0, absent = 0, leave = 0, halfDay = 0;
+      int present = 0, absent = 0, leave = 0;
       map.forEach((date, record) {
         if (date.year == focused.year && date.month == focused.month) {
           switch (record.statusType) {
             case AttendanceStatusType.present:
-            case AttendanceStatusType.running:
               present++;
               break;
             case AttendanceStatusType.absent:
@@ -211,33 +182,21 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             case AttendanceStatusType.leave:
               leave++;
               break;
-            case AttendanceStatusType.halfDay:
-              halfDay++;
-              break;
-            case AttendanceStatusType.weekOff:
-              break;
           }
         }
       });
 
       return Container(
         width: double.infinity,
-        padding:  EdgeInsets.only(left: 10,right: 10,bottom: 10),
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
         color: Colors.indigo,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                _miniStat("Present", present, Colors.green.shade300),
-                _miniDivider(),
-                _miniStat("Absent", absent, Colors.red.shade300),
-                _miniDivider(),
-                _miniStat("Leave", leave, Colors.blue.shade300),
-                _miniDivider(),
-                _miniStat("Half Day", halfDay, Colors.orange.shade300),
-              ],
-            ),
+            _miniStat("Present", present, Colors.green.shade300),
+            _miniDivider(),
+            _miniStat("Absent", absent, Colors.red.shade300),
+            _miniDivider(),
+            _miniStat("Leave", leave, Colors.blue.shade300),
           ],
         ),
       );
@@ -270,9 +229,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     color: Colors.white.withOpacity(0.2),
   );
 
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
   // Error / Empty
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
   Widget _buildErrorState() {
     return Center(
       child: Padding(
@@ -289,16 +248,12 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                attendanceController.fetchAttendance(
-                  teacherId: teacherController.teacherIdCard,
-                );
-              },
+              onPressed: () => attendanceController.fetchAttendance(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -318,7 +273,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: _primaryLight,
               shape: BoxShape.circle,
             ),
@@ -326,24 +281,23 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                 size: 50, color: _primary),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "No Attendance Records",
-            style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87),
-          ),
+          const Text("No Attendance Records",
+              style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87)),
           const SizedBox(height: 4),
           Text("Data will appear here once available",
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              style:
+              TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────
-  // Month Header
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // Month header
+  // ══════════════════════════════════════════════════════
   Widget _buildMonthHeader() {
     return Obx(() {
       final focused = attendanceController.focusedDay.value;
@@ -361,36 +315,29 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              onPressed: canPrev
-                  ? () => attendanceController.goToPreviousMonth()
-                  : null,
-              icon: Icon(
-                Icons.chevron_left_rounded,
-                size: 28,
-                color: canPrev ? _primary : Colors.grey.shade300,
-              ),
+              onPressed:
+              canPrev ? () => attendanceController.goToPreviousMonth() : null,
+              icon: Icon(Icons.chevron_left_rounded,
+                  size: 28,
+                  color: canPrev ? _primary : Colors.grey.shade300),
             ),
             Column(
               children: [
                 Text(
                   DateFormat('MMMM yyyy').format(focused),
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87),
                 ),
               ],
             ),
             IconButton(
-              onPressed: canNext
-                  ? () => attendanceController.goToNextMonth()
-                  : null,
-              icon: Icon(
-                Icons.chevron_right_rounded,
-                size: 28,
-                color: canNext ? _primary : Colors.grey.shade300,
-              ),
+              onPressed:
+              canNext ? () => attendanceController.goToNextMonth() : null,
+              icon: Icon(Icons.chevron_right_rounded,
+                  size: 28,
+                  color: canNext ? _primary : Colors.grey.shade300),
             ),
           ],
         ),
@@ -398,9 +345,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     });
   }
 
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
   // Calendar
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
   Widget _buildCalendar() {
     return Obx(() {
       final focused = attendanceController.focusedDay.value;
@@ -442,23 +389,18 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             }
           },
           calendarStyle: CalendarStyle(
-            defaultDecoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            weekendDecoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            outsideDecoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            defaultDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            weekendDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            outsideDecoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(8)),
             todayDecoration: BoxDecoration(
               color: _primaryLight,
               borderRadius: BorderRadius.circular(8),
             ),
             todayTextStyle: const TextStyle(
-              color: _primary,
-              fontWeight: FontWeight.bold,
-            ),
+                color: _primary, fontWeight: FontWeight.bold),
             markerDecoration:
             const BoxDecoration(color: Colors.transparent),
             markersMaxCount: 0,
@@ -475,24 +417,19 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           ),
           daysOfWeekStyle: DaysOfWeekStyle(
             weekdayStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: Colors.black87,
-            ),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: Colors.black87),
             weekendStyle: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: _primary.withOpacity(0.7),
-            ),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: _primary.withOpacity(0.7)),
             decoration: const BoxDecoration(color: Colors.transparent),
           ),
           calendarBuilders: CalendarBuilders(
-            defaultBuilder: (context, date, _) {
-              return _buildDayCell(date, map);
-            },
-            outsideBuilder: (context, date, _) {
-              return _buildDayCell(date, map, isOutside: true);
-            },
+            defaultBuilder: (context, date, _) => _buildDayCell(date, map),
+            outsideBuilder: (context, date, _) =>
+                _buildDayCell(date, map, isOutside: true),
             todayBuilder: (context, date, _) => _buildDayCell(date, map),
           ),
         ),
@@ -501,13 +438,9 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
   }
 
   AttendanceRecord? _findRecord(
-      Map<DateTime, AttendanceRecord> map,
-      DateTime date,
-      ) {
+      Map<DateTime, AttendanceRecord> map, DateTime date) {
     for (final entry in map.entries) {
-      if (isSameDay(entry.key, date)) {
-        return entry.value;
-      }
+      if (isSameDay(entry.key, date)) return entry.value;
     }
     return null;
   }
@@ -518,8 +451,6 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
         bool isOutside = false,
       }) {
     final focused = attendanceController.focusedDay.value;
-
-    // ✅ Only show records from focused month
     final isInFocusedMonth =
         date.year == focused.year && date.month == focused.month;
 
@@ -556,26 +487,21 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
     );
   }
 
+  /// ✅ Only 3 statuses
   Color _getStatusColor(AttendanceStatusType status) {
     switch (status) {
-      case AttendanceStatusType.weekOff:
-        return Colors.grey.shade300;
-      case AttendanceStatusType.absent:
-        return Colors.red.shade300;
       case AttendanceStatusType.present:
         return Colors.green.shade400;
-      case AttendanceStatusType.running:
-        return Colors.green.shade300;
-      case AttendanceStatusType.halfDay:
-        return Colors.orange.shade300;
+      case AttendanceStatusType.absent:
+        return Colors.red.shade300;
       case AttendanceStatusType.leave:
         return _primary.withOpacity(0.7);
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Legend
-  // ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // Legend — only 3 items
+  // ══════════════════════════════════════════════════════
   Widget _buildLegend() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -611,11 +537,8 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
             spacing: 16,
             runSpacing: 10,
             children: [
-              _legendItem(color: Colors.grey.shade300, title: "Week Off"),
               _legendItem(color: Colors.red.shade300, title: "Absent"),
               _legendItem(color: Colors.green.shade400, title: "Present"),
-              _legendItem(color: Colors.green.shade300, title: "Running"),
-              _legendItem(color: Colors.orange.shade300, title: "Half Day"),
               _legendItem(color: _primary.withOpacity(0.7), title: "Leave"),
             ],
           ),
@@ -637,14 +560,11 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(title,
+            style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500)),
       ],
     );
   }

@@ -1,7 +1,6 @@
 // lib/feature/school/student_leave/repository/student_leave_repository.dart
 
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
 import '../model/student_leave_list_model.dart';
@@ -9,15 +8,11 @@ import '../model/student_leave_list_model.dart';
 class StudentLeaveRepository {
   final Dio _dio = ApiClient.dio;
 
-  // ==================== GET LIST (All) ====================
+  // ─── GET ALL ───
   Future<StudentLeaveListModel> getStudentLeaveList() async {
     try {
-      final response = await _dio.get(ApiUrls.studentLeaveList);
-      if (response.statusCode == 200) {
-        return StudentLeaveListModel.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
+      final r = await _dio.get(ApiUrls.studentLeaveList);
+      return StudentLeaveListModel.fromJson(r.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
@@ -25,47 +20,70 @@ class StudentLeaveRepository {
     }
   }
 
+  // ─── GET BY CLASS ───
+  Future<StudentLeaveListModel> getStudentLeaveByClass(String className) async {
+    try {
+      final r = await _dio.get(ApiUrls.studentLeaveByClass(className));
+      return StudentLeaveListModel.fromJson(r.data);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  // ─── GET BY CARD ───
+  Future<StudentLeaveListModel> getStudentLeaveByCardId(String card) async {
+    try {
+      final r = await _dio.get('${ApiUrls.studentLeaveByIdCard}$card/');
+      return StudentLeaveListModel.fromJson(r.data);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  // ─── GET DETAIL ───
+  Future<StudentLeaveDetailResponse> getLeaveById(int leaveId) async {
+    try {
+      final r = await _dio.get('${ApiUrls.studentLeaveDetail}$leaveId/');
+      return StudentLeaveDetailResponse.fromJson(r.data);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    } catch (e) {
+      throw Exception('Something went wrong: $e');
+    }
+  }
+
+  // ─── CREATE (only student_id_card needed — backend auto-fills name, class, school) ───
+  // ─── CREATE ───
   Future<StudentLeaveCreateResponse> createLeave({
     required String studentIdCard,
-    required String studentName,
-    required String studentClass,
-    required String schoolType,
     required String reasonMsg,
     required String startDate,
     required String endDate,
     String? imagePath,
   }) async {
     try {
+      // ✅ explicit <String, dynamic>
       final Map<String, dynamic> map = {
         'student_id_card': studentIdCard,
-        'student_name': studentName,
-        'student_class': studentClass,
-        'school_type': schoolType,
         'reason_msg': reasonMsg,
         'start_date': startDate,
         'end_date': endDate,
       };
-
-      // Image optional hai
       if (imagePath != null && imagePath.isNotEmpty) {
         map['image'] = await MultipartFile.fromFile(
           imagePath,
           filename: imagePath.split('/').last,
         );
       }
-
-      final formData = FormData.fromMap(map);
-
-      final response = await _dio.post(
+      final r = await _dio.post(
         ApiUrls.studentLeaveCreate,
-        data: formData,
+        data: FormData.fromMap(map),
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return StudentLeaveCreateResponse.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
+      return StudentLeaveCreateResponse.fromJson(r.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
@@ -73,68 +91,37 @@ class StudentLeaveRepository {
     }
   }
 
-  Future<StudentLeaveDetailResponse> getLeaveById(int leaveId) async {
-    try {
-      final response = await _dio.get(
-        '${ApiUrls.studentLeaveDetail}$leaveId/',
-      );
-
-      if (response.statusCode == 200) {
-        return StudentLeaveDetailResponse.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    } catch (e) {
-      throw Exception('Something went wrong: $e');
-    }
-  }
-
+  // ─── UPDATE ───
   Future<StudentLeaveCreateResponse> updateLeave({
     required int leaveId,
     required String studentIdCard,
-    required String studentName,
-    required String studentClass,
-    required String schoolType,
     required String reasonMsg,
     required String startDate,
     required String endDate,
-    String? imagePath,          // new image (optional)
-    bool removeOldImage = false, // agar purani image hatani ho
+    String? imagePath,
+    bool removeOldImage = false,
   }) async {
     try {
+      // ✅ explicit <String, dynamic>
       final Map<String, dynamic> map = {
         'student_id_card': studentIdCard,
-        'student_name': studentName,
-        'student_class': studentClass,
-        'school_type': schoolType,
         'reason_msg': reasonMsg,
         'start_date': startDate,
         'end_date': endDate,
       };
-
       if (imagePath != null && imagePath.isNotEmpty) {
         map['image'] = await MultipartFile.fromFile(
           imagePath,
           filename: imagePath.split('/').last,
         );
       } else if (removeOldImage) {
-        map['image'] = ''; // backend ko signal ki image clear kar do
+        map['image'] = '';
       }
-
-      final formData = FormData.fromMap(map);
-
-      final response = await _dio.put(
+      final r = await _dio.put(
         '${ApiUrls.studentLeaveDetail}$leaveId/',
-        data: formData,
+        data: FormData.fromMap(map),
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return StudentLeaveCreateResponse.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
+      return StudentLeaveCreateResponse.fromJson(r.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
@@ -142,24 +129,17 @@ class StudentLeaveRepository {
     }
   }
 
+  // ─── DELETE ───
   Future<StudentLeaveDeleteResponse> deleteLeave(int leaveId) async {
     try {
-      final response = await _dio.delete(
-        '${ApiUrls.studentLeaveDetail}$leaveId/',
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        // 204 No Content me body empty hoti hai
-        if (response.data == null || response.data is! Map) {
-          return StudentLeaveDeleteResponse(
-            status: true,
-            message: 'Leave deleted successfully',
-          );
-        }
-        return StudentLeaveDeleteResponse.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
+      final r = await _dio.delete('${ApiUrls.studentLeaveDetail}$leaveId/');
+      if (r.data == null || r.data is! Map) {
+        return StudentLeaveDeleteResponse(
+          status: true,
+          message: 'Leave deleted successfully',
+        );
       }
+      return StudentLeaveDeleteResponse.fromJson(r.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
@@ -167,26 +147,7 @@ class StudentLeaveRepository {
     }
   }
 
-  // ==================== GET LIST BY STUDENT CARD ID ✅ NEW ====================
-  Future<StudentLeaveListModel> getStudentLeaveByCardId(
-      String studentCardId) async {
-    try {
-      final response = await _dio.get(
-        '${ApiUrls.studentLeaveByIdCard}$studentCardId/',
-      );
-      if (response.statusCode == 200) {
-        return StudentLeaveListModel.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    } catch (e) {
-      throw Exception('Something went wrong: $e');
-    }
-  }
-
-  // ==================== PATCH APPROVAL ====================
+  // ─── APPROVAL ───
   Future<StudentLeaveApprovalResponse> updateLeaveApproval({
     required int leaveId,
     required String status,
@@ -194,7 +155,7 @@ class StudentLeaveRepository {
     String? teacherName,
   }) async {
     try {
-      final response = await _dio.patch(
+      final r = await _dio.patch(
         '${ApiUrls.studentLeaveApproval}$leaveId/',
         data: {
           'leave_status': status.toLowerCase(),
@@ -202,12 +163,7 @@ class StudentLeaveRepository {
           if (teacherName != null) 'teacher_name': teacherName,
         },
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return StudentLeaveApprovalResponse.fromJson(response.data);
-      } else {
-        throw Exception('Failed: ${response.statusCode}');
-      }
+      return StudentLeaveApprovalResponse.fromJson(r.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
@@ -215,9 +171,7 @@ class StudentLeaveRepository {
     }
   }
 
-
-
-  // ==================== ERROR HANDLER ====================
+  // ─── ERROR HANDLER ───
   String _handleDioError(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
@@ -226,6 +180,13 @@ class StudentLeaveRepository {
       case DioExceptionType.badResponse:
         final data = e.response?.data;
         if (data is Map && data['message'] != null) return data['message'];
+        if (data is Map && data['errors'] != null) {
+          final errs = data['errors'];
+          if (errs is Map && errs.isNotEmpty) {
+            final first = errs.values.first;
+            return first is List ? first.first.toString() : first.toString();
+          }
+        }
         return 'Server error (${e.response?.statusCode})';
       case DioExceptionType.connectionError:
         return 'No internet connection.';
