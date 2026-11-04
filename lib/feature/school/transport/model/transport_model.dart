@@ -2,11 +2,11 @@
 class TransportModel {
   final int id;
   final String transportType;
-  final String schoolType;
+  final String schoolType;       // ✅ nested school.school_type se
   final String vehicleNumber;
   final String driverName;
   final String driverNumber;
-  final String? driverImage;
+  final String? driverImage;     // ✅ `driver_image` key
   final String? capacity;
   final String? routeName;
   final List<StudentData> students;
@@ -31,47 +31,62 @@ class TransportModel {
   });
 
   factory TransportModel.fromJson(Map<String, dynamic> json) {
+    // ✅ school_type backend me nested `school` object ke andar aata hai
+    String schoolTypeStr = '';
+    final schoolObj = json['school'];
+    if (schoolObj is Map<String, dynamic>) {
+      schoolTypeStr = (schoolObj['school_type'] ?? '').toString();
+    }
+
+    // ✅ backend `driver_image` bhejta hai (not driver_image_url)
+    final driverImgRaw = json['driver_image'] ?? json['driver_image_url'];
+
+    // ✅ students list — nested student object parse
     List<StudentData> studentList = [];
-    if (json['students'] != null && json['students'] is List) {
-      studentList = (json['students'] as List)
-          .map((e) => StudentData.fromJson(e))
+    final rawStudents = json['students'];
+    if (rawStudents is List) {
+      studentList = rawStudents
+          .whereType<Map<String, dynamic>>()
+          .map(StudentData.fromJson)
           .toList();
     }
 
     return TransportModel(
       id: json['id'] ?? 0,
-      transportType: json['transport_type'] ?? '',
-      schoolType: json['school_type'] ?? '',
-      vehicleNumber: json['vehicle_number'] ?? '',
-      driverName: json['driver_name'] ?? '',
-      driverNumber: json['driver_number'] ?? '',
-      driverImage: json['driver_image_url'],
+      transportType: (json['transport_type'] ?? '').toString(),
+      schoolType: schoolTypeStr,
+      vehicleNumber: (json['vehicle_number'] ?? '').toString(),
+      driverName: (json['driver_name'] ?? '').toString(),
+      driverNumber: (json['driver_number'] ?? '').toString(),
+      driverImage: driverImgRaw?.toString(),
       capacity: json['capacity']?.toString(),
-      routeName: json['route_name'],
+      routeName: json['route_name']?.toString(),
       students: studentList,
-      studentCount: json['student_count'] ?? studentList.length,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      // ✅ backend student_count authoritative hai
+      studentCount: (json['student_count'] is int)
+          ? json['student_count'] as int
+          : studentList.length,
+      createdAt:
+      DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt:
+      DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'transport_type': transportType,
-      'school_type': schoolType,
-      'vehicle_number': vehicleNumber,
-      'driver_name': driverName,
-      'driver_number': driverNumber,
-      'driver_image_url': driverImage,
-      'capacity': capacity,
-      'route_name': routeName,
-      'students': students.map((e) => e.toJson()).toList(),
-      'student_count': studentCount,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'transport_type': transportType,
+    'vehicle_number': vehicleNumber,
+    'driver_name': driverName,
+    'driver_number': driverNumber,
+    'driver_image': driverImage,
+    'capacity': capacity,
+    'route_name': routeName,
+    'students': students.map((e) => e.toJson()).toList(),
+    'student_count': studentCount,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
 
   TransportModel copyWith({
     int? id,
@@ -107,11 +122,18 @@ class TransportModel {
 }
 
 
+// ============================================================
+// StudentData
+// ============================================================
 class StudentData {
-  final int id;
-  final String studentName;
-  final String studentId;
-  final String? address;              // ✅ ADDED
+  final int id;                 // TransportStudent pk
+  final String studentName;     // full name from nested
+  final String studentId;       // ✅ Student DB pk (string) — delete ke liye
+  final String studentIdCard;   // ✅ "st-student02" — display
+  final String studentProfile;  // ✅ profile image URL
+  final String studentClass;    // ✅ "9th"
+  final String parentPhone;     // ✅ parent contact
+  final String? address;
   final String? pickupTime;
   final String? dropTime;
   final DateTime createdAt;
@@ -121,7 +143,11 @@ class StudentData {
     required this.id,
     required this.studentName,
     required this.studentId,
-    this.address,                     // ✅ ADDED
+    this.studentIdCard = '',
+    this.studentProfile = '',
+    this.studentClass = '',
+    this.parentPhone = '',
+    this.address,
     this.pickupTime,
     this.dropTime,
     required this.createdAt,
@@ -129,33 +155,93 @@ class StudentData {
   });
 
   factory StudentData.fromJson(Map<String, dynamic> json) {
+    // ✅ Nested student object parse
+    final nested = (json['student'] is Map<String, dynamic>)
+        ? json['student'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    final first = (nested['first_name'] ?? '').toString().trim();
+    final middle = (nested['middle_name'] ?? '').toString().trim();
+    final last = (nested['last_name'] ?? '').toString().trim();
+    final fullName = [first, middle, last]
+        .where((p) => p.isNotEmpty)
+        .join(' ');
+
     return StudentData(
       id: json['id'] ?? 0,
-      studentName: json['student_name'] ?? '',
-      studentId: json['student_id'] ?? '',
-      address: json['address'],       // ✅ ADDED
-      pickupTime: json['pickup_time'],
-      dropTime: json['drop_time'],
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      studentName:
+      fullName.isNotEmpty ? fullName : 'Unknown Student',
+      studentId: (nested['id'] ?? '').toString(),          // DB pk
+      studentIdCard:
+      (nested['student_id_card'] ?? '').toString(),    // card
+      studentProfile:
+      (nested['student_profile'] ?? '').toString(),
+      studentClass:
+      (nested['student_class'] ?? '').toString(),
+      parentPhone:
+      (nested['parent_phone'] ?? '').toString(),
+      address: json['address']?.toString(),
+      pickupTime: json['pickup_time']?.toString(),
+      dropTime: json['drop_time']?.toString(),
+      createdAt:
+      DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt:
+      DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'student': {
+      'id': studentId,
       'student_name': studentName,
-      'student_id': studentId,
-      'address': address,             // ✅ ADDED
-      'pickup_time': pickupTime,
-      'drop_time': dropTime,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-    };
+      'student_id_card': studentIdCard,
+      'student_profile': studentProfile,
+      'student_class': studentClass,
+      'parent_phone': parentPhone,
+    },
+    'address': address,
+    'pickup_time': pickupTime,
+    'drop_time': dropTime,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
+
+  StudentData copyWith({
+    int? id,
+    String? studentName,
+    String? studentId,
+    String? studentIdCard,
+    String? studentProfile,
+    String? studentClass,
+    String? parentPhone,
+    String? address,
+    String? pickupTime,
+    String? dropTime,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return StudentData(
+      id: id ?? this.id,
+      studentName: studentName ?? this.studentName,
+      studentId: studentId ?? this.studentId,
+      studentIdCard: studentIdCard ?? this.studentIdCard,
+      studentProfile: studentProfile ?? this.studentProfile,
+      studentClass: studentClass ?? this.studentClass,
+      parentPhone: parentPhone ?? this.parentPhone,
+      address: address ?? this.address,
+      pickupTime: pickupTime ?? this.pickupTime,
+      dropTime: dropTime ?? this.dropTime,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }
 
 
+// ============================================================
+// Response wrapper
+// ============================================================
 class TransportListResponse {
   final bool success;
   final int count;
@@ -172,7 +258,8 @@ class TransportListResponse {
       success: json['success'] ?? false,
       count: json['count'] ?? 0,
       data: (json['data'] as List? ?? [])
-          .map((e) => TransportModel.fromJson(e))
+          .whereType<Map<String, dynamic>>()
+          .map(TransportModel.fromJson)
           .toList(),
     );
   }

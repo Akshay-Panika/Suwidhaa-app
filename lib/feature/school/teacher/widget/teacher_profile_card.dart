@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:get/get.dart';
+import '../../../notification/screen/notification_screen.dart';
 import '../../profile/controller/teacher_controller.dart';
 import '../../profile/model/teacher_model.dart';
 
@@ -26,7 +27,7 @@ class TeacherProfileCard extends StatelessWidget {
       // Show data
       if (teacherController.hasData) {
         final teacher = teacherController.teacherData.value!;
-        return _buildProfileContent(teacher, teacherController);
+        return _buildProfileContent(context,teacher, teacherController);
       }
 
       // No data available
@@ -251,7 +252,7 @@ class TeacherProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileContent(TeacherData teacher, TeacherController controller) {
+  Widget _buildProfileContent(BuildContext context,TeacherData teacher, TeacherController controller) {
     String _getGreeting() {
       final hour = DateTime.now().hour;
       if (hour < 12) return "Good Morning";
@@ -261,7 +262,7 @@ class TeacherProfileCard extends StatelessWidget {
     }
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -320,7 +321,7 @@ class TeacherProfileCard extends StatelessWidget {
                   children: [
                     IconButton(
                       onPressed: () {
-                        // Notification screen
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen(),));
                       },
                       icon: const Icon(
                         Icons.notifications_none_rounded,
@@ -364,7 +365,7 @@ class TeacherProfileCard extends StatelessWidget {
                   const SizedBox(width: 8),
                    Expanded(
                     child: Text(
-                      "${0}",
+                      "${teacher.school!.schoolName.toString()}",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -380,7 +381,7 @@ class TeacherProfileCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child:  Text(
-                      "Joining Date:${teacher.joinDate}",
+                      "Joining: ${teacher.joinDate}",
                       style:
                       TextStyle(
                         color: Colors.white,

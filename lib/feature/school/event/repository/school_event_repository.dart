@@ -2,14 +2,57 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
+import '../../auth/service/school_auth_shared_pref_service.dart';
 import '../model/school_event_model.dart';
 
 class SchoolEventRepository {
   final Dio _dio = ApiClient.dio;
 
   // ============================================================
+  // SCHOOL ID RESOLVERS (uses existing SharedPrefService)
+  // ============================================================
+
+  /// Teacher's school id (create / update / delete / pin ke liye)
+  Future<int> _teacherSchoolIdOrThrow() async {
+    final Map<String, dynamic>? school =
+    await SchoolAuthSharedPrefService.getTeacherSchoolData();
+    final id = _extractSchoolId(school);
+    if (id == null || id <= 0) {
+      throw Exception('Teacher school not found. Please log in again.');
+    }
+    return id;
+  }
+
+  /// Active school id:
+  /// - teacher logged in → teacher ki school id
+  /// - student logged in → student ki school id
+  Future<int> _activeSchoolIdOrThrow() async {
+    if (await SchoolAuthSharedPrefService.isTeacherLoggedIn()) {
+      final Map<String, dynamic>? school =
+      await SchoolAuthSharedPrefService.getTeacherSchoolData();
+      final id = _extractSchoolId(school);
+      if (id != null && id > 0) return id;
+    }
+    if (await SchoolAuthSharedPrefService.isStudentLoggedIn()) {
+      final Map<String, dynamic>? school =
+      await SchoolAuthSharedPrefService.getStudentSchoolData();
+      final id = _extractSchoolId(school);
+      if (id != null && id > 0) return id;
+    }
+    throw Exception('School not found. Please log in again.');
+  }
+
+  int? _extractSchoolId(Map<String, dynamic>? data) {
+    if (data == null) return null;
+    final raw = data['id'] ?? data['school_id'] ?? data['schoolId'];
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    return int.tryParse(raw.toString());
+  }
+
+  // ============================================================
   // 1. LIST EVENTS
-  //    GET /v1/school/event/list/
+  //    GET /v1/school/<school_id>/event/list/
   // ============================================================
   Future<List<SchoolEventModel>> getEvents({
     String? category,
@@ -17,17 +60,21 @@ class SchoolEventRepository {
     String? status,
   }) async {
     try {
+      final schoolId = await _activeSchoolIdOrThrow();
+
       final query = <String, dynamic>{};
       if (category != null && category.isNotEmpty && category != "All") {
         query['category'] = category;
       }
-      if (audience != null && audience.isNotEmpty) query['audience'] = audience;
+      if (audience != null && audience.isNotEmpty) {
+        query['audience'] = audience;
+      }
       if (status != null && status.isNotEmpty && status != "All") {
         query['status'] = status;
       }
 
       final res = await _dio.get(
-        ApiUrls.eventList,
+        ApiUrls.eventList(schoolId),
         queryParameters: query.isEmpty ? null : query,
       );
 
@@ -42,8 +89,8 @@ class SchoolEventRepository {
   }
 
   // ============================================================
-  // 2. CREATE EVENT (multipart for banner upload)
-  //    POST /v1/school/event/create/
+  // 2. CREATE EVENT
+  //    POST /v1/school/<school_id>/event/create/
   // ============================================================
   Future<SchoolEventModel> createEvent({
     required String title,
@@ -61,6 +108,8 @@ class SchoolEventRepository {
     PlatformFile? banner,
   }) async {
     try {
+      final schoolId = await _teacherSchoolIdOrThrow();
+
       final map = <String, dynamic>{
         'title': title,
         'description': description,
@@ -89,7 +138,7 @@ class SchoolEventRepository {
       }
 
       final res = await _dio.post(
-        ApiUrls.eventCreate,
+        ApiUrls.eventCreate(schoolId),
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
@@ -105,7 +154,7 @@ class SchoolEventRepository {
 
   // ============================================================
   // 3. UPDATE EVENT
-  //    PUT /v1/school/event/<id>/
+  //    PUT /v1/school/<school_id>/event/<id>/
   // ============================================================
   Future<SchoolEventModel> updateEvent({
     required int id,
@@ -125,6 +174,8 @@ class SchoolEventRepository {
     bool removeBanner = false,
   }) async {
     try {
+      final schoolId = await _teacherSchoolIdOrThrow();
+
       final map = <String, dynamic>{
         'title': title,
         'description': description,
@@ -155,7 +206,7 @@ class SchoolEventRepository {
       }
 
       final res = await _dio.put(
-        ApiUrls.eventDetail(id),
+        ApiUrls.eventDetail(schoolId, id),
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );
@@ -171,11 +222,12 @@ class SchoolEventRepository {
 
   // ============================================================
   // 4. DELETE EVENT
-  //    DELETE /v1/school/event/<id>/
+  //    DELETE /v1/school/<school_id>/event/<id>/
   // ============================================================
   Future<void> deleteEvent(int id) async {
     try {
-      final res = await _dio.delete(ApiUrls.eventDetail(id));
+      final schoolId = await _teacherSchoolIdOrThrow();
+      final res = await _dio.delete(ApiUrls.eventDetail(schoolId, id));
       if (res.statusCode != 200) {
         throw Exception(res.data['message'] ?? 'Failed to delete event');
       }
@@ -186,11 +238,12 @@ class SchoolEventRepository {
 
   // ============================================================
   // 5. TOGGLE PIN
-  //    POST /v1/school/event/<id>/toggle-pin/
+  //    POST /v1/school/<school_id>/event/<id>/toggle-pin/
   // ============================================================
   Future<SchoolEventModel> togglePin(int id) async {
     try {
-      final res = await _dio.post(ApiUrls.eventTogglePin(id));
+      final schoolId = await _teacherSchoolIdOrThrow();
+      final res = await _dio.post(ApiUrls.eventTogglePin(schoolId, id));
       if (res.statusCode == 200 && res.data['success'] == true) {
         return SchoolEventModel.fromJson(res.data['data']);
       }

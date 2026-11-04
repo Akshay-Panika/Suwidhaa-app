@@ -7,6 +7,7 @@ import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:untitled/feature/location/screen/location_permission_screen.dart';
 import '../../../core/utils/app_color.dart';
 import '../../auth/controller/auth_controller.dart';
+import '../../notification/screen/notification_screen.dart';
 import '../widget/module_banner_card.dart';
 import '../widget/module_card.dart';
 import '../../ecommerce/dashboard/screen/ecommerce_dashboard_screen.dart';
@@ -146,7 +147,10 @@ class _ModuleScreenState extends State<ModuleScreen> {
           ),
           child: IconButton(
             icon: const Icon(Icons.notifications_active, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen(),));
+
+            },
             splashRadius: 20,
           ),
         ),

@@ -12,11 +12,20 @@ class MeetingController extends GetxController {
   final RxList<MeetingModel> meetings = <MeetingModel>[].obs;
   final Rx<MeetingModel?> selectedMeeting = Rx<MeetingModel?>(null);
 
-  // ---------------- LIST ----------------
-  Future<void> fetchMeetings({bool showLoader = true}) async {
+  // ---------------- LIST (with optional filters) ----------------
+  Future<void> fetchMeetings({
+    bool showLoader = true,
+    String? forMeeting,
+    String? className,
+    String? date,
+  }) async {
     try {
       if (showLoader) isLoading.value = true;
-      final list = await _repo.getMeetings();
+      final list = await _repo.getMeetings(
+        forMeeting: forMeeting,
+        className: className,
+        date: date,
+      );
       meetings.assignAll(list);
     } catch (e) {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
@@ -70,7 +79,7 @@ class MeetingController extends GetxController {
     }
   }
 
-  // ---------------- UPDATE ----------------
+  // ---------------- UPDATE (PUT) ----------------
   Future<bool> updateMeeting(
       int id, {
         required String title,
@@ -95,6 +104,25 @@ class MeetingController extends GetxController {
       if (idx != -1) meetings[idx] = updated;
       selectedMeeting.value = updated;
 
+      FlutterToast.success('Meeting updated successfully');
+      return true;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isCreating.value = false;
+    }
+  }
+
+  // ---------------- PARTIAL UPDATE (PATCH) ----------------
+  Future<bool> patchMeeting(
+      int id, Map<String, dynamic> body) async {
+    try {
+      isCreating.value = true;
+      final updated = await _repo.patchMeeting(id, body);
+      final idx = meetings.indexWhere((m) => m.id == id);
+      if (idx != -1) meetings[idx] = updated;
+      selectedMeeting.value = updated;
       FlutterToast.success('Meeting updated successfully');
       return true;
     } catch (e) {

@@ -5,9 +5,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../controller/transport_controller.dart';
+import '../model/transport_model.dart';
 
 class AddBusScreen extends StatefulWidget {
-  const AddBusScreen({super.key});
+  /// ✅ null → create mode, non-null → edit mode
+  final TransportModel? transport;
+
+  const AddBusScreen({super.key, this.transport});
 
   @override
   State<AddBusScreen> createState() => _AddBusScreenState();
@@ -15,7 +19,6 @@ class AddBusScreen extends StatefulWidget {
 
 class _AddBusScreenState extends State<AddBusScreen> {
   static const Color _primary = Colors.indigo;
-  static const Color _primaryDark = Color(0xFF283593);
   static const Color _primaryLight = Color(0xFFE8EAF6);
 
   final _formKey = GlobalKey<FormState>();
@@ -27,15 +30,29 @@ class _AddBusScreenState extends State<AddBusScreen> {
   final _capacityCtrl = TextEditingController();
   final _routeNameCtrl = TextEditingController();
 
-  // School Type — Single select
-  String? _selectedSchoolType;
-
-  // Image
   File? _driverImage;
+  String? _existingImageUrl;   // ✅ from server (edit mode)
   final ImagePicker _picker = ImagePicker();
 
-  // Available school types
-  static const List<String> _schoolTypeOptions = ['School A', 'School B'];
+  bool get isEdit => widget.transport != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isEdit) {
+      final t = widget.transport!;
+      _transportTypeCtrl.text = t.transportType;
+      _vehicleNumberCtrl.text = t.vehicleNumber;
+      _driverNameCtrl.text = t.driverName;
+      _driverNumberCtrl.text = t.driverNumber;
+      _capacityCtrl.text = t.capacity ?? '';
+      _routeNameCtrl.text = t.routeName ?? '';
+      _existingImageUrl =
+      (t.driverImage != null && t.driverImage!.isNotEmpty)
+          ? t.driverImage
+          : null;
+    }
+  }
 
   @override
   void dispose() {
@@ -48,54 +65,50 @@ class _AddBusScreenState extends State<AddBusScreen> {
     super.dispose();
   }
 
-  // ==================== PICK IMAGE ====================
   Future<void> _pickImage() async {
     try {
       final XFile? file = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
       );
-      if (file != null) {
-        setState(() => _driverImage = File(file.path));
-      }
-    } catch (e) {
+      if (file != null) setState(() => _driverImage = File(file.path));
+    } catch (_) {
       FlutterToast.error('Failed to pick image');
     }
   }
 
-  // ==================== SELECT SCHOOL TYPE ====================
-  void _selectSchoolType(String type) {
-    setState(() {
-      // Toggle: same tap = deselect, different tap = replace
-      _selectedSchoolType = _selectedSchoolType == type ? null : type;
-    });
-  }
-
-  // ==================== SAVE ====================
   Future<void> _saveBus() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedSchoolType == null || _selectedSchoolType!.isEmpty) {
-      FlutterToast.error('Please select a school type');
-      return;
-    }
-
     final controller = Get.find<TransportController>();
 
-    final success = await controller.createTransport(
-      transportType: _transportTypeCtrl.text.trim(),
-      schoolType: _selectedSchoolType!,
-      vehicleNumber: _vehicleNumberCtrl.text.trim().toUpperCase(),
-      driverName: _driverNameCtrl.text.trim(),
-      driverNumber: _driverNumberCtrl.text.trim(),
-      capacity: _capacityCtrl.text.trim(),
-      routeName: _routeNameCtrl.text.trim(),
-      driverImage: _driverImage,
-    );
+    bool ok;
+    if (isEdit) {
+      ok = await controller.updateTransport(
+        id: widget.transport!.id,
+        transportType: _transportTypeCtrl.text.trim(),
+        vehicleNumber: _vehicleNumberCtrl.text.trim().toUpperCase(),
+        driverName: _driverNameCtrl.text.trim(),
+        driverNumber: _driverNumberCtrl.text.trim(),
+        capacity: _capacityCtrl.text.trim(),
+        routeName: _routeNameCtrl.text.trim(),
+        driverImage: _driverImage, // null → existing image stays
+      );
+    } else {
+      ok = await controller.createTransport(
+        transportType: _transportTypeCtrl.text.trim(),
+        vehicleNumber: _vehicleNumberCtrl.text.trim().toUpperCase(),
+        driverName: _driverNameCtrl.text.trim(),
+        driverNumber: _driverNumberCtrl.text.trim(),
+        capacity: _capacityCtrl.text.trim(),
+        routeName: _routeNameCtrl.text.trim(),
+        driverImage: _driverImage,
+      );
+    }
 
-    if (success) {
-      FlutterToast.success('Bus added successfully');
-      Navigator.pop(context, true);
+    if (ok) {
+      FlutterToast.success(isEdit ? 'Bus updated' : 'Bus added');
+      if (mounted) Navigator.pop(context, true);
     }
   }
 
@@ -109,12 +122,12 @@ class _AddBusScreenState extends State<AddBusScreen> {
         backgroundColor: _primary,
         elevation: 0,
         leading: IconButton(
-          icon:  Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Add Bus',
-          style: TextStyle(
+        title: Text(
+          isEdit ? 'Edit Bus' : 'Add Bus',
+          style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
             color: Colors.white,
@@ -124,7 +137,6 @@ class _AddBusScreenState extends State<AddBusScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ==================== SCROLLABLE BODY ====================
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -133,7 +145,6 @@ class _AddBusScreenState extends State<AddBusScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ========== Step 1 — Transport Info ==========
                       _stepHeader(
                         step: 1,
                         title: 'Transport Info',
@@ -176,35 +187,10 @@ class _AddBusScreenState extends State<AddBusScreen> {
                         icon: Icons.person_outline_rounded,
                         keyboardType: TextInputType.number,
                       ),
-
                       const SizedBox(height: 22),
 
-                      // ========== Step 2 — School Type ==========
                       _stepHeader(
                         step: 2,
-                        title: 'School Type',
-                        icon: Icons.school_rounded,
-                      ),
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 34),
-                        child: Text(
-                          'Select one school',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildSchoolTypeSelector(),
-
-                      const SizedBox(height: 22),
-
-                      // ========== Step 3 — Driver Info ==========
-                      _stepHeader(
-                        step: 3,
                         title: 'Driver Info',
                         icon: Icons.person_rounded,
                       ),
@@ -230,98 +216,24 @@ class _AddBusScreenState extends State<AddBusScreen> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 22),
 
-                      // ========== Step 4 — Driver Photo ==========
                       _stepHeader(
-                        step: 4,
+                        step: 3,
                         title: 'Driver Photo (Optional)',
                         icon: Icons.photo_camera_rounded,
                       ),
                       const SizedBox(height: 12),
                       _buildImagePicker(),
-
                       const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
             ),
-
-            // ==================== STICKY SAVE BUTTON ====================
             _buildBottomBar(controller),
           ],
         ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // SCHOOL TYPE SELECTOR (Single select)
-  // ============================================================
-  Widget _buildSchoolTypeSelector() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _selectedSchoolType == null
-              ? Colors.grey.shade300
-              : _primary.withOpacity(0.3),
-          width: _selectedSchoolType == null ? 1 : 1.5,
-        ),
-      ),
-      child: Row(
-        spacing: 8,
-        children: _schoolTypeOptions.map((type) {
-          final isSelected = _selectedSchoolType == type;
-          return Expanded(
-            child: InkWell(
-              onTap: () => _selectSchoolType(type),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? _primary : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? _primary : Colors.grey.shade300,
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.school_outlined,
-                      size: 14,
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      type,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -370,7 +282,7 @@ class _AddBusScreenState extends State<AddBusScreen> {
   }
 
   // ============================================================
-  // BOTTOM BAR (Sticky Save)
+  // BOTTOM BAR
   // ============================================================
   Widget _buildBottomBar(TransportController controller) {
     return Container(
@@ -386,8 +298,8 @@ class _AddBusScreenState extends State<AddBusScreen> {
         ],
       ),
       child: Obx(() {
-        final isSaving = controller.isCreating.value;
-
+        final isSaving =
+        isEdit ? controller.isUpdating.value : controller.isCreating.value;
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -401,8 +313,15 @@ class _AddBusScreenState extends State<AddBusScreen> {
                 color: Colors.white,
               ),
             )
-                : const Icon(Icons.check_rounded, size: 18),
-            label: Text(isSaving ? 'Saving...' : 'Save Bus'),
+                : Icon(
+              isEdit ? Icons.save_rounded : Icons.check_rounded,
+              size: 18,
+            ),
+            label: Text(
+              isSaving
+                  ? 'Saving...'
+                  : (isEdit ? 'Update Bus' : 'Save Bus'),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primary,
               foregroundColor: Colors.white,
@@ -419,9 +338,14 @@ class _AddBusScreenState extends State<AddBusScreen> {
   }
 
   // ============================================================
-  // IMAGE PICKER
+  // IMAGE PICKER (supports edit mode existing image)
   // ============================================================
   Widget _buildImagePicker() {
+    final hasNew = _driverImage != null;
+    final hasExisting = !hasNew &&
+        _existingImageUrl != null &&
+        _existingImageUrl!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -440,7 +364,7 @@ class _AddBusScreenState extends State<AddBusScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _primary.withOpacity(0.2)),
             ),
-            child: _driverImage != null
+            child: hasNew
                 ? ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.file(
@@ -448,6 +372,20 @@ class _AddBusScreenState extends State<AddBusScreen> {
                 width: 64,
                 height: 64,
                 fit: BoxFit.cover,
+              ),
+            )
+                : hasExisting
+                ? ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _existingImageUrl!,
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                    Icons.person_rounded,
+                    size: 28,
+                    color: _primary),
               ),
             )
                 : const Icon(Icons.person_rounded,
@@ -459,9 +397,11 @@ class _AddBusScreenState extends State<AddBusScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _driverImage == null
-                      ? 'No image selected'
-                      : 'Image ready to upload',
+                  hasNew
+                      ? 'New image ready'
+                      : hasExisting
+                      ? 'Current driver image'
+                      : 'No image selected',
                   style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
@@ -484,7 +424,7 @@ class _AddBusScreenState extends State<AddBusScreen> {
                       icon: const Icon(Icons.photo_library_rounded,
                           size: 14, color: _primary),
                       label: Text(
-                        _driverImage == null ? 'Choose' : 'Change',
+                        (hasNew || hasExisting) ? 'Change' : 'Choose',
                         style: const TextStyle(fontSize: 12),
                       ),
                       style: TextButton.styleFrom(
@@ -495,17 +435,15 @@ class _AddBusScreenState extends State<AddBusScreen> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
-                    if (_driverImage != null) ...[
+                    if (hasNew) ...[
                       const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () =>
                             setState(() => _driverImage = null),
                         icon: const Icon(Icons.close_rounded,
                             size: 14, color: Colors.red),
-                        label: const Text(
-                          'Remove',
-                          style: TextStyle(fontSize: 12),
-                        ),
+                        label: const Text('Undo',
+                            style: TextStyle(fontSize: 12)),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(
@@ -526,7 +464,7 @@ class _AddBusScreenState extends State<AddBusScreen> {
   }
 
   // ============================================================
-  // BUILD FIELD
+  // FIELD
   // ============================================================
   Widget _buildField({
     required TextEditingController controller,

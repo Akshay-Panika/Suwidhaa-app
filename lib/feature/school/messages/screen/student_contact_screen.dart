@@ -317,6 +317,8 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
     final initials = s.displayName + _secondInitial(s.fullName);
     final phone = s.parentPhone;
     final hasPhone = phone.isNotEmpty;
+    final profileUrl = (s.studentProfile ?? '').trim();
+    final hasImage = profileUrl.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -334,23 +336,58 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          // ---------- Avatar ----------
+          // ---------- Avatar (image + initials fallback) ----------
           Stack(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: hasImage
+                      ? null
+                      : LinearGradient(
                     colors: [
                       color.withOpacity(0.15),
                       color.withOpacity(0.06),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
+                  border: hasImage
+                      ? Border.all(
+                      color: color.withOpacity(0.35), width: 1.2)
+                      : null,
                 ),
+                clipBehavior: Clip.antiAlias,
                 alignment: Alignment.center,
-                child: Text(
+                child: hasImage
+                    ? Image.network(
+                  profileUrl,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: color,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Text(
+                    initials,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
+                  ),
+                )
+                    : Text(
                   initials,
                   style: TextStyle(
                     fontSize: 15,
@@ -450,9 +487,7 @@ class _StudentContactScreenState extends State<StudentContactScreen> {
                 onTap: hasPhone
                     ? () => _openWhatsApp(
                   phone,
-                  s.fatherName.isNotEmpty
-                      ? s.fatherName
-                      : 'Parent',
+                  s.fatherName.isNotEmpty ? s.fatherName : 'Parent',
                 )
                     : null,
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:get/get.dart';
+import '../../../notification/screen/notification_screen.dart';
 import '../../profile/controller/student_controller.dart';
 import '../../profile/model/student_model.dart';
 
@@ -26,7 +27,7 @@ class StudentProfileCard extends StatelessWidget {
       // Show data
       if (studentController.hasData) {
         final student = studentController.studentData.value!;
-        return _buildProfileContent(student, studentController);
+        return _buildProfileContent(context, student, studentController);
       }
 
       // No data available
@@ -251,7 +252,7 @@ class StudentProfileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileContent(StudentData student, StudentController controller) {
+  Widget _buildProfileContent(BuildContext context,StudentData student, StudentController controller) {
 
     String _getGreeting() {
       final hour = DateTime.now().hour;
@@ -263,7 +264,7 @@ class StudentProfileCard extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.end,
@@ -322,7 +323,8 @@ class StudentProfileCard extends StatelessWidget {
                   children: [
                     IconButton(
                       onPressed: () {
-                        // Notification screen
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen(),));
+
                       },
                       icon: const Icon(
                         Icons.notifications_none_rounded,
@@ -366,7 +368,7 @@ class StudentProfileCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "${student.schoolType}",
+                      "${student.school!.schoolName.toString()}",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -382,7 +384,7 @@ class StudentProfileCard extends StatelessWidget {
                   //     borderRadius: BorderRadius.circular(20),
                   //   ),
                   //   child:  Text(
-                  //     "Joining Date:${student.createdAt}",
+                  //     "Joining: ${student.}",
                   //     style:
                   //     TextStyle(
                   //       color: Colors.white,

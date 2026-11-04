@@ -13,15 +13,14 @@ import 'add_student_screen.dart';
 class SchoolStudentTransportScreen extends StatelessWidget {
   const SchoolStudentTransportScreen({super.key});
 
-  // ================= PRIMARY COLOR =================
   static const Color _primary = Colors.indigo;
   static const Color _primaryLight = Color(0xFFE8EAF6);
 
   @override
   Widget build(BuildContext context) {
-    final TransportController controller = Get.put(TransportController());
+    // ✅ FIX: Get.put se state reset hoti thi (AppBindings me lazyPut hai)
+    final TransportController controller = Get.find<TransportController>();
     final authController = Get.find<SchoolAuthController>();
-
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -45,9 +44,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-
             const SizedBox(width: 10),
-
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +76,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
             ),
           ],
         ),
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -87,16 +83,13 @@ class SchoolStudentTransportScreen extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
-                  onPressed: () {
-                    // Notification screen
-                  },
+                  onPressed: () {},
                   icon: const Icon(
                     Icons.notifications_none_rounded,
                     color: Colors.white,
                     size: 25,
                   ),
                 ),
-
                 Positioned(
                   right: 7,
                   top: 7,
@@ -106,10 +99,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.blue,
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: Colors.blue, width: 1.5),
                     ),
                   ),
                 ),
@@ -121,11 +111,9 @@ class SchoolStudentTransportScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (authController.userType != 'student')
+            _buildHeader(context, controller),
 
-          if(authController.userType!='student')
-          _buildHeader(context, controller),
-
-          // Routes Title
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Row(
@@ -153,7 +141,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
             ),
           ),
 
-          // List View
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value &&
@@ -171,12 +158,13 @@ class SchoolStudentTransportScreen extends StatelessWidget {
                 color: _primary,
                 onRefresh: () => controller.refreshTransportList(),
                 child: ListView.builder(
-                  padding:
-                  const EdgeInsets.only(bottom: 100, left: 14, right: 14),
+                  padding: const EdgeInsets.only(
+                      bottom: 100, left: 14, right: 14),
                   itemCount: controller.filteredTransportList.length,
                   itemBuilder: (context, index) {
                     final transport = controller.filteredTransportList[index];
-                    return _buildTransportCard(context, transport, controller);
+                    return _buildTransportCard(
+                        context, transport, controller);
                   },
                 ),
               );
@@ -188,17 +176,15 @@ class SchoolStudentTransportScreen extends StatelessWidget {
   }
 
   // ============================================================
-  // HEADER (with Add Bus + Add Student)
+  // HEADER (Teacher only)
   // ============================================================
   Widget _buildHeader(BuildContext context, TransportController controller) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-      ),
+      color: Colors.white,
       child: Row(
         children: [
-          Expanded(
+          const Expanded(
             child: Text(
               'Transport',
               style: TextStyle(
@@ -208,7 +194,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
               ),
             ),
           ),
-          // Add Bus Button
           _buildHeaderButton(
             icon: Icons.directions_bus,
             label: 'Add Bus',
@@ -216,17 +201,12 @@ class SchoolStudentTransportScreen extends StatelessWidget {
             onTap: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const AddBusScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const AddBusScreen()),
               );
-              if (result == true) {
-                controller.refreshTransportList();
-              }
+              if (result == true) controller.refreshTransportList();
             },
           ),
           const SizedBox(width: 8),
-          // Add Student Button
           _buildHeaderButton(
             icon: Icons.person_add_alt_1_rounded,
             label: 'Add Student',
@@ -239,9 +219,8 @@ class SchoolStudentTransportScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AddStudentScreen(
-                    transports: controller.transportList,
-                  ),
+                  builder: (_) =>
+                      AddStudentScreen(transports: controller.transportList),
                 ),
               );
             },
@@ -296,7 +275,7 @@ class SchoolStudentTransportScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: _primaryLight,
               shape: BoxShape.circle,
             ),
@@ -347,206 +326,193 @@ class SchoolStudentTransportScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                // Row 1: Route Name + Type + Student Count
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(9),
-                      decoration: BoxDecoration(
-                        color: _primaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.directions_bus_rounded,
-                          size: 18, color: _primary),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            routeName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            transport.vehicleNumber,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _primaryLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        transport.transportType,
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: _primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.directions_bus_rounded,
+                      size: 18, color: _primary),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        routeName,
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: _primary,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        transport.vehicleNumber,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _primaryLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    transport.transportType,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _primary,
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 10),
+              ],
+            ),
+            const SizedBox(height: 10),
 
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _buildChip(Icons.directions_bus, transport.vehicleNumber,
-                        _primary, true),
-                    if (transport.schoolType != null &&
-                        transport.schoolType!.isNotEmpty)
-                      _buildChip(Icons.school, transport.schoolType!,
-                          Colors.teal, false),
-                    if (transport.capacity != null &&
-                        transport.capacity!.isNotEmpty)
-                      _buildChip(Icons.person_outline,
-                          'Cap: ${transport.capacity}', Colors.orange, false),
-                    if (transport.studentCount > 0)
-                      _buildChip(
-                        Icons.school_rounded,
-                        '${transport.studentCount} students',
-                        Colors.green,
-                        true,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _buildChip(Icons.directions_bus, transport.vehicleNumber,
+                    _primary, true),
+                if (transport.schoolType != null &&
+                    transport.schoolType!.isNotEmpty)
+                  _buildChip(Icons.school, transport.schoolType!,
+                      Colors.teal, false),
+                if (transport.capacity != null &&
+                    transport.capacity!.isNotEmpty)
+                  _buildChip(Icons.person_outline,
+                      'Cap: ${transport.capacity}', Colors.orange, false),
+                if (transport.studentCount > 0)
+                  _buildChip(
+                    Icons.school_rounded,
+                    '${transport.studentCount} '
+                        'student${transport.studentCount == 1 ? '' : 's'}',
+                    transport.studentCount > 0 ? Colors.green : Colors.grey,
+                    true,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
+            const SizedBox(height: 12),
 
-                Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
-                const SizedBox(height: 12),
-
-                // Row 3: Driver Info + Action Buttons
-                Row(
-                  children: [
-                    Container(
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _primaryLight,
+                    border: Border.all(
+                        color: _primary.withOpacity(0.2), width: 1.5),
+                  ),
+                  child: transport.driverImage != null &&
+                      transport.driverImage!.isNotEmpty
+                      ? ClipOval(
+                    child: Image.network(
+                      transport.driverImage!,
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _primaryLight,
-                        border: Border.all(
-                            color: _primary.withOpacity(0.2), width: 1.5),
-                      ),
-                      child: transport.driverImage != null &&
-                          transport.driverImage!.isNotEmpty
-                          ? ClipOval(
-                        child: Image.network(
-                          transport.driverImage!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                              Icons.person,
-                              size: 20,
-                              color: _primary),
-                        ),
-                      )
-                          : const Icon(Icons.person,
-                          size: 20, color: _primary),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person, size: 20, color: _primary),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  )
+                      : const Icon(Icons.person, size: 20, color: _primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        transport.driverName,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
                         children: [
+                          Icon(Icons.phone,
+                              size: 11, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
                           Text(
-                            transport.driverName,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
+                            transport.driverNumber,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.grey.shade600,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(Icons.phone,
-                                  size: 11, color: Colors.grey.shade500),
-                              const SizedBox(width: 4),
-                              Text(
-                                transport.driverNumber,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                Row(
+                  spacing: 8,
+                  children: [
+                    _buildActionButton(
+                      icon: Icons.call_rounded,
+                      color: Colors.green.shade700,
+                      onTap: () => ContactHelper.call(transport.driverNumber),
+                      tooltip: 'Call Driver',
                     ),
-                    Row(
-                      spacing: 8,
-                      children: [
-                        _buildActionButton(
-                          icon: Icons.call_rounded,
-                          color: Colors.green.shade700,
-                          onTap: () => ContactHelper.call(transport.driverNumber),
-                          tooltip: 'Call Driver',
+                    _buildActionButton(
+                      icon: Icons.chat_rounded,
+                      color: const Color(0xFF25D366),
+                      onTap: () => ContactHelper.whatsapp(transport.driverNumber,
+                          'Hello, I need assistance with my transport service.'),
+                      tooltip: 'WhatsApp',
+                    ),
+                    _buildActionButton(
+                      icon: Icons.arrow_forward_ios_rounded,
+                      color: _primary,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              TransportDetailScreen(transport: transport),
                         ),
-                        _buildActionButton(
-                          icon: Icons.chat_rounded,
-                          color: const Color(0xFF25D366),
-                          onTap: () => ContactHelper.whatsapp(
-                              transport.driverNumber,
-                              'Hello, I need assistance with my transport service.'),
-                          tooltip: 'WhatsApp',
-                        ),
-                        _buildActionButton(
-                          icon: Icons.arrow_forward_ios_rounded,
-                          color: _primary,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  TransportDetailScreen(transport: transport),
-                            ),
-                          ),
-                          tooltip: 'View Details',
-                        ),
-                      ],
+                      ),
+                      tooltip: 'View Details',
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // ============================================================
-  // CHIP
-  // ============================================================
   Widget _buildChip(IconData icon, String label, Color color, bool bold) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -573,9 +539,6 @@ class SchoolStudentTransportScreen extends StatelessWidget {
     );
   }
 
-  // ============================================================
-  // ACTION BUTTON
-  // ============================================================
   Widget _buildActionButton({
     required IconData icon,
     required Color color,
@@ -599,4 +562,3 @@ class SchoolStudentTransportScreen extends StatelessWidget {
     );
   }
 }
-

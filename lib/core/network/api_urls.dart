@@ -123,12 +123,22 @@ class ApiUrls {
   static const String homeworkCreate = 'v1/school/homework/create/';
   static const String homeworkDetail = 'v1/school/homework/';
 
-  // Transport endpoints
-  static const String transportList = 'v1/school/transport/list/';
-  static const String transportDetail = 'v1/school/transport/';
+  // ==================== TRANSPORT ====================
+  // ✅ School-wise list
+  static String transportListBySchool(int schoolId) =>
+      'v1/school/transport/list/school/$schoolId/';
+
   static const String transportCreate = 'v1/school/transport/create/';
-  static const String transportAddStudent = 'v1/school/transport/';
-  static const String transportRemoveStudent = 'v1/school/transport/';
+  static const String transportDetail = 'v1/school/transport/'; // + id/
+  static String transportDetailById(int id) =>
+      'v1/school/transport/$id/';
+
+  // ✅ Helper URLs (student add / remove)
+  static String transportAddStudent(int transportId) =>
+      'v1/school/transport/$transportId/students/add/';
+
+  static String transportRemoveStudent(int transportId, String studentId) =>
+      'v1/school/transport/$transportId/students/$studentId/delete/';
 
 
   // College Banner endpoints
@@ -195,10 +205,19 @@ class ApiUrls {
   static const String reportCardByStudentBase = 'v1/school/report-cards/student-list/';
 
   // Meeting endpoints
-  static const String meetingCreate = 'v1/school/meeting/create/';
-  static const String meetingList   = 'v1/school/meeting/list/';
-  static const String meetingDelete = 'v1/school/meeting/delete/';   // + id/
-  static String meetingDetail(int id) => 'v1/school/meeting/$id/';
+  // ==================== MEETING (school_id based) ====================
+  static String meetingCreate(int schoolId) =>
+      'v1/school/$schoolId/meeting/create/';
+
+  static String meetingList(int schoolId) =>
+      'v1/school/$schoolId/meeting/list/';
+
+  static String meetingDetail(int schoolId, int id) =>
+      'v1/school/$schoolId/meeting/$id/';
+
+  static String meetingDelete(int schoolId, int id) =>
+      'v1/school/$schoolId/meeting/delete/$id/';
+
 
   // ==================== NOTICE ====================
   static const String noticeList   = 'v1/school/notice/list/';
@@ -207,20 +226,33 @@ class ApiUrls {
   static String noticeTogglePin(int id) => 'v1/school/notice/$id/toggle-pin/';
 
   // ==================== SCHOOL EVENT ====================
-  static const String eventList   = 'v1/school/event/list/';
-  static const String eventCreate = 'v1/school/event/create/';
-  static String eventDetail(int id)    => 'v1/school/event/$id/';
-  static String eventTogglePin(int id) => 'v1/school/event/$id/toggle-pin/';
+  // ✅ school_id based (backend: <int:school_id>/event/...)
+  static String eventList(int schoolId) =>
+      'v1/school/$schoolId/event/list/';
+
+  static String eventCreate(int schoolId) =>
+      'v1/school/$schoolId/event/create/';
+
+  static String eventDetail(int schoolId, int id) =>
+      'v1/school/$schoolId/event/$id/';
+
+  static String eventTogglePin(int schoolId, int id) =>
+      'v1/school/$schoolId/event/$id/toggle-pin/';
 
   // ==================== SCHOOL LIBRARY ====================
   static const String libraryCreate = 'v1/school/library/create/';
   static const String libraryList   = 'v1/school/library/list/';
   static String libraryDetail(int id) => 'v1/school/library/$id/';
 
-  // ==================== EXAM TIMETABLE ====================
-  static const String examTimetableCreate = 'v1/school/exam-timetables/create/';
-  static const String examTimetableList   = 'v1/school/exam-timetables/list/';
-  static String examTimetableDetail(int id) => 'v1/school/exam-timetables/$id/';
+  // ==================== EXAM TIMETABLE (school_id based) ====================
+  static String examTimetableCreate(int schoolId) =>
+      'v1/school/$schoolId/exam-timetables/create/';
+
+  static String examTimetableList(int schoolId) =>
+      'v1/school/$schoolId/exam-timetables/list/';
+
+  static String examTimetableDetail(int schoolId, int id) =>
+      'v1/school/$schoolId/exam-timetables/$id/';
 
   // ==================== NGO BANNER ====================
   static const String ngoBannerCreate = 'v1/ngo/banner/create/';

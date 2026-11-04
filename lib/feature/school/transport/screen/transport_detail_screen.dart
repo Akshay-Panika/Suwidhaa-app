@@ -1,9 +1,11 @@
+// lib/feature/school/transport/view/transport_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:untitled/core/widget/contact_helper.dart';
+import '../../auth/controller/school_auth_controller.dart';
 import '../controller/transport_controller.dart';
 import '../model/transport_model.dart';
-
+import 'add_bus_screen.dart';
 
 class TransportDetailScreen extends StatefulWidget {
   final TransportModel transport;
@@ -19,6 +21,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
   static const Color _primaryLight = Color(0xFFE8EAF6);
 
   late TransportController _transportController;
+  late SchoolAuthController _authController;
   late TransportModel transport;
 
   @override
@@ -26,6 +29,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
     super.initState();
     transport = widget.transport;
     _transportController = Get.find<TransportController>();
+    _authController = Get.find<SchoolAuthController>();
   }
 
   // ==================== CONFIRM + DELETE ====================
@@ -35,9 +39,8 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -53,10 +56,8 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             const Expanded(
               child: Text(
                 'Delete Transport?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
+                style:
+                TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -71,13 +72,9 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: const Text('Cancel',
+                style: TextStyle(
+                    color: Colors.grey, fontWeight: FontWeight.w700)),
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
@@ -87,8 +84,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+                  borderRadius: BorderRadius.circular(10)),
             ),
           ),
         ],
@@ -98,10 +94,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
     if (confirmed == true) {
       final success =
       await _transportController.deleteTransport(transport.id);
-      if (success && mounted) {
-        // Return true so caller can refresh list
-        Navigator.pop(context, true);
-      }
+      if (success && mounted) Navigator.pop(context, true);
     }
   }
 
@@ -112,9 +105,8 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -130,29 +122,25 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             const Expanded(
               child: Text(
                 'Remove Student?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
+                style:
+                TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to remove '
-              '"${student.studentName}" (ID: ${student.studentId}) from this transport?',
+              '"${student.studentName}" (ID: '
+              '${student.studentIdCard.isNotEmpty ? student.studentIdCard : student.studentId}) '
+              'from this transport?',
           style: const TextStyle(fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: const Text('Cancel',
+                style: TextStyle(
+                    color: Colors.grey, fontWeight: FontWeight.w700)),
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
@@ -162,8 +150,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+                  borderRadius: BorderRadius.circular(10)),
             ),
           ),
         ],
@@ -173,15 +160,16 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
     if (confirmed == true) {
       final success = await _transportController.removeStudentFromTransport(
         transportId: transport.id,
-        studentId: student.studentId,
+        studentId: student.studentId, // ✅ DB pk (nested student.id)
       );
 
       if (success && mounted) {
         setState(() {
           transport = transport.copyWith(
             students: transport.students
-                .where((s) => s.studentId != student.studentId)
+                .where((s) => s.id != student.id)
                 .toList(),
+            studentCount: (transport.studentCount - 1).clamp(0, 9999),
           );
         });
       }
@@ -190,6 +178,8 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTeacher = _authController.userType != 'student';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -203,7 +193,9 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              transport.routeName ?? 'Transport Route',
+              (transport.routeName?.isNotEmpty == true)
+                  ? transport.routeName!
+                  : 'Vehicle ${transport.vehicleNumber}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -214,7 +206,8 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              'Vehicle: ${transport.vehicleNumber}',
+              'Vehicle: ${transport.vehicleNumber} • '
+                  '${transport.studentCount} student(s)',
               style: const TextStyle(
                 fontSize: 11,
                 color: Colors.white70,
@@ -223,6 +216,28 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             ),
           ],
         ),
+        actions: [
+          if (isTeacher)
+            IconButton(
+              tooltip: 'Edit Bus',
+              icon: const Icon(Icons.edit_rounded, color: Colors.white),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddBusScreen(transport: transport),
+                  ),
+                );
+                if (result == true) {
+                  final fresh = _transportController.transportList
+                      .firstWhereOrNull((t) => t.id == transport.id);
+                  if (fresh != null && mounted) {
+                    setState(() => transport = fresh);
+                  }
+                }
+              },
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -234,42 +249,44 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
                 children: [
                   _buildDriverCard(),
                   const SizedBox(height: 20),
-                  _buildStudentList(transport.students),
+                  _buildStudentList(transport.students, isTeacher: isTeacher),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
 
-          Obx(() {
-            final deleting = _transportController.isDeleting.value;
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              child: OutlinedButton.icon(
-                onPressed: deleting ? null : _confirmDelete,
-                icon: deleting
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.red,
+          // ✅ Teacher-only Delete Transport button
+          if (isTeacher)
+            Obx(() {
+              final deleting = _transportController.isDeleting.value;
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                child: OutlinedButton.icon(
+                  onPressed: deleting ? null : _confirmDelete,
+                  icon: deleting
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  )
+                      : const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: Text(deleting ? 'Deleting...' : 'Delete Transport'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    side: BorderSide(color: Colors.red.shade300),
+                    foregroundColor: Colors.red.shade700,
                   ),
-                )
-                    : const Icon(Icons.delete_outline_rounded, size: 18),
-                label: Text(deleting ? 'Deleting...' : 'Delete Transport'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: BorderSide(color: Colors.red.shade300),
-                  foregroundColor: Colors.red.shade700,
                 ),
-              ),
-            );
-          }),
+              );
+            }),
           const SizedBox(height: 20),
         ],
       ),
@@ -312,7 +329,6 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,10 +378,9 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
                             transport.capacity!.isNotEmpty)
                           _driverInfoRow(Icons.person_outline,
                               'Capacity: ${transport.capacity}'),
-                        if (transport.schoolType != null &&
-                            transport.schoolType!.isNotEmpty)
+                        if (transport.schoolType.isNotEmpty)
                           _driverInfoRow(
-                              Icons.school_rounded, transport.schoolType!),
+                              Icons.school_rounded, transport.schoolType),
                       ],
                     ),
                   ),
@@ -442,7 +457,10 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
   }
 
   // ==================== STUDENT LIST ====================
-  Widget _buildStudentList(List<StudentData> students) {
+  Widget _buildStudentList(
+      List<StudentData> students, {
+        required bool isTeacher,
+      }) {
     if (students.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -456,7 +474,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: _primaryLight,
                   shape: BoxShape.circle,
                 ),
@@ -510,18 +528,20 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
           itemCount: students.length,
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            return _buildStudentTile(students[index]);
+            return _buildStudentTile(students[index], isTeacher: isTeacher);
           },
         ),
       ],
     );
   }
 
-  Widget _buildStudentTile(StudentData student) {
+  Widget _buildStudentTile(StudentData student, {required bool isTeacher}) {
+    final hasProfile = student.studentProfile.trim().isNotEmpty;
+
     return Stack(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12,vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -535,15 +555,26 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
             ],
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ✅ Profile image (fallback to initial letter)
               Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
                   color: Colors.indigo.shade50,
                   borderRadius: BorderRadius.circular(10),
+                  image: hasProfile
+                      ? DecorationImage(
+                    image: NetworkImage(student.studentProfile),
+                    fit: BoxFit.cover,
+                    onError: (_, __) {},
+                  )
+                      : null,
                 ),
-                child: Center(
+                child: hasProfile
+                    ? null
+                    : Center(
                   child: Text(
                     student.studentName.isNotEmpty
                         ? student.studentName[0].toUpperCase()
@@ -562,9 +593,7 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      student.studentName.isNotEmpty
-                          ? student.studentName
-                          : 'Unknown Student',
+                      student.studentName,
                       style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -573,88 +602,126 @@ class _TransportDetailScreenState extends State<TransportDetailScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'ID: ${student.studentId.isNotEmpty ? student.studentId : 'N/A'}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    const SizedBox(height: 3),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      children: [
+                        if (student.studentClass.isNotEmpty)
+                          _miniInfo(Icons.menu_book_rounded,
+                              'Class ${student.studentClass}'),
+                        if (student.studentIdCard.isNotEmpty)
+                          _miniInfo(Icons.badge_rounded,
+                              student.studentIdCard),
+                        if (student.parentPhone.isNotEmpty)
+                          _miniInfo(Icons.phone_rounded,
+                              student.parentPhone),
+                      ],
                     ),
-                    if (student.address != null && student.address!.isNotEmpty)
-                      Text(
-                        'Address: ${student.address}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    if (student.address != null &&
+                        student.address!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.location_on_rounded,
+                              size: 12, color: Colors.red.shade400),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              student.address!,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
                   ],
                 ),
               ),
-
-              // ==================== TIME BADGES ====================
+              const SizedBox(width: 8),
               Column(
                 spacing: 4,
                 children: [
                   if (student.pickupTime != null &&
-                      student.pickupTime!.isNotEmpty) ...[
+                      student.pickupTime!.isNotEmpty)
                     _buildTimeBadge(
                       Icons.arrow_upward_rounded,
                       student.pickupTime!,
                       Colors.green,
                     ),
-                    const SizedBox(width: 6),
-                  ],
                   if (student.dropTime != null &&
-                      student.dropTime!.isNotEmpty) ...[
+                      student.dropTime!.isNotEmpty)
                     _buildTimeBadge(
                       Icons.arrow_downward_rounded,
                       student.dropTime!,
                       Colors.orange,
                     ),
-                  ],
                 ],
               ),
               const SizedBox(width: 14),
             ],
           ),
         ),
-        Positioned(
-          top:-10,right: -10,
-          child: Obx(() {
-            final removing =
-            _transportController.isRemovingStudent(student.studentId);
-            return IconButton(
-              onPressed: removing
-                  ? null
-                  : () => _confirmRemoveStudent(student),
-              tooltip: 'Remove Student',
-              icon: removing
-                  ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.red,
+
+        // ✅ Teacher-only Remove icon
+        if (isTeacher)
+          Positioned(
+            top: -10,
+            right: -10,
+            child: Obx(() {
+              final removing =
+              _transportController.isRemovingStudent(student.studentId);
+              return IconButton(
+                onPressed: removing
+                    ? null
+                    : () => _confirmRemoveStudent(student),
+                tooltip: 'Remove Student',
+                icon: removing
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.red,
+                  ),
+                )
+                    : Icon(
+                  Icons.delete_outline_rounded,
+                  size: 20,
+                  color: Colors.red.shade400,
                 ),
-              )
-                  : Icon(
-                Icons.delete_outline_rounded,
-                size: 20,
-                color: Colors.red.shade400,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 36,
-                minHeight: 36,
-              ),
-            );
-          }),
+                padding: EdgeInsets.zero,
+                constraints:
+                const BoxConstraints(minWidth: 36, minHeight: 36),
+              );
+            }),
+          ),
+      ],
+    );
+  }
+
+  Widget _miniInfo(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: Colors.grey.shade500),
+        const SizedBox(width: 3),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 10.5,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

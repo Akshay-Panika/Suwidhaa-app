@@ -387,13 +387,14 @@ class _ClassExamTimetableViewScreenState extends State<ClassExamTimetableViewScr
   }
 
   // ==================== SCHEDULE TABLE ====================
+  // ==================== SCHEDULE TABLE ====================
   Widget _scheduleTable(List<SubjectSchedule> sorted) {
     const double wSr = 40;
     const double wSubject = 110;
     const double wDate = 100;
-    const double wTime = 110;
-    const double wInvigilator = 110;
-    const double wRoom = 80;
+    const double wTime = 140;        // ✅ 110 → 140 (time cell fit)
+    const double wInvigilator = 130; // ✅ 110 → 130 (long names fit)
+    const double wRoom = 90;         // ✅ 80 → 90
     const double rowH = 52;
 
     final bs = BorderSide(color: Colors.grey.shade300, width: 1);
@@ -480,41 +481,47 @@ class _ClassExamTimetableViewScreenState extends State<ClassExamTimetableViewScr
                           ),
                         ),
                       ),
+
+                      // ✅ TIME CELL — FittedBox for absolute safety
                       _dataCell(
                         width: wTime,
                         height: rowH,
                         bs: bs,
                         alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              s.startTime,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1F36),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                s.startTime,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A1F36),
+                                ),
                               ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 4),
-                              child: Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 12,
-                                color: Colors.indigo,
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 12,
+                                  color: Colors.indigo,
+                                ),
                               ),
-                            ),
-                            Text(
-                              s.endTime,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1F36),
+                              Text(
+                                s.endTime,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A1F36),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
+
                       _dataCell(
                         width: wInvigilator,
                         height: rowH,

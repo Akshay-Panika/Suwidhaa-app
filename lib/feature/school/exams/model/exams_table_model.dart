@@ -55,12 +55,18 @@ extension ExamTypeLabel on ExamType {
 
 // ==================== SUBJECT SCHEDULE ====================
 class SubjectSchedule {
-  final dynamic id; // can be int (from API) or String
+  final dynamic id;
   final String subject;
   final DateTime date;
   final String startTime;
   final String endTime;
+
+  /// ✅ Backend `invigilator` FK — Teacher DB pk (send as-is in payload)
+  final int? invigilatorId;
+
+  /// ✅ Display name — from `invigilator_details.first_name + last_name`
   final String invigilator;
+
   final String room;
 
   SubjectSchedule({
@@ -69,6 +75,7 @@ class SubjectSchedule {
     required this.date,
     required this.startTime,
     required this.endTime,
+    this.invigilatorId,
     required this.invigilator,
     required this.room,
   });
@@ -78,30 +85,74 @@ class SubjectSchedule {
 
   /// ============ API MAPPING ============
   factory SubjectSchedule.fromJson(Map<String, dynamic> json) {
+    // Parse nested teacher object → display name
+    String displayName = '';
+    final details = json['invigilator_details'];
+    if (details is Map<String, dynamic>) {
+      final f = (details['first_name'] ?? '').toString().trim();
+      final m = (details['middle_name'] ?? '').toString().trim();
+      final l = (details['last_name'] ?? '').toString().trim();
+      displayName = [f, m, l].where((p) => p.isNotEmpty).join(' ');
+    }
+
+    // Invigilator ID (write field, backend returns as int or null)
+    int? invId;
+    final rawInv = json['invigilator'];
+    if (rawInv is int) {
+      invId = rawInv;
+    } else if (rawInv is String && rawInv.isNotEmpty) {
+      invId = int.tryParse(rawInv);
+    }
+
     return SubjectSchedule(
       id: json['id'],
       subject: json['subject'] ?? '',
       date: DateTime.parse(json['date']),
       startTime: json['start_time'] ?? '10:00',
       endTime: json['end_time'] ?? '13:00',
-      invigilator: json['invigilator'] ?? '',
+      invigilatorId: invId,
+      invigilator: displayName,
       room: json['room'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
     'subject': subject,
-    'date': '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+    'date':
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
     'start_time': startTime,
     'end_time': endTime,
-    'invigilator': invigilator,
+    // ✅ Send invigilator as FK id (int) — not name string
+    'invigilator': invigilatorId,
     'room': room,
   };
+
+  SubjectSchedule copyWith({
+    dynamic id,
+    String? subject,
+    DateTime? date,
+    String? startTime,
+    String? endTime,
+    int? invigilatorId,
+    String? invigilator,
+    String? room,
+  }) {
+    return SubjectSchedule(
+      id: id ?? this.id,
+      subject: subject ?? this.subject,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      invigilatorId: invigilatorId ?? this.invigilatorId,
+      invigilator: invigilator ?? this.invigilator,
+      room: room ?? this.room,
+    );
+  }
 }
 
 // ==================== CLASS EXAM TIMETABLE ====================
 class ClassExamTimetable {
-  final dynamic id; // int from API, String when created locally
+  final dynamic id;
   final String className;
   final String section;
   final ExamType examType;
@@ -109,7 +160,6 @@ class ClassExamTimetable {
   final DateTime toDate;
   final List<SubjectSchedule> schedules;
 
-  // audit
   final String? createdByName;
   final String? createdById;
   final DateTime? createdAt;
@@ -134,18 +184,18 @@ class ClassExamTimetable {
 
   String get displayTitle => '$className • ${examType.label}';
 
-  /// ============ API MAPPING ============
   factory ClassExamTimetable.fromJson(Map<String, dynamic> json) {
     final rawSchedules = json['schedules'] as List<dynamic>? ?? [];
     return ClassExamTimetable(
       id: json['id'],
       className: json['class_name'] ?? '',
-      section: '', // backend doesn't return section
+      section: '',
       examType: ExamTypeLabel.fromApi(json['exam_type'] ?? 'board'),
       fromDate: DateTime.parse(json['from_date']),
       toDate: DateTime.parse(json['to_date']),
       schedules: rawSchedules
-          .map((s) => SubjectSchedule.fromJson(s as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map(SubjectSchedule.fromJson)
           .toList(),
       createdByName: json['created_by_name'],
       createdById: json['created_by_id'],

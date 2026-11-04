@@ -8,20 +8,20 @@ import '../repository/transport_repository.dart';
 class TransportController extends GetxController {
   final TransportRepository _repository = TransportRepository();
 
-  // Observables
   var isLoading = false.obs;
   var isCreating = false.obs;
+  var isUpdating = false.obs;      // ✅ NEW
   var isAddingStudent = false.obs;
   var isDeleting = false.obs;
   var removingStudentIds = <String>{}.obs;
 
-  bool isRemovingStudent(String studentId) => removingStudentIds.contains(studentId);
+  bool isRemovingStudent(String studentId) =>
+      removingStudentIds.contains(studentId);
 
   var transportList = <TransportModel>[].obs;
   var filteredTransportList = <TransportModel>[].obs;
   var selectedTransport = Rxn<TransportModel>();
 
-  // Filter
   var searchQuery = ''.obs;
   var filterByType = ''.obs;
 
@@ -36,7 +36,6 @@ class TransportController extends GetxController {
     try {
       isLoading.value = true;
       final response = await _repository.getTransportList();
-
       if (response.success) {
         transportList.value = response.data;
         filteredTransportList.value = response.data;
@@ -60,7 +59,6 @@ class TransportController extends GetxController {
     try {
       isLoading.value = true;
       final transport = await _repository.getTransportDetail(id);
-
       if (transport != null) {
         selectedTransport.value = transport;
       } else {
@@ -73,24 +71,20 @@ class TransportController extends GetxController {
     }
   }
 
-  // ==================== CREATE TRANSPORT ====================
+  // ==================== CREATE ====================
   Future<bool> createTransport({
     required String transportType,
-    required String schoolType,
     required String vehicleNumber,
     required String driverName,
     required String driverNumber,
     String? capacity,
     String? routeName,
     File? driverImage,
-  })
-  async {
+  }) async {
     try {
       isCreating.value = true;
-
       final newTransport = await _repository.createTransport(
         transportType: transportType,
-        schoolType: schoolType,
         vehicleNumber: vehicleNumber,
         driverName: driverName,
         driverNumber: driverNumber,
@@ -98,11 +92,8 @@ class TransportController extends GetxController {
         routeName: routeName,
         driverImage: driverImage,
       );
-
-      // Add to local list (optimistic update)
       transportList.insert(0, newTransport);
       applyFilters();
-
       return true;
     } catch (e) {
       Get.snackbar(
@@ -116,7 +107,44 @@ class TransportController extends GetxController {
       isCreating.value = false;
     }
   }
-// ==================== ADD STUDENT TO TRANSPORT ====================
+
+  // ==================== ✅ NEW: UPDATE ====================
+  Future<bool> updateTransport({
+    required int id,
+    required String transportType,
+    required String vehicleNumber,
+    required String driverName,
+    required String driverNumber,
+    String? capacity,
+    String? routeName,
+    File? driverImage,
+  }) async {
+    try {
+      isUpdating.value = true;
+      final updated = await _repository.updateTransport(
+        id: id,
+        transportType: transportType,
+        vehicleNumber: vehicleNumber,
+        driverName: driverName,
+        driverNumber: driverNumber,
+        capacity: capacity,
+        routeName: routeName,
+        driverImage: driverImage,
+      );
+      final i = transportList.indexWhere((t) => t.id == id);
+      if (i != -1) transportList[i] = updated;
+      applyFilters();
+      FlutterToast.success('Transport updated');
+      return true;
+    } catch (e) {
+      FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
+      return false;
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  // ==================== ADD STUDENT ====================
   Future<bool> addStudentToTransport({
     required int transportId,
     required String studentName,
@@ -127,7 +155,6 @@ class TransportController extends GetxController {
   }) async {
     try {
       isAddingStudent.value = true;
-
       final success = await _repository.addStudentToTransport(
         transportId: transportId,
         studentName: studentName,
@@ -136,11 +163,7 @@ class TransportController extends GetxController {
         dropTime: dropTime,
         address: address,
       );
-
-      if (success) {
-        // Refresh the transport list so student count updates
-        await getTransportList();
-      }
+      if (success) await getTransportList();
       return success;
     } catch (e) {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
@@ -153,25 +176,22 @@ class TransportController extends GetxController {
   // ==================== FILTERS ====================
   void applyFilters() {
     var list = transportList.toList();
-
     if (searchQuery.value.isNotEmpty) {
+      final query = searchQuery.value.toLowerCase();
       list = list.where((item) {
-        final query = searchQuery.value.toLowerCase();
         return item.routeName?.toLowerCase().contains(query) == true ||
             item.vehicleNumber.toLowerCase().contains(query) ||
             item.driverName.toLowerCase().contains(query) ||
             item.transportType.toLowerCase().contains(query);
       }).toList();
     }
-
     if (filterByType.value.isNotEmpty) {
-      list = list.where((item) {
-        return item.transportType
-            .toLowerCase()
-            .contains(filterByType.value.toLowerCase());
-      }).toList();
+      list = list
+          .where((item) => item.transportType
+          .toLowerCase()
+          .contains(filterByType.value.toLowerCase()))
+          .toList();
     }
-
     filteredTransportList.value = list;
   }
 
@@ -191,7 +211,6 @@ class TransportController extends GetxController {
     applyFilters();
   }
 
-  // ==================== GETTERS ====================
   int get totalRoutes => transportList.length;
 
   int get totalStudents {
@@ -212,20 +231,15 @@ class TransportController extends GetxController {
     return types.toList();
   }
 
-
-  // ==================== DELETE TRANSPORT ====================
+  // ==================== DELETE ====================
   Future<bool> deleteTransport(int id) async {
     try {
       isDeleting.value = true;
-
       final success = await _repository.deleteTransport(id);
-
       if (success) {
-        // Remove from local lists
         transportList.removeWhere((t) => t.id == id);
         filteredTransportList.removeWhere((t) => t.id == id);
         applyFilters();
-
         FlutterToast.success('Transport deleted successfully');
       }
       return success;
@@ -237,18 +251,17 @@ class TransportController extends GetxController {
     }
   }
 
+  // ==================== REMOVE STUDENT ====================
   Future<bool> removeStudentFromTransport({
     required int transportId,
     required String studentId,
   }) async {
     try {
-      removingStudentIds.add(studentId);   // ✅ add only this ID
-
+      removingStudentIds.add(studentId);
       final success = await _repository.removeStudentFromTransport(
         transportId: transportId,
         studentId: studentId,
       );
-
       if (success) {
         await getTransportList();
         FlutterToast.success('Student removed successfully');
@@ -258,7 +271,7 @@ class TransportController extends GetxController {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
       return false;
     } finally {
-      removingStudentIds.remove(studentId);   // ✅ remove from set
+      removingStudentIds.remove(studentId);
     }
   }
 }

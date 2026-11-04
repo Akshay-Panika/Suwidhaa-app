@@ -3,11 +3,12 @@ import 'package:intl/intl.dart';
 class MeetingModel {
   final int id;
   final String title;
-  final String date;       // "2025-01-20"
-  final String time;       // "10:30:00"
-  final String forMeeting; // "Student" or "Staff"
+  final String date;        // "2025-01-20"
+  final String time;        // "10:30:00"
+  final String forMeeting;  // "Student" or "Staff"
   final String? className;
   final String? zoomUrl;
+  final String? schoolName; // ✅ NEW: backend deta hai
   final String? createdAt;
   final String? updatedAt;
 
@@ -19,6 +20,7 @@ class MeetingModel {
     required this.forMeeting,
     this.className,
     this.zoomUrl,
+    this.schoolName,
     this.createdAt,
     this.updatedAt,
   });
@@ -32,6 +34,7 @@ class MeetingModel {
       forMeeting: json['for_meeting'] ?? '',
       className: json['class_name'],
       zoomUrl: json['zoom_url'],
+      schoolName: json['school_name'], // ✅ NEW
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
     );

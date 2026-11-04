@@ -24,9 +24,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   TransportModel? _selectedTransport;
   StudentListData? _selectedStudent;
 
-  // Timing
   TimeOfDay? _pickupTime;
   TimeOfDay? _dropTime;
+
+  // ✅ NEW: manual address input
+  final TextEditingController _addressCtrl = TextEditingController();
 
   late StudentListController _studentController;
   late TransportController _transportController;
@@ -34,19 +36,30 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   @override
   void initState() {
     super.initState();
-
     _studentController = Get.find<StudentListController>();
     _transportController = Get.find<TransportController>();
-
 
     if (_studentController.studentList.isEmpty) {
       _studentController.loadStudentList();
     }
   }
 
-  void _clearTransport() {
-    setState(() => _selectedTransport = null);
+  @override
+  void dispose() {
+    _addressCtrl.dispose();
+    super.dispose();
   }
+
+  void _clearTransport() => setState(() => _selectedTransport = null);
+
+  // ✅ NEW: also clear address
+  void _clearStudent() {
+    setState(() {
+      _selectedStudent = null;
+      _addressCtrl.clear();
+    });
+  }
+
   // ==================== TIME PICKER ====================
   Future<void> _pickTime({required bool isPickup}) async {
     final initial = isPickup
@@ -90,7 +103,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     return '${h.toString().padLeft(2, '0')}:$m $p';
   }
 
-  // ==================== OPEN TRANSPORT PICKER ====================
+  // ==================== PICKERS ====================
   Future<void> _openTransportPicker() async {
     final result = await showModalBottomSheet<TransportModel>(
       context: context,
@@ -101,13 +114,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         selectedId: _selectedTransport?.id,
       ),
     );
-
-    if (result != null) {
-      setState(() => _selectedTransport = result);
-    }
+    if (result != null) setState(() => _selectedTransport = result);
   }
 
-  // ==================== OPEN STUDENT PICKER ====================
   Future<void> _openStudentPicker() async {
     final result = await showModalBottomSheet<StudentListData>(
       context: context,
@@ -120,14 +129,19 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
 
     if (result != null) {
-      setState(() => _selectedStudent = result);
+      setState(() {
+        _selectedStudent = result;
+
+        // ✅ Prefill address from student record (if any)
+        final existing = (result.address ?? '').trim();
+        if (existing.isNotEmpty && existing.toLowerCase() != 'n/a') {
+          _addressCtrl.text = existing;
+        }
+      });
     }
   }
 
-  void _clearStudent() {
-    setState(() => _selectedStudent = null);
-  }
-
+  // ==================== SAVE ====================
   Future<void> _saveStudent() async {
     if (_selectedTransport == null) {
       FlutterToast.error('Please select a transport');
@@ -135,6 +149,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     }
     if (_selectedStudent == null) {
       FlutterToast.error('Please select a student');
+      return;
+    }
+    if (_addressCtrl.text.trim().isEmpty) {
+      FlutterToast.error('Please enter pickup / drop address');
       return;
     }
     if (_pickupTime == null) {
@@ -146,18 +164,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       return;
     }
 
-    // Address fallback if student has none
-    final address = (_selectedStudent!.address?.trim().isNotEmpty ?? false)
-        ? _selectedStudent!.address!
-        : 'N/A';
-
+    // ✅ Send Student DB id (int as string) — backend expects FK pk, NOT id-card
     final success = await _transportController.addStudentToTransport(
       transportId: _selectedTransport!.id,
       studentName: _selectedStudent!.fullName,
-      studentId: _selectedStudent!.studentIdCard,
+      studentId: _selectedStudent!.id.toString(),
       pickupTime: _formatTime(_pickupTime),
       dropTime: _formatTime(_dropTime),
-      address: address,
+      address: _addressCtrl.text.trim(),
     );
 
     if (success) {
@@ -166,6 +180,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     }
   }
 
+  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,7 +206,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ==================== TRANSPORT ====================
             Row(
               children: [
@@ -202,10 +216,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     onPressed: _clearTransport,
                     icon: const Icon(Icons.close_rounded,
                         size: 14, color: Colors.red),
-                    label: const Text(
-                      'Clear',
-                      style: TextStyle(fontSize: 12, color: Colors.red),
-                    ),
+                    label: const Text('Clear',
+                        style: TextStyle(fontSize: 12, color: Colors.red)),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
@@ -230,10 +242,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     onPressed: _clearStudent,
                     icon: const Icon(Icons.close_rounded,
                         size: 14, color: Colors.red),
-                    label: const Text(
-                      'Clear',
-                      style: TextStyle(fontSize: 12, color: Colors.red),
-                    ),
+                    label: const Text('Clear',
+                        style: TextStyle(fontSize: 12, color: Colors.red)),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
@@ -245,6 +255,13 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             ),
             const SizedBox(height: 12),
             _buildStudentSelectorButton(),
+
+            const SizedBox(height: 22),
+
+            // ==================== ADDRESS (NEW) ====================
+            _sectionTitle('Pickup / Drop Address'),
+            const SizedBox(height: 12),
+            _buildAddressField(),
 
             const SizedBox(height: 22),
 
@@ -267,9 +284,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                        strokeWidth: 2, color: Colors.white),
                   )
                       : const Icon(Icons.check_rounded, size: 18),
                   label: Text(loading ? 'Saving...' : 'Save Student'),
@@ -293,7 +308,42 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
+  // ==================== ADDRESS FIELD ====================
+  Widget _buildAddressField() {
+    return TextField(
+      controller: _addressCtrl,
+      maxLines: 3,
+      minLines: 2,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: InputDecoration(
+        hintText: 'e.g. 12, Green Park, Andheri West, Mumbai',
+        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        prefixIcon: const Padding(
+          padding: EdgeInsets.only(bottom: 36),
+          child: Icon(Icons.location_on_rounded,
+              size: 18, color: _primary),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _primary, width: 1.5),
+        ),
+      ),
+    );
+  }
 
+  // ==================== TRANSPORT SELECTOR ====================
   Widget _buildTransportSelectorButton() {
     final hasTransport = _selectedTransport != null;
     final hasImage = hasTransport &&
@@ -319,7 +369,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         ),
         child: Row(
           children: [
-            // ✅ Driver image or icon
             Container(
               width: 60,
               height: 60,
@@ -342,17 +391,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   errorBuilder: (_, __, ___) => Icon(
                     Icons.directions_bus,
                     size: 20,
-                    color: hasTransport
-                        ? _primary
-                        : Colors.grey.shade600,
+                    color:
+                    hasTransport ? _primary : Colors.grey.shade600,
                   ),
                 ),
               )
                   : Center(
                 child: Icon(
-                  hasTransport
-                      ? Icons.directions_bus
-                      : Icons.directions_bus,
+                  Icons.directions_bus,
                   size: 30,
                   color: hasTransport
                       ? _primary
@@ -407,7 +453,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
-
+  // ==================== STUDENT SELECTOR ====================
   Widget _buildStudentSelectorButton() {
     final hasStudent = _selectedStudent != null;
     return InkWell(
@@ -430,7 +476,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: Row(
           children: [
             Container(
-              height: 60,width: 60,
+              height: 60,
+              width: 60,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: hasStudent
@@ -491,9 +538,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
-  // ============================================================
-  // TIMING ROW
-  // ============================================================
+  // ==================== TIMING ====================
   Widget _buildTimingRow() {
     return Row(
       children: [
@@ -582,9 +627,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
-  // ============================================================
-  // SECTION TITLE
-  // ============================================================
   Widget _sectionTitle(String text) {
     return Row(
       children: [
@@ -613,7 +655,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
 
 // ============================================================
-// TRANSPORT PICKER BOTTOM SHEET
+// TRANSPORT PICKER BOTTOM SHEET (unchanged)
 // ============================================================
 class TransportPickerSheet extends StatefulWidget {
   final List<TransportModel> transports;
@@ -676,7 +718,6 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
           ),
           child: Column(
             children: [
-              // Drag handle
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Container(
@@ -688,8 +729,6 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                   ),
                 ),
               ),
-
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                 child: Row(
@@ -708,23 +747,17 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Select Transport',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black87,
-                            ),
-                          ),
+                          Text('Select Transport',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87)),
                           SizedBox(height: 2),
-                          Text(
-                            'Choose a bus or van',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          Text('Choose a bus or van',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -735,10 +768,7 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                   ],
                 ),
               ),
-
               const Divider(height: 1),
-
-              // Search
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: TextField(
@@ -779,11 +809,7 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                   ),
                 ),
               ),
-
-              // List
               Expanded(child: _buildList(scrollController)),
-
-              // Bottom button
               if (_selectedId != null) _buildBottomButton(),
             ],
           ),
@@ -794,7 +820,6 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
 
   Widget _buildList(ScrollController scrollController) {
     final list = _filtered;
-
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -810,14 +835,11 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                   size: 30, color: _primary),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'No transports found',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
+            const Text('No transports found',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87)),
           ],
         ),
       );
@@ -830,8 +852,7 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
       separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final t = list[index];
-        final isSelected = _selectedId == t.id;
-        return _buildTransportItem(t, isSelected);
+        return _buildTransportItem(t, _selectedId == t.id);
       },
     );
   }
@@ -859,7 +880,6 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
         ),
         child: Row(
           children: [
-            // ✅ Driver Image / Bus Icon
             Container(
               width: 48,
               height: 48,
@@ -892,32 +912,22 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: _primary,
-                        ),
+                            strokeWidth: 2, color: _primary),
                       ),
                     );
                   },
                   errorBuilder: (_, __, ___) => const Center(
-                    child: Icon(
-                      Icons.directions_bus_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
+                    child: Icon(Icons.directions_bus_rounded,
+                        color: Colors.white, size: 22),
                   ),
                 ),
               )
                   : const Center(
-                child: Icon(
-                  Icons.directions_bus_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+                child: Icon(Icons.directions_bus_rounded,
+                    color: Colors.white, size: 22),
               ),
             ),
             const SizedBox(width: 12),
-
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,8 +997,6 @@ class _TransportPickerSheetState extends State<TransportPickerSheet> {
                 ],
               ),
             ),
-
-            // Check
             if (isSelected)
               const Icon(Icons.check_circle_rounded,
                   size: 22, color: _primary)
@@ -1058,7 +1066,6 @@ class StudentPickerSheet extends StatefulWidget {
 
 class _StudentPickerSheetState extends State<StudentPickerSheet> {
   static const Color _primary = Colors.indigo;
-  static const Color _primaryDark = Color(0xFF283593);
   static const Color _primaryLight = Color(0xFFE8EAF6);
 
   final _searchCtrl = TextEditingController();
@@ -1081,7 +1088,6 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
     super.dispose();
   }
 
-  // ==================== FILTERS ====================
   List<String> get _schoolTypes {
     return widget.studentController.studentList
         .map((s) => s.schoolType)
@@ -1142,7 +1148,6 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
           ),
           child: Column(
             children: [
-              // Drag handle
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Container(
@@ -1154,8 +1159,6 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                   ),
                 ),
               ),
-
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                 child: Row(
@@ -1174,23 +1177,17 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Select Student',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black87,
-                            ),
-                          ),
+                          Text('Select Student',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87)),
                           SizedBox(height: 2),
-                          Text(
-                            'Filter and choose a student',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          Text('Filter and choose a student',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -1201,14 +1198,10 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                   ],
                 ),
               ),
-
               const Divider(height: 1),
-
               Expanded(
                 child: Obx(() {
-                  final _ = widget.studentController.studentList.length;
                   final loading = widget.studentController.isLoading.value;
-
                   return Column(
                     children: [
                       Padding(
@@ -1237,7 +1230,6 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                   );
                 }),
               ),
-
               if (_selectedId != null) _buildBottomButton(),
             ],
           ),
@@ -1389,23 +1381,17 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                   size: 30, color: _primary),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'No students found',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
+            const Text('No students found',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87)),
             const SizedBox(height: 2),
             Text(
               _searchQuery.isNotEmpty
                   ? 'Try a different search'
                   : 'No students in this filter',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -1419,13 +1405,15 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
       separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final s = students[index];
-        final isSelected = _selectedId == s.id;
-        return _buildStudentItem(s, isSelected);
+        return _buildStudentItem(s, _selectedId == s.id);
       },
     );
   }
 
   Widget _buildStudentItem(StudentListData student, bool isSelected) {
+    // ✅ null-safe avatar
+    final hasImage = (student.studentProfile ?? '').trim().isNotEmpty;
+
     return InkWell(
       onTap: () => setState(() => _selectedId = student.id),
       borderRadius: BorderRadius.circular(12),
@@ -1445,11 +1433,18 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-               color: Colors.indigo.shade50,
+                color: Colors.indigo.shade50,
                 borderRadius: BorderRadius.circular(10),
-                image: DecorationImage(image: NetworkImage(student.studentProfile!))
+                image: hasImage
+                    ? DecorationImage(
+                  image: NetworkImage(student.studentProfile!),
+                  fit: BoxFit.cover,
+                )
+                    : null,
               ),
-              child: student.studentProfile!.isNotEmpty? null: Center(
+              child: hasImage
+                  ? null
+                  : Center(
                 child: Text(
                   student.displayName,
                   style: const TextStyle(
@@ -1466,9 +1461,7 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    student.fullName.isNotEmpty
-                        ? student.fullName
-                        : 'Unknown',
+                    student.fullName.isNotEmpty ? student.fullName : 'Unknown',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -1479,21 +1472,15 @@ class _StudentPickerSheetState extends State<StudentPickerSheet> {
                   ),
                   const SizedBox(height: 2),
                   Text('ID: ${student.studentIdCard}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   Text('Class: ${student.studentClass}th',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
