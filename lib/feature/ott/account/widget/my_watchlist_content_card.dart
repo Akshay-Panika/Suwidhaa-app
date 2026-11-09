@@ -2,14 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controller/ott_content_controller.dart';
+import '../../content/controller/ott_content_controller.dart';
+import '../../content/model/ott_content_model.dart';
 import '../../home/screen/play_dashboard_screen.dart';
 
 class MyWatchlistContentCard extends StatelessWidget {
-
-  MyWatchlistContentCard({
-    super.key,
-  });
+  MyWatchlistContentCard({super.key});
 
   final OttContentController controller = Get.find<OttContentController>();
 
@@ -26,7 +24,7 @@ class MyWatchlistContentCard extends StatelessWidget {
         );
       }
 
-      // ── All contents without any contentType filter ──
+      // ── All contents ──
       final suggestions = controller.contents;
 
       // ── Empty ──
@@ -53,67 +51,101 @@ class MyWatchlistContentCard extends StatelessWidget {
     });
   }
 
-  Widget _buildMovieCard(BuildContext context, dynamic content) {
+  Widget _buildMovieCard(BuildContext context, OttContentModel content) {
     return InkWell(
+      // ✅ Navigation add kiya — full content object pass kiya
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlayDashboardScreen(
-              contentId: content.categoryId,
-              contentType: content.contentType,
-            ),
-          ),
-        );
+        Get.to(() => PlayDashboardScreen(content: content));
       },
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.grey[900],
-              image: (content.thumbnailVertical != null &&
-                  content.thumbnailVertical.isNotEmpty)
-                  ? DecorationImage(
-                image: NetworkImage(content.thumbnailVertical),
-                fit: BoxFit.fill,
-              )
-                  : null,
-            ),
-            child: (content.thumbnailVertical == null ||
-                content.thumbnailVertical.isEmpty)
-                ? const Center(
-              child: Icon(
-                Icons.movie,
-                color: Colors.grey,
-                size: 40,
-              ),
-            )
-                : null,
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                (content.contentType ?? '').toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Poster (prefer vertical, fallback horizontal) ──
+            Image.network(
+              content.thumbnailVertical.isNotEmpty
+                  ? content.thumbnailVertical
+                  : content.thumbnailHorizontal,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey[900],
+                child: const Center(
+                  child: Icon(
+                    Icons.movie,
+                    color: Colors.grey,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // ── Gradient bottom (title ke liye) ──
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.9),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Category badge top-right ──
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  content.categoryName.isNotEmpty
+                      ? content.categoryName.toUpperCase()
+                      : 'CONTENT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Title bottom-left ──
+            Positioned(
+              bottom: 6,
+              left: 6,
+              right: 6,
+              child: Text(
+                content.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

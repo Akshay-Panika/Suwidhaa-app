@@ -1,7 +1,7 @@
 // lib/feature/ott/home/widget/my_watchlist_content_card.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../controller/ott_content_controller.dart';
+import '../../content/controller/ott_content_controller.dart';
 
 class SuggestionContentCard extends StatefulWidget {
   final int? contentId;           // 🔹 currently playing id
@@ -37,7 +37,7 @@ class _SuggestionContentCardState extends State<SuggestionContentCard> {
 
       // ── Filter: same contentType only ──
       final suggestions = controller.contents
-          .where((c) => c.contentType == widget.contentType)
+          .where((c) => c == widget.contentType)
           .toList();
 
       // ── Empty ──

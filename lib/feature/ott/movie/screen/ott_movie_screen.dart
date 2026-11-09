@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controller/ott_content_controller.dart';
+import '../../category/controller/ott_category_controller.dart';
+import '../../category/widget/ott_category_widget.dart';
+import '../../content/controller/ott_content_controller.dart';
+import '../../content/model/ott_content_model.dart';
 import '../../home/screen/play_dashboard_screen.dart';
-import '../../home/screen/play_movie_screen.dart';
 
 class OttMovieScreen extends StatefulWidget {
   const OttMovieScreen({super.key});
@@ -13,18 +15,27 @@ class OttMovieScreen extends StatefulWidget {
 }
 
 class _OttMovieScreenState extends State<OttMovieScreen> {
-  final OttContentController controller = Get.find<OttContentController>();
+  final categoryCtrl = Get.find<OttCategoryController>();
+  final contentCtrl = Get.find<OttContentController>();
 
-  final List<Map<String, String?>> _categories = [
-    {'label': 'Home', 'type': null},
-    {'label': 'Movies', 'type': 'movie'},
-    {'label': 'SCI-FI', 'type': 'sci_fi'},
-    {'label': 'WebSeries', 'type': 'web_series'},
-    {'label': 'Sports', 'type': 'sport'},
-    {'label': 'Cartoons', 'type': 'cartoon'},
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  int _selectedCategory = 0;
+    // ✅ Category change → content refetch
+    ever(categoryCtrl.selectedCategoryId, (id) {
+      contentCtrl.getContents(categoryId: id);
+    });
+
+    // Initial fetch (if not already loaded)
+    Future.microtask(() {
+      if (contentCtrl.contents.isEmpty) {
+        contentCtrl.getContents(
+          categoryId: categoryCtrl.selectedCategoryId.value,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +46,14 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
     );
   }
 
+  // ==================== APP BAR ====================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.black,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: const Text(
-        'Movies',
+        'Browse',
         style: TextStyle(
           color: Colors.white,
           fontSize: 24,
@@ -61,51 +73,63 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
     );
   }
 
+  // ==================== BODY ====================
   Widget _buildBody() {
     return Obx(() {
-      // 🔹 Loading — only when nothing has loaded yet
-      if (controller.isLoading.value && controller.contents.isEmpty) {
+      // ── Initial Loader ──
+      if (contentCtrl.isLoading.value && contentCtrl.contents.isEmpty) {
         return const Center(
           child: CircularProgressIndicator(color: Colors.red),
         );
       }
 
-      // 🔹 Filter logic
-      final selectedType = _categories[_selectedCategory]['type'];
+      return Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
 
-      final filteredContents = selectedType == null
-          ? controller.contents.toList()
-          : controller.contents
-          .where((c) => c.contentType == selectedType)
-          .toList();
+                // ✅ Dynamic category tabs (shared with home)
+                const OttCategoryWidget(),
+                const SizedBox(height: 16),
 
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
+                // ✅ Grid or empty state
+                if (contentCtrl.contents.isEmpty)
+                  _buildEmptyState()
+                else
+                  _buildMovieGrid(contentCtrl.contents),
 
-            // 🔹 Categories — ALWAYS visible
-            _buildCategories(),
-            const SizedBox(height: 16),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
 
-            // 🔹 Grid OR empty message (only this part changes)
-            if (filteredContents.isEmpty)
-              _buildEmptyState()
-            else
-              _buildMovieGrid(filteredContents),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+          // ── Loading overlay on category switch ──
+          if (contentCtrl.isLoading.value && contentCtrl.contents.isNotEmpty)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.55),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.red),
+                ),
+              ),
+            ),
+        ],
       );
     });
   }
 
-  // ---------------------------------------------------------------
-  // EMPTY STATE (inside the body, below categories)
-  // ---------------------------------------------------------------
+  // ==================== EMPTY STATE ====================
   Widget _buildEmptyState() {
+    final currentCategoryName = categoryCtrl.categories
+        .firstWhereOrNull(
+          (c) => c.id == categoryCtrl.selectedCategoryId.value,
+    )
+        ?.name;
+
     return SizedBox(
       height: 300,
       child: Center(
@@ -113,11 +137,16 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 100),
-            Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
+            const Icon(
+              Icons.movie_creation_outlined,
+              size: 50,
+              color: Colors.grey,
+            ),
             const SizedBox(height: 12),
-
             Text(
-              'No ${_categories[_selectedCategory]['label']} available',
+              currentCategoryName != null
+                  ? 'No ${currentCategoryName} available'
+                  : 'No content available',
               style: const TextStyle(color: Colors.grey, fontSize: 16),
             ),
           ],
@@ -126,56 +155,8 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
     );
   }
 
-  // ---------------------------------------------------------------
-  // CATEGORIES
-  // ---------------------------------------------------------------
-  Widget _buildCategories() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          final isSelected = _selectedCategory == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = index),
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.red : Colors.grey[900],
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? Colors.red : Colors.grey[800]!,
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  _categories[index]['label']!,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey,
-                    fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------
-  // GRID
-  // ---------------------------------------------------------------
-  Widget _buildMovieGrid(List<dynamic> contents) {
+  // ==================== GRID ====================
+  Widget _buildMovieGrid(List<OttContentModel> contents) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: GridView.builder(
@@ -183,9 +164,9 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.8,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+          childAspectRatio: 0.8, // portrait poster ratio
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -194,47 +175,152 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
       ),
     );
   }
-  Widget _buildMovieCard(dynamic content) {
+
+  // ==================== MOVIE CARD ====================
+  Widget _buildMovieCard(OttContentModel content) {
     return InkWell(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
-          contentId: content.categoryId,
-          contentType: content.contentType,
-        ),));
+        Get.to(() => PlayDashboardScreen(content: content));
       },
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.grey[900],
-                image:  DecorationImage(image: NetworkImage(content.thumbnailVertical),fit: BoxFit.fill)
-            ),
-            child: content.thumbnailVertical.isEmpty?Center(child: Icon(Icons.movie,color: Colors.grey,size: 40,)):null,
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                (content.contentType ?? '').toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Poster (prefer vertical, fallback horizontal) ──
+            Image.network(
+              content.thumbnailVertical.isNotEmpty
+                  ? content.thumbnailVertical
+                  : content.thumbnailHorizontal,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey[900],
+                child: const Center(
+                  child: Icon(Icons.movie, color: Colors.grey, size: 40),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // ── Gradient bottom (for title readability) ──
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.9),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Category badge top-right ──
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  content.categoryName.isNotEmpty
+                      ? content.categoryName.toUpperCase()
+                      : 'CONTENT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Flags top-left (only true shown) ──
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (content.isTrending)
+                    _miniBadge('🔥', Colors.orange),
+                  if (content.isLock)
+                    _miniBadge('🔒', Colors.purple),
+                  if (content.isSomethingNew)
+                    _miniBadge('✨', Colors.green),
+                ],
+              ),
+            ),
+
+            // ── Duration bottom-right ──
+            if (content.videoDuration.isNotEmpty)
+              Positioned(
+                bottom: 6,
+                right: 6,
+                child: Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(
+                    content.videoDuration,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+            // ── Title bottom-left ──
+            Positioned(
+              bottom: 6,
+              left: 6,
+              right: 60, // leave room for duration badge
+              child: Text(
+                content.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== SMALL FLAG BADGE ====================
+  Widget _miniBadge(String emoji, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        emoji,
+        style: const TextStyle(fontSize: 9),
       ),
     );
   }

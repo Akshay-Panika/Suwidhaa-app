@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controller/ott_content_controller.dart';
+import '../../content/controller/ott_content_controller.dart';
 import '../../search/screen/search_movie_screen.dart';
 import 'play_dashboard_screen.dart';
 
@@ -98,13 +98,13 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
             child: Obx(() {
               // 🔹 1. Filter by category
               var list = controller.contents.toList();
-            
+
               if (widget.categoryType != null) {
                 list = list
-                    .where((c) => c.contentType == widget.categoryType)
+                    .where((c) => c == widget.categoryType)
                     .toList();
               }
-            
+
               // 🔹 2. Filter by trending / recommended / all
               switch (widget.filterType) {
                 case 'trending':
@@ -117,7 +117,7 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
                 default:
                   break;
               }
-            
+
               if (list.isEmpty) {
                 return const Center(
                   child: Column(
@@ -133,7 +133,7 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
                   ),
                 );
               }
-            
+
               // 🔹 3. Grid layout
               return GridView.builder(
                 padding: EdgeInsets.symmetric(horizontal: 12),
@@ -147,10 +147,9 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
                 itemBuilder: (context, index) {
                   final content = list[index];
                   return _buildCard(
+                    contentType: '',
                     contentId: content.categoryId,
                     title: content.title,
-                    contentType: content.contentType,
-                    rating: content.rating,
                     imageUrl: content.thumbnailVertical,
                   );
                 },
@@ -166,21 +165,20 @@ class _OttViewAllScreenState extends State<OttViewAllScreen> {
     required String title,
     required int contentId,
     required String contentType,
-    required String rating,
     required String imageUrl,
   }) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PlayDashboardScreen(
-              contentId: contentId,
-              contentType: contentType,
-            ),
-          ),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => PlayDashboardScreen(
+        //       contentId: contentId,
+        //       contentType: contentType,
+        //     ),
+        //   ),
+        // );
       },
       child: Stack(
         children: [

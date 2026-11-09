@@ -1,25 +1,22 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:readmore/readmore.dart';
-import 'package:untitled/core/widget/flutter_toast.dart';
+import 'package:untitled/core/widget/flutter_toast.dart'; // Apne project ka path check kar lein
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../../../router/app_routes.dart';
-import '../../controller/ott_controller.dart';
-import '../../model/ott_model.dart';
-import '../widget/suggestion_contant_card.dart';
+import '../../ads/controller/ott_ads_controller.dart';
+import '../../content/controller/ott_content_controller.dart';
+import '../../content/model/ott_content_model.dart';
 
 class PlayMovieScreen extends StatefulWidget {
-  final int contentId;
-  final String contentType;
+  final OttContentModel content;
 
   const PlayMovieScreen({
     super.key,
-    required this.contentId,
-    required this.contentType,
+    required this.content,
   });
 
   @override
@@ -27,143 +24,36 @@ class PlayMovieScreen extends StatefulWidget {
 }
 
 class _PlayMovieScreenState extends State<PlayMovieScreen> {
-  final OttController controller = Get.find<OttController>();
+  final OttContentController contentCtrl = Get.find<OttContentController>();
+  final OttAdsController adsCtrl = Get.find<OttAdsController>();
 
-  int? _currentlyPlayingId;
-
-  static final Map<String, String> _streamUrlCache = {};
-
+  // Video Player State
   VideoPlayerController? _videoController;
   bool _isVideoLoading = false;
   bool _hasVideoError = false;
   bool _isFullScreen = false;
 
-  // 🔹 Custom controls state
+  // Custom controls state
   bool _showControls = true;
   bool _isMuted = false;
   Timer? _hideControlsTimer;
 
+  // YouTube Stream Cache
+  static final Map<String, String> _streamUrlCache = {};
+
   @override
   void initState() {
     super.initState();
-    _currentlyPlayingId = widget.contentId;
-    controller.fetchContentDetail(
-      id: widget.contentId,
-      contentType: widget.contentType,
-    );
-  }
 
-
-  void _onSuggestionTap(int id, int categoryId, String contentType) {
-    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    debugPrint('📥 SUGGESTION TAP');
-    debugPrint('   id          : $id');
-    debugPrint('   categoryId  : $categoryId');
-    debugPrint('   contentType : $contentType');
-    debugPrint('   currentType : ${widget.contentType}');
-    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    // 🔹 Step 1: only handle if same contentType
-    if (contentType != widget.contentType) {
-      debugPrint('⚠️ contentType mismatch → ignoring');
-      FlutterToast.error('Different content type, cannot play here');
-      return;
+    // Agar ads load nahi hue hain toh fetch karein
+    if (adsCtrl.ads.isEmpty) {
+      adsCtrl.fetchAds();
     }
 
-    // 🔹 Step 2: try to find matching item in OttController.contents
-    final matched = controller.contents.firstWhereOrNull(
-          (c) =>
-      c.id == id ||
-          c.categoryId == categoryId,
-    );
-
-    if (matched != null) {
-      debugPrint('✅ MATCHED in OttController.contents → playing: ${matched.title}');
-      _playMatchedContent(matched);
-      return;
+    // Video ko auto-play karein agar URL present hai
+    if (widget.content.videoUrl.isNotEmpty) {
+      _initVideo(widget.content.videoUrl);
     }
-
-    // 🔹 Step 3: not found → fetch detail by tapped ids
-    debugPrint('🔄 No match → fetching detail by id=$categoryId');
-    _fetchAndPlayByDetail(
-      id: categoryId,
-      contentType: contentType,
-    );
-  }
-  /// 🔹 Play a content object we already have from OttController.contents
-  void _playMatchedContent(OttModel matched) {
-
-    setState(() {
-      _currentlyPlayingId = matched.categoryId;   // ⚠️ use categoryId or id
-    });
-    // 🔹 Instantly show title / thumbnail so UI reacts right away
-    controller.selectedContent.value = matched;
-    controller.isDetailLoading.value = false;
-
-    // 🔹 Reset any previous video state
-    _videoController?.removeListener(_onVideoTick);
-    _videoController?.pause();
-    _videoController?.dispose();
-    _videoController = null;
-    _isVideoLoading = false;
-    _hasVideoError = false;
-    _showControls = true;
-
-    // 🔹 If the list item already has a videoUrl → play immediately
-    final url = matched.videoUrl;
-    if (url != null && url.isNotEmpty) {
-      debugPrint('▶️ Playing from list videoUrl: $url');
-      _initVideo(url);
-      return;
-    }
-
-    // 🔹 Otherwise → fetch detail from API to get videoUrl
-    debugPrint('🔄 List item has no videoUrl → fetching detail for id=${matched.categoryId}');
-    _fetchAndPlayByDetail(
-      id: matched.categoryId,      // ⚠️ use categoryId (movie/cartoon/sport id)
-      contentType: matched.contentType,
-    );
-  }
-
-  Future<void> _fetchAndPlayByDetail({
-    required int id,
-    required String contentType,
-  }) async {
-    setState(() {
-      _currentlyPlayingId = id;   // 🔹 update
-    });
-    // 🔹 Reset video state first
-    _videoController?.removeListener(_onVideoTick);
-    _videoController?.pause();
-    _videoController?.dispose();
-    _videoController = null;
-    _isVideoLoading = false;
-    _hasVideoError = false;
-    _showControls = true;
-
-    await controller.fetchContentDetail(
-      id: id,
-      contentType: contentType,
-    );
-
-    final fetched = controller.selectedContent.value;
-    if (fetched == null) {
-      debugPrint('❌ Detail fetch returned null');
-      FlutterToast.error('Failed to load selected content');
-      return;
-    }
-
-    debugPrint('📦 Fetched detail: ${fetched.title}');
-    debugPrint('   videoUrl: ${fetched.videoUrl}');
-
-    final url = fetched.videoUrl;
-    if (url == null || url.isEmpty) {
-      debugPrint('❌ Detail API also returned empty videoUrl');
-      FlutterToast.error('No video URL available for this content');
-      return;
-    }
-
-    _initVideo(url);
   }
 
   @override
@@ -171,28 +61,28 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     _hideControlsTimer?.cancel();
     _videoController?.removeListener(_onVideoTick);
     _videoController?.dispose();
+
+    // Screen dispose hone par orientation wapas portrait karein
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
     super.dispose();
   }
 
   void _onVideoTick() {
-    // Rebuild to keep progress bar / play-pause icon in sync
     if (mounted) setState(() {});
   }
 
-  /// 🔹 Extract YouTube video ID from any YouTube URL
+  // ==================== YOUTUBE LOGIC ====================
   String? _extractYouTubeId(String url) {
     try {
       final uri = Uri.parse(url);
-
       if (uri.host.contains('youtu.be')) {
         return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
       }
-
       if (uri.host.contains('youtube.com')) {
         if (uri.pathSegments.contains('shorts')) {
           final idx = uri.pathSegments.indexOf('shorts');
@@ -210,20 +100,14 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
           }
         }
       }
-
       return null;
     } catch (_) {
       return null;
     }
   }
 
-  /// 🔹 Fetch stream URL (cached) via youtube_explode_dart and init video_player
   Future<void> _initVideo(String videoUrl) async {
     final videoId = _extractYouTubeId(videoUrl);
-    if (videoId == null) {
-      setState(() => _hasVideoError = true);
-      return;
-    }
 
     setState(() {
       _isVideoLoading = true;
@@ -231,25 +115,28 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     });
 
     try {
-      String? resolvedUrl = _streamUrlCache[videoId];
+      String resolvedUrl = videoUrl;
 
-      if (resolvedUrl == null) {
-        final yt = YoutubeExplode();
-        try {
-          final manifest = await yt.videos.streamsClient.getManifest(videoId);
-
-          // 🔹 Pick a lighter stream (max 720p) instead of the absolute
-          // highest bitrate — much faster to start & buffer smoothly.
-          final muxedStreams = manifest.muxed.sortByVideoQuality();
-          final streamInfo = muxedStreams.firstWhere(
-                (s) => (s.videoResolution.height) <= 720,
-            orElse: () => muxedStreams.first, // fallback: best available
-          );
-
-          resolvedUrl = streamInfo.url.toString();
-          _streamUrlCache[videoId] = resolvedUrl;
-        } finally {
-          yt.close();
+      // Agar YouTube URL hai toh youtube_explode_dart se stream resolve karein
+      if (videoId != null) {
+        String? cachedUrl = _streamUrlCache[videoId];
+        if (cachedUrl != null) {
+          resolvedUrl = cachedUrl;
+        } else {
+          final yt = YoutubeExplode();
+          try {
+            final manifest = await yt.videos.streamsClient.getManifest(videoId);
+            final muxedStreams = manifest.muxed.sortByVideoQuality();
+            // 720p ya usse kam quality choose karein taaki fast load ho
+            final streamInfo = muxedStreams.firstWhere(
+                  (s) => (s.videoResolution.height) <= 720,
+              orElse: () => muxedStreams.first,
+            );
+            resolvedUrl = streamInfo.url.toString();
+            _streamUrlCache[videoId] = resolvedUrl;
+          } finally {
+            yt.close();
+          }
         }
       }
 
@@ -289,6 +176,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     }
   }
 
+  // ==================== CONTROLS LOGIC ====================
   void _startHideControlsTimer() {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = Timer(const Duration(seconds: 3), () {
@@ -324,7 +212,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     });
   }
 
-  /// 🔹 Seek forward/backward by given offset (clamped within video bounds)
   void _seekBy(Duration offset) {
     if (_videoController == null) return;
     final current = _videoController!.value.position;
@@ -374,6 +261,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     return '${two(minutes)}:${two(seconds)}';
   }
 
+  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     if (_isFullScreen) {
@@ -388,92 +276,78 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(toolbarHeight: 0,backgroundColor: Colors.black,),
-        body: Obx(() {
-          if (controller.isDetailLoading.value) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.red),
-            );
-          }
-
-          final content = controller.selectedContent.value;
-
-          if (content == null) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+        appBar: AppBar(toolbarHeight: 0, backgroundColor: Colors.black),
+        body: Column(
+          children: [
+            // Top Video Area
+            Expanded(
+              child: Stack(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.grey, size: 60),
-                  SizedBox(height: 12),
-                  Text(
-                    'Failed to load content',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  Container(
+                    margin: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(12),
+                      image: (_videoController == null && !_isVideoLoading)
+                          ? DecorationImage(
+                        image: NetworkImage(widget.content.thumbnailHorizontal),
+                        fit: BoxFit.cover,
+                        onError: (_, __) {},
+                      )
+                          : null,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _buildPlayerArea(),
+                    ),
+                  ),
+                  Positioned(
+                    top: 20,
+                    left: 20,
+                    child: IconButton(
+                      onPressed: () => Get.offAllNamed(AppRoutes.ottDashboard),
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white),
+                        ),
+                        child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            );
-          }
+            ),
 
-          return Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade700,
-                        borderRadius: BorderRadius.circular(12),
-                        image: (_videoController == null && !_isVideoLoading)
-                            ? DecorationImage(
-                          image: NetworkImage(content.thumbnailHorizontal),
-                          fit: BoxFit.cover,
-                          onError: (_, __) {},
-                        ) : null,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildPlayerArea(content),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Get.offAllNamed(AppRoutes.ottDashboard),
-                      icon: Container(
-                        padding: EdgeInsets.all(4),
-                        margin: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white)
-                          ),
-                          child: const Icon(Icons.arrow_back_ios, color: Colors.white,size: 20,)),
-                    ),
-                  ],
+            // Bottom Details Area
+            Expanded(
+              flex: 2,
+              child: Container(
+                margin: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Container(
-                  margin: const EdgeInsets.all(10),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          content.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.content.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        if (content.description != null && content.description!.trim().isNotEmpty)
-                          ReadMoreText(
-                          content.description!,
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Description
+                      if (widget.content.description.isNotEmpty)
+                        ReadMoreText(
+                          widget.content.description,
                           trimLines: 3,
                           colorClickableText: Colors.blue,
                           trimMode: TrimMode.Line,
@@ -495,88 +369,208 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: [
-                            _chip(Icons.star, content.rating, Colors.amber),
-                            if (content.duration != null &&
-                                content.duration!.isNotEmpty)
-                              _chip(Icons.access_time, content.duration!,
-                                  Colors.white),
-                            if (content.language != null &&
-                                content.language!.isNotEmpty)
-                              _chip(Icons.language,
-                                  content.language!.toUpperCase(), Colors.white),
-                            if (content.releaseDate != null &&
-                                content.releaseDate!.isNotEmpty)
-                              _chip(Icons.calendar_today,
-                                  content.releaseDate!, Colors.white),
-                            _chip(Icons.category,
-                                content.contentType.toUpperCase(), Colors.white),
-                          ],
-                        ),
-                        /// Gridview show kro
-                        const SizedBox(height: 20),
-                        Row(
-                          spacing: 10,
-                          children: [
-                            Container(color: Colors.red, height: 14, width: 3),
-                            const Text(
-                              'Similar Content',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                      const SizedBox(height: 12),
+
+                      // Chips
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (widget.content.videoDuration.isNotEmpty)
+                            _chip(Icons.access_time, widget.content.videoDuration, Colors.white),
+                          if (widget.content.releaseDate.isNotEmpty)
+                            _chip(Icons.calendar_today, widget.content.releaseDate, Colors.white),
+                          _chip(Icons.category, widget.content.categoryName.toUpperCase(), Colors.white),
+                          if (widget.content.isFamily) _chip(Icons.family_restroom, 'Family', Colors.green),
+                          if (widget.content.isLock) _chip(Icons.lock, 'Premium', Colors.amber),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ==================== ADS API SECTION ====================
+                      Obx(() {
+                        final activeAds = adsCtrl.ads.where((a) => a.isActive).toList();
+                        if (activeAds.isEmpty) return const SizedBox.shrink();
+
+                        // Pick an ad to show
+                        final ad = activeAds.first;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (ad.navigateScreen != null && ad.navigateScreen!.isNotEmpty) {
+                                Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}', backgroundColor: Colors.white, colorText: Colors.black);
+                              }
+                            },
+                            child: Container(
+                              height: 100,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white12),
+                                image: ad.image != null && ad.image!.isNotEmpty
+                                    ? DecorationImage(
+                                  image: NetworkImage(ad.image!),
+                                  fit: BoxFit.cover,
+                                  colorFilter: ColorFilter.mode(
+                                    Colors.black.withOpacity(0.4),
+                                    BlendMode.darken,
+                                  ),
+                                )
+                                    : null,
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'SPONSORED',
+                                        style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 8,
+                                    left: 12,
+                                    right: 12,
+                                    child: Text(
+                                      ad.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SuggestionContentCard(
-                          contentId: _currentlyPlayingId ?? widget.contentId,
-                          contentType: widget.contentType,
-                          onItemTap: _onSuggestionTap,   // 🔹 full flow handled here
-                        ),
-                        SizedBox(height: 100,)
-                      ],
-                    ),
+                          ),
+                        );
+                      }),
+
+                      // ==================== SIMILAR CONTENT ====================
+                      Row(
+                        spacing: 10,
+                        children: [
+                          Container(color: Colors.red, height: 14, width: 3),
+                          const Text(
+                            'Similar Content',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Suggestions from OttContentController
+                      Obx(() {
+                        // Same category ka content filter karein, current ko chhod kar
+                        final similar = contentCtrl.contents
+                            .where((c) => c.categoryId == widget.content.categoryId && c.id != widget.content.id)
+                            .toList();
+
+                        if (similar.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text('No similar content found', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          );
+                        }
+
+                        return SizedBox(
+                          height: 180,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: similar.length,
+                            itemBuilder: (context, index) {
+                              final item = similar[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  // Naye content ke sath screen replace karein
+                                  Get.off(() => PlayMovieScreen(content: item));
+                                },
+                                child: Container(
+                                  width: 120,
+                                  margin: const EdgeInsets.only(right: 10),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            item.thumbnailVertical.isNotEmpty ? item.thumbnailVertical : item.thumbnailHorizontal,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: Colors.grey[900],
+                                              child: const Center(child: Icon(Icons.movie, color: Colors.white24)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
               ),
-            ],
-          );
-        }),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Player area: thumbnail+play button -> loading -> video (with full controls)
-  Widget _buildPlayerArea(dynamic content) {
+  Widget _buildPlayerArea() {
     if (_hasVideoError) {
       return Stack(
         alignment: Alignment.center,
         children: [
-          Container(color: Colors.grey.shade200,),
+          Container(color: Colors.grey.shade200),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline, color: Colors.white, size: 40),
               const SizedBox(height: 8),
-              const Text(
-                'Failed to load video',
-                style: TextStyle(color: Colors.white),
-              ),
+              const Text('Failed to load video', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
-                  final url = content.videoUrl;
-                  if (url != null && url.isNotEmpty) {
-                    _initVideo(url);
+                  if (widget.content.videoUrl.isNotEmpty) {
+                    _initVideo(widget.content.videoUrl);
                   }
                 },
-                child: const Text('Retry'),
+                child: const Text('Retry', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -601,7 +595,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       return _buildVideoWithControls(isFullScreen: false);
     }
 
-    // Thumbnail + Play button (initial state)
+    // Initial state thumbnail + play button
     return Stack(
       children: [
         Container(
@@ -614,31 +608,19 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
           child: IconButton(
             iconSize: 60,
             onPressed: () {
-              final url = content.videoUrl;
-              if (url == null || url.isEmpty) {
+              if (widget.content.videoUrl.isEmpty) {
                 FlutterToast.error("No video URL available");
                 return;
               }
-
-              final id = _extractYouTubeId(url);
-              if (id == null) {
-                FlutterToast.error("Not a valid YouTube URL");
-                return;
-              }
-
-              _initVideo(url);
+              _initVideo(widget.content.videoUrl);
             },
-            icon: const Icon(
-              Icons.play_circle_fill,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.play_circle_fill, color: Colors.white),
           ),
         ),
       ],
     );
   }
 
-  /// 🔹 Full custom control set: rewind/forward, play/pause, seek bar, time, mute, fullscreen
   Widget _buildVideoWithControls({required bool isFullScreen}) {
     final value = _videoController!.value;
     final isBuffering = value.isBuffering;
@@ -646,7 +628,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     return GestureDetector(
       onTap: _toggleControlsVisibility,
       onDoubleTapDown: (details) {
-        // 🔹 Double-tap left half = rewind 10s, right half = forward 10s
         final box = context.findRenderObject() as RenderBox?;
         if (box == null) return;
         final tapX = details.localPosition.dx;
@@ -667,8 +648,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
         fit: StackFit.expand,
         children: [
           Container(color: Colors.black),
-
-          // Video (pinch-to-zoom)
           Center(
             child: InteractiveViewer(
               minScale: 1.0,
@@ -679,9 +658,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
               ),
             ),
           ),
-
-
-          // Dark gradient + controls overlay (fades in/out)
           AnimatedOpacity(
             opacity: _showControls ? 1 : 0,
             duration: const Duration(milliseconds: 200),
@@ -703,7 +679,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top row: mute button
                     Padding(
                       padding: const EdgeInsets.all(6),
                       child: Row(
@@ -719,52 +694,35 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                         ],
                       ),
                     ),
-
-                    // Center: rewind - play/pause - forward
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
-                          onPressed: () =>
-                              _seekBy(const Duration(seconds: -10)),
-                          icon: const Icon(
-                            Icons.replay_10,
-                            color: Colors.white,
-                          ),
+                          onPressed: () => _seekBy(const Duration(seconds: -10)),
+                          icon: const Icon(Icons.replay_10, color: Colors.white),
                         ),
                         SizedBox(width: isFullScreen ? 24 : 16),
-
-                        isBuffering ?CircularProgressIndicator(color: Colors.red,):
-                        IconButton(
+                        isBuffering
+                            ? const CircularProgressIndicator(color: Colors.red)
+                            : IconButton(
                           iconSize: isFullScreen ? 64 : 48,
                           onPressed: _togglePlayPause,
                           icon: Icon(
-                            value.isPlaying
-                                ? Icons.pause_circle_filled
-                                : Icons.play_circle_fill,
+                            value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
                             color: Colors.white,
                           ),
                         ),
                         SizedBox(width: isFullScreen ? 24 : 16),
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
-                          onPressed: () =>
-                              _seekBy(const Duration(seconds: 10)),
-                          icon: const Icon(
-                            Icons.forward_10,
-                            color: Colors.white,
-                          ),
+                          onPressed: () => _seekBy(const Duration(seconds: 10)),
+                          icon: const Icon(Icons.forward_10, color: Colors.white),
                         ),
                       ],
                     ),
-
-                    // Bottom: seek bar + time + fullscreen
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -782,18 +740,12 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                             children: [
                               Text(
                                 _formatDuration(value.position),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
                               ),
                               const Spacer(),
                               Text(
                                 _formatDuration(value.duration),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
                               ),
                               const SizedBox(width: 8),
                               IconButton(
@@ -801,9 +753,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                                 constraints: const BoxConstraints(),
                                 onPressed: _toggleFullScreen,
                                 icon: Icon(
-                                  isFullScreen
-                                      ? Icons.fullscreen_exit
-                                      : Icons.fullscreen,
+                                  isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
                                   color: Colors.white,
                                   size: 22,
                                 ),
@@ -823,7 +773,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     );
   }
 
-  /// 🔹 Fullscreen landscape player screen (with rotation + pinch zoom + controls)
   Widget _buildFullScreenPlayer() {
     return PopScope(
       canPop: false,
@@ -853,11 +802,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
           const SizedBox(width: 5),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
           ),
         ],
       ),

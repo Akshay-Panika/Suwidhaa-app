@@ -22,8 +22,10 @@ import '../feature/ngo/home/controller/ngo_category_controller.dart';
 import '../feature/ngo/services/controller/ngo_history_controller.dart';
 import '../feature/ngo/services/controller/ngo_service_controller.dart';
 import '../feature/ngo/services/controller/ngo_staff_controller.dart';
-import '../feature/ott/controller/ott_banner_controller.dart';
-import '../feature/ott/controller/ott_content_controller.dart';
+import '../feature/ott/ads/controller/ott_ads_controller.dart';
+import '../feature/ott/banner/controller/ott_banner_controller.dart';
+import '../feature/ott/category/controller/ott_category_controller.dart';
+import '../feature/ott/content/controller/ott_content_controller.dart';
 import '../feature/ott/controller/ott_controller.dart';
 import '../feature/ott/controller/ott_reel_controller.dart';
 import '../feature/ott/controller/webseries_controller.dart';
@@ -99,5 +101,8 @@ class AppBindings implements Bindings {
     Get.lazyPut<EcommerceProductController>(() => EcommerceProductController(), fenix: true);
     Get.lazyPut<EcommerceStoreController>(() => EcommerceStoreController(), fenix: true);
     Get.lazyPut<StudentFeeHistoryController>(() => StudentFeeHistoryController(), fenix: true);
+    Get.lazyPut<OttCategoryController>(() => OttCategoryController(), fenix: true);
+    Get.lazyPut<OttAdsController>(() => OttAdsController(), fenix: true);
+
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controller/ott_content_controller.dart';
+import '../../content/controller/ott_content_controller.dart';
+import '../../content/model/ott_content_model.dart';
 import '../../home/screen/play_dashboard_screen.dart';
-import '../../home/screen/play_movie_screen.dart';
 
 class SearchMovieScreen extends StatefulWidget {
   const SearchMovieScreen({super.key});
@@ -18,17 +18,9 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  /// 🔹 Local filtered results — UI mein hi manage
-  List<dynamic> _filteredResults = [];
+  // ✅ Type-safe lists
+  List<OttContentModel> _filteredResults = [];
   bool _isSearching = false;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _focusNode.requestFocus();
-  //   });
-  // }
 
   @override
   void dispose() {
@@ -37,7 +29,7 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     super.dispose();
   }
 
-  /// 🔹 Search logic — title + contentType par match
+  // ✅ Search — title + categoryName match
   void _onSearchChanged(String query) {
     final q = query.trim().toLowerCase();
 
@@ -50,10 +42,8 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     }
 
     final results = controller.contents.where((c) {
-      final title = (c.title ?? '').toString().toLowerCase();
-      final type = (c.contentType ?? '').toString().toLowerCase();
-
-      return title.contains(q) || type.contains(q);
+      return c.title.toLowerCase().contains(q) ||
+          c.categoryName.toLowerCase().contains(q);
     }).toList();
 
     setState(() {
@@ -120,7 +110,7 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
   }
 
   Widget _buildBody() {
-    // 🔹 Empty state — before typing
+    // ── Before typing ──
     if (!_isSearching) {
       final recommended = controller.contents
           .where((c) => c.isRecommended == true)
@@ -132,30 +122,23 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
 
       return SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-
-            // 🔹 Recommended header
             _buildSectionHeader('Recommended'),
             const SizedBox(height: 12),
             _buildHorizontalGrid(recommended),
-
             const SizedBox(height: 24),
-
-            // 🔹 Trending header
             _buildSectionHeader('Trending'),
             const SizedBox(height: 12),
             _buildHorizontalGrid(trending),
-
             const SizedBox(height: 24),
           ],
         ),
       );
     }
 
-    // 🔹 No results
+    // ── No results ──
     if (_filteredResults.isEmpty) {
       return const Center(
         child: Column(
@@ -172,21 +155,16 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
       );
     }
 
-    // 🔹 Results grid
+    // ── Results ──
     return _buildResultsGrid(_filteredResults);
   }
 
-  /// 🔹 Section header — red bar + title
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(
-            color: Colors.red,
-            height: 16,
-            width: 3,
-          ),
+          Container(color: Colors.red, height: 16, width: 3),
           const SizedBox(width: 10),
           Text(
             title,
@@ -201,8 +179,8 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     );
   }
 
-  /// 🔹 HORIZONTAL SCROLLING GRID — 2 rows
-  Widget _buildHorizontalGrid(List<dynamic> contents) {
+  // Horizontal 2-row grid
+  Widget _buildHorizontalGrid(List<OttContentModel> contents) {
     if (contents.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -248,8 +226,8 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     );
   }
 
-  /// 🔹 VERTICAL GRID (search results ke liye)
-  Widget _buildResultsGrid(List<dynamic> contents) {
+  // Vertical results grid
+  Widget _buildResultsGrid(List<OttContentModel> contents) {
     if (contents.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -269,7 +247,7 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
           crossAxisCount: 3,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio:0.7,
+          childAspectRatio: 0.7,
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -279,49 +257,59 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
     );
   }
 
-  Widget _buildMovieCard(dynamic content) {
+  // ✅ Type-safe card + working navigation
+  Widget _buildMovieCard(OttContentModel content) {
     return InkWell(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayDashboardScreen(
-          contentId: content.categoryId,
-          contentType: content.contentType,
-        ),));
+        Get.to(() => PlayDashboardScreen(content: content));
       },
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Poster (prefer vertical, fallback horizontal)
+            Image.network(
+              content.thumbnailVertical.isNotEmpty
+                  ? content.thumbnailVertical
+                  : content.thumbnailHorizontal,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
                 color: Colors.grey[900],
-                image:  DecorationImage(image: NetworkImage(content.thumbnailVertical),fit: BoxFit.fill)
-            ),
-            child: content.thumbnailVertical.isEmpty?Center(child: Icon(Icons.movie,color: Colors.grey,size: 40,)):null,
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                (content.contentType ?? '').toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+                child: const Center(
+                  child: Icon(Icons.movie, color: Colors.grey, size: 40),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // Category badge top-right
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  content.categoryName.isNotEmpty
+                      ? content.categoryName.toUpperCase()
+                      : 'CONTENT',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
-
   }
 }

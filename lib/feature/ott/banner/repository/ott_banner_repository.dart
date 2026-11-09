@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_urls.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_urls.dart';
 import '../model/ott_banner_model.dart';
 
 class OttBannerRepository {

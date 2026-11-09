@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-
 import '../../profile/controller/teacher_controller.dart';
 import '../model/exams_table_model.dart';
 
@@ -156,7 +155,7 @@ class _ClassExamTimetableFormScreenState
       backgroundColor: Colors.transparent,
       builder: (_) => _SubjectFormSheet(
         initial: existing,
-        teacherNames: _teacherNames, // 👈 pass dynamic list
+        teacherNames: _teacherNames,
       ),
     );
 

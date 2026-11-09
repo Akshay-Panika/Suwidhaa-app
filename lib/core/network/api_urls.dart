@@ -164,6 +164,8 @@ class ApiUrls {
   static const String tiffinAllList = 'v1/college/tiffins/';
 
   // Ott content
+  // ==================== OTT CATEGORY ====================
+  static const String ottCategory = 'v1/ott/category/list/';
   static const String ottBanner = 'v1/ott/banner/list';
   static const String ottContent = 'v1/ott/content/list';
   static const String ottMovieDetail   = 'v1/ott/movies/';
@@ -353,5 +355,9 @@ class ApiUrls {
     return base;
   }
 
+
+  // ---------- Ads ----------
+  static const String ottAdsList   = 'v1/ott/ads/list/';
+  static const String ottAdsDetail = 'v1/ott/ads/'; // + id/
 
 }

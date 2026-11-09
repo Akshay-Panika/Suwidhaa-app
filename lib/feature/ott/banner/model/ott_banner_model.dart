@@ -1,14 +1,16 @@
 class OttBannerModel {
   final int id;
   final String image;
-  final bool isActive;
+  final String? videoUrl; // null when no video
+  final bool isPlay;      // true → this banner is playable
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   OttBannerModel({
     required this.id,
     required this.image,
-    required this.isActive,
+    this.videoUrl,
+    required this.isPlay,
     this.createdAt,
     this.updatedAt,
   });
@@ -17,7 +19,8 @@ class OttBannerModel {
     return OttBannerModel(
       id: json['id'] ?? 0,
       image: json['image'] ?? '',
-      isActive: json['is_active'] ?? false,
+      videoUrl: json['video_url'] as String?, // may be null
+      isPlay: json['is_play'] ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,

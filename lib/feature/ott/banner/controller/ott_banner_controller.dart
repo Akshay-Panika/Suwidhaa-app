@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../../core/widget/flutter_toast.dart';
+import '../../../../core/widget/flutter_toast.dart';
 import '../model/ott_banner_model.dart';
 import '../repository/ott_banner_repository.dart';
 
