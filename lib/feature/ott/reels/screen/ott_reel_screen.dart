@@ -23,53 +23,92 @@ class _OttReelScreenState extends State<OttReelScreen> {
     super.dispose();
   }
 
+  // ✅ Common Refresh Function
+  Future<void> _handleRefresh() async {
+    // Yahan apne controller ka fetch method call karein (e.g. fetchReels, getReels)
+    await controller.fetchReels();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: _buildAppBar(),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.reels.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
-        }
-
-        if (controller.reels.isEmpty) {
-          return  Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // const SizedBox(height: 50),
-                Icon(Icons.movie_creation_outlined,size: 50,color: Colors.grey,),
-                const SizedBox(height: 12),
-                Text("No Reels",style: TextStyle(fontSize: 16,color: Colors.grey,fontWeight: FontWeight.w600),)
-              ],
-            ),
-          );
-        }
-
-        return PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          itemCount: controller.reels.length,
-          onPageChanged: (index) {
-            currentIndex.value = index;
-          },
-          itemBuilder: (context, index) {
-            final OttReelData reel = controller.reels[index];
-            return Obx(
-                  () => ReelPlayerItem(
-                key: ValueKey(reel.id),
-                youtubeUrl: reel.youtubeUrl,
-                title: reel.title,
-                isActive: currentIndex.value == index,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: Colors.red,              // Spinner color
+        backgroundColor: Colors.black,  // Spinner background color
+        child: Obx(() {
+          // 1. LOADING STATE
+          if (controller.isLoading.value && controller.reels.isEmpty) {
+            return const SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: 600,
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               ),
             );
-          },
-        );
-      }),
+          }
+
+          // 2. EMPTY STATE
+          if (controller.reels.isEmpty) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.movie_creation_outlined, size: 50, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "No Reels",
+                        style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 16),
+                      // Extra refresh button for empty state
+                      ElevatedButton.icon(
+                        onPressed: _handleRefresh,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text("Refresh"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // 3. PAGE VIEW (VIDEOS)
+          return PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            physics: const AlwaysScrollableScrollPhysics(), // ✅ Pull to refresh enable karta hai
+            itemCount: controller.reels.length,
+            onPageChanged: (index) {
+              currentIndex.value = index;
+            },
+            itemBuilder: (context, index) {
+              final OttReelData reel = controller.reels[index];
+              return Obx(
+                    () => ReelPlayerItem(
+                  key: ValueKey(reel.id),
+                  youtubeUrl: reel.youtubeUrl,
+                  title: reel.title,
+                  isActive: currentIndex.value == index,
+                ),
+              );
+            },
+          );
+        }),
+      ),
     );
   }
 
@@ -86,6 +125,14 @@ class _OttReelScreenState extends State<OttReelScreen> {
         ),
       ),
       automaticallyImplyLeading: false,
+      actions: [
+        // ✅ AppBar me manual refresh button (web/desktop ke liye best)
+        IconButton(
+          onPressed: _handleRefresh,
+          icon: const Icon(Icons.refresh, color: Colors.white),
+          tooltip: 'Refresh Reels',
+        ),
+      ],
     );
   }
 }
@@ -141,7 +188,6 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
       await _videoController!.initialize();
       _videoController!.setLooping(true);
 
-      // 🔹 Listen for play/pause/buffering changes to update the overlay icon
       _videoController!.addListener(_onVideoTick);
 
       if (!mounted) return;
@@ -158,7 +204,6 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
   }
 
   void _onVideoTick() {
-    // Rebuild so the play/pause icon overlay stays in sync
     if (mounted) setState(() {});
   }
 
@@ -241,7 +286,6 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
               ),
             ),
 
-          // 🔹 Play/Pause icon overlay — shown whenever the video is paused
           if (isInitialized && !isPlaying && !_hasError)
             const Center(
               child: Icon(

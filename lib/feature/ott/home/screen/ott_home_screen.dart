@@ -10,6 +10,7 @@ import '../../content/controller/ott_content_controller.dart';
 import '../../content/model/ott_content_model.dart';
 import '../../search/screen/search_movie_screen.dart';
 import '../../banner/widget/movie_banner.dart';
+import 'ott_view_all_screen.dart';
 
 class OttHomeScreen extends StatefulWidget {
   const OttHomeScreen({super.key});
@@ -356,7 +357,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-  // ==================== ALL SECTIONS ====================
+// ==================== ALL SECTIONS ====================
   Widget _buildAllSections() {
     return Obx(() {
       if (contentCtrl.isLoading.value && contentCtrl.contents.isEmpty) {
@@ -388,27 +389,47 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       final premium = all.where((c) => c.isLock).toList();
 
       final List<Widget> contentSections = [];
-      contentSections
-          .add(_buildContentSection(title: 'Watch Now', items: all));
+
+      // ✅ filterType added to each section
+      contentSections.add(_buildContentSection(
+        title: 'Watch Now',
+        items: all,
+        filterType: 'all',
+      ));
       if (trending.isNotEmpty) {
-        contentSections
-            .add(_buildContentSection(title: 'Trending Now', items: trending));
+        contentSections.add(_buildContentSection(
+          title: 'Trending Now',
+          items: trending,
+          filterType: 'trending',
+        ));
       }
       if (recommended.isNotEmpty) {
-        contentSections.add(
-            _buildContentSection(title: 'Recommended', items: recommended));
+        contentSections.add(_buildContentSection(
+          title: 'Recommended',
+          items: recommended,
+          filterType: 'recommended',
+        ));
       }
       if (newItems.isNotEmpty) {
-        contentSections
-            .add(_buildContentSection(title: 'New Arrivals', items: newItems));
+        contentSections.add(_buildContentSection(
+          title: 'New Arrivals',
+          items: newItems,
+          filterType: 'new',
+        ));
       }
       if (family.isNotEmpty) {
-        contentSections.add(
-            _buildContentSection(title: 'Family Friendly', items: family));
+        contentSections.add(_buildContentSection(
+          title: 'Family Friendly',
+          items: family,
+          filterType: 'family',
+        ));
       }
       if (premium.isNotEmpty) {
-        contentSections
-            .add(_buildContentSection(title: 'Premium', items: premium));
+        contentSections.add(_buildContentSection(
+          title: 'Premium',
+          items: premium,
+          filterType: 'premium',
+        ));
       }
 
       final allActiveAds = adsCtrl.ads.where((a) => a.isActive).toList();
@@ -437,10 +458,10 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     });
   }
 
-  // ==================== SINGLE SECTION ====================
   Widget _buildContentSection({
     required String title,
     required List<OttContentModel> items,
+    String filterType = 'all',   // ✅ NEW param
   }) {
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -463,7 +484,19 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {},
+                  // ✅ Navigate to View All
+                  onTap: () => _pauseNavigate(
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OttViewAllScreen(
+                          title: title,
+                          filterType: filterType,
+                          items: items,   // ✅ pass pre-filtered list
+                        ),
+                      ),
+                    ),
+                  ),
                   child: const Text(
                     'View All',
                     style: TextStyle(
@@ -491,6 +524,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       ),
     );
   }
+
 
   // ==================== INLINE AD CARD ====================
   Widget _buildInterspersedAdCard(OttAdsModel ad) {
@@ -602,27 +636,27 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 6,
-                      left: 6,
-                      right: 6,
-                      child: Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          if (content.isTrending)
-                            _buildBadge('🔥 Trending', Colors.redAccent),
-                          if (content.isRecommended)
-                            _buildBadge('⭐ Rec', Colors.blueAccent),
-                          if (content.isFamily)
-                            _buildBadge('👨‍👩‍👧 Family', Colors.green),
-                          if (content.isLock)
-                            _buildBadge('🔒 Premium', Colors.amber),
-                          if (content.isSomethingNew)
-                            _buildBadge('✨ New', Colors.purpleAccent),
-                        ],
-                      ),
-                    ),
+                    // Positioned(
+                    //   top: 6,
+                    //   left: 6,
+                    //   right: 6,
+                    //   child: Wrap(
+                    //     spacing: 4,
+                    //     runSpacing: 4,
+                    //     children: [
+                    //       if (content.isTrending)
+                    //         _buildBadge('🔥 Trending', Colors.redAccent),
+                    //       if (content.isRecommended)
+                    //         _buildBadge('⭐ Rec', Colors.blueAccent),
+                    //       if (content.isFamily)
+                    //         _buildBadge('👨‍👩‍👧 Family', Colors.green),
+                    //       if (content.isLock)
+                    //         _buildBadge('🔒 Premium', Colors.amber),
+                    //       if (content.isSomethingNew)
+                    //         _buildBadge('✨ New', Colors.purpleAccent),
+                    //     ],
+                    //   ),
+                    // ),
                     if (content.videoDuration.isNotEmpty)
                       Positioned(
                         bottom: 6,

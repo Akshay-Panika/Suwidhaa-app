@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../peyment/screen/ott_plain_screen.dart';
 import '../widget/my_watchlist_content_card.dart';
@@ -26,6 +27,12 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
   void initState() {
     super.initState();
     _startCountdown();
+  }
+
+  // ✅ Fallback helper — same as ModuleScreen
+  String _getDisplayName() {
+    final name = authController.getUserName.trim();
+    return name.isEmpty ? 'Suwidhaa User' : name;
   }
 
   void _startCountdown() {
@@ -95,15 +102,21 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
           ),
 
           // Conditional UI: Settings List or Main Content
-          _isSetting ? _buildSettingsView() : Column(
+          _isSetting
+              ? _buildSettingsView()
+              : Column(
             spacing: 10,
             children: [
               Container(
                 height: 170,
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 10),
                 decoration: const BoxDecoration(
-                    image: DecorationImage(image: AssetImage("assets/ott/ott_subcri_img.png"), fit: BoxFit.fill)
+                  image: DecorationImage(
+                    image: AssetImage("assets/ott/ott_subcri_img.png"),
+                    fit: BoxFit.fill,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -116,40 +129,73 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Text("Spacial Prise", style: TextStyle(color: Colors.white)),
+                            const Text("Spacial Prise",
+                                style: TextStyle(color: Colors.white)),
                             Row(
                               spacing: 10,
                               children: const [
-                                Text("₹ 199", style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
-                                Text("/1 Months", style: TextStyle(color: Colors.white)),
+                                Text("₹ 199",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold)),
+                                Text("/1 Months",
+                                    style:
+                                    TextStyle(color: Colors.white)),
                               ],
                             ),
-                            const Text("Original Prise ₹ 499", style: TextStyle(color: Colors.white)),
+                            const Text("Original Prise ₹ 499",
+                                style: TextStyle(color: Colors.white)),
                           ],
                         ),
                         Row(
                           spacing: 10,
                           children: [
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
-                                const Text("Countdown to the offer", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                const Text("Countdown to the offer",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12)),
                                 Row(
                                   children: [
-                                    Card(child: Padding(padding: const EdgeInsets.all(4), child: Text(_formatDigits(hours)))),
-                                    Card(child: Padding(padding: const EdgeInsets.all(4), child: Text(_formatDigits(minutes)))),
-                                    Card(child: Padding(padding: const EdgeInsets.all(4), child: Text(_formatDigits(seconds)))),
+                                    Card(
+                                        child: Padding(
+                                            padding:
+                                            const EdgeInsets.all(4),
+                                            child: Text(
+                                                _formatDigits(hours)))),
+                                    Card(
+                                        child: Padding(
+                                            padding:
+                                            const EdgeInsets.all(4),
+                                            child: Text(
+                                                _formatDigits(minutes)))),
+                                    Card(
+                                        child: Padding(
+                                            padding:
+                                            const EdgeInsets.all(4),
+                                            child: Text(
+                                                _formatDigits(seconds)))),
                                   ],
                                 )
                               ],
                             ),
                             InkWell(
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => OttPlainScreen(),));
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          OttPlainScreen()),
+                                );
                               },
                               child: const CircleAvatar(
                                 backgroundColor: Colors.amber,
-                                child: Text("Get", style: TextStyle(color: Colors.white)),
+                                child: Text("Get",
+                                    style: TextStyle(color: Colors.white)),
                               ),
                             )
                           ],
@@ -159,14 +205,17 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                   ],
                 ),
               ),
-              SizedBox(height: 4,),
+              const SizedBox(height: 4),
               Row(
                 spacing: 10,
                 children: [
                   Container(color: Colors.red, height: 14, width: 3),
                   const Text(
                     'My Watchlist',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -177,7 +226,10 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
                   Container(color: Colors.red, height: 14, width: 3),
                   const Text(
                     'My Favorite',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -199,7 +251,8 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
           // Parental Controls Switch Tile
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Parental Controls', style: TextStyle(color: Colors.white, fontSize: 16)),
+            title: const Text('Parental Controls',
+                style: TextStyle(color: Colors.white, fontSize: 16)),
             value: _parentalControls,
             activeColor: Colors.red,
             onChanged: (val) {
@@ -216,7 +269,8 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
           ),
 
           const SizedBox(height: 10),
-          const Text('App', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          const Text('App',
+              style: TextStyle(color: Colors.grey, fontSize: 13)),
           const SizedBox(height: 5),
 
           // Share App
@@ -253,7 +307,8 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
           ),
 
           const SizedBox(height: 10),
-          const Text('Support & About', style: TextStyle(color: Colors.grey, fontSize: 13)),
+          const Text('Support & About',
+              style: TextStyle(color: Colors.grey, fontSize: 13)),
           const SizedBox(height: 5),
 
           // Contact Us
@@ -273,15 +328,22 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
   }
 
   // Reusable List Tile for Settings
-  Widget _buildSettingItem({required String title, String? trailingText, required VoidCallback onTap}) {
+  Widget _buildSettingItem({
+    required String title,
+    String? trailingText,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+      title: Text(title,
+          style: const TextStyle(color: Colors.white, fontSize: 15)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailingText != null)
-            Text(trailingText, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+            Text(trailingText,
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.6), fontSize: 14)),
           if (trailingText != null) const SizedBox(width: 8),
           const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
         ],
@@ -290,7 +352,10 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
     );
   }
 
-  Widget _buildProfileCard({required void Function()? onPressed, required IconData icon}) {
+  Widget _buildProfileCard({
+    required void Function()? onPressed,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -313,14 +378,19 @@ class _OttAccountScreenState extends State<OttAccountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  authController.getUserName,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                // ✅ FIXED — fallback name + reactive
+                Obx(() => Text(
+                  _getDisplayName(),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                )),
                 const SizedBox(height: 4),
                 Text(
                   authController.getUserPhone,
-                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.8), fontSize: 14),
                 ),
               ],
             ),

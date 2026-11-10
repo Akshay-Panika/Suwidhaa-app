@@ -26,6 +26,8 @@ import '../feature/ott/ads/controller/ott_ads_controller.dart';
 import '../feature/ott/banner/controller/ott_banner_controller.dart';
 import '../feature/ott/category/controller/ott_category_controller.dart';
 import '../feature/ott/content/controller/ott_content_controller.dart';
+import '../feature/ott/content/controller/ott_tvshows_controller.dart';
+import '../feature/ott/content/controller/ott_webseries_controller.dart';
 import '../feature/ott/controller/ott_controller.dart';
 import '../feature/ott/controller/ott_reel_controller.dart';
 import '../feature/ott/controller/webseries_controller.dart';
@@ -103,6 +105,8 @@ class AppBindings implements Bindings {
     Get.lazyPut<StudentFeeHistoryController>(() => StudentFeeHistoryController(), fenix: true);
     Get.lazyPut<OttCategoryController>(() => OttCategoryController(), fenix: true);
     Get.lazyPut<OttAdsController>(() => OttAdsController(), fenix: true);
+    Get.lazyPut<OttWebSeriesController>(() => OttWebSeriesController(), fenix: true);
+    Get.lazyPut<OttTvShowsController>(() => OttTvShowsController(), fenix: true);
 
   }
 }

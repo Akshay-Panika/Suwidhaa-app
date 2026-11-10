@@ -247,22 +247,22 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
               ),
             ),
 
-            // ── Flags top-left (only true shown) ──
-            Positioned(
-              top: 6,
-              left: 6,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (content.isTrending)
-                    _miniBadge('🔥', Colors.orange),
-                  if (content.isLock)
-                    _miniBadge('🔒', Colors.purple),
-                  if (content.isSomethingNew)
-                    _miniBadge('✨', Colors.green),
-                ],
-              ),
-            ),
+            // // ── Flags top-left (only true shown) ──
+            // Positioned(
+            //   top: 6,
+            //   left: 6,
+            //   child: Column(
+            //     crossAxisAlignment: CrossAxisAlignment.start,
+            //     children: [
+            //       if (content.isTrending)
+            //         _miniBadge('🔥', Colors.orange),
+            //       if (content.isLock)
+            //         _miniBadge('🔒', Colors.purple),
+            //       if (content.isSomethingNew)
+            //         _miniBadge('✨', Colors.green),
+            //     ],
+            //   ),
+            // ),
 
             // ── Duration bottom-right ──
             if (content.videoDuration.isNotEmpty)

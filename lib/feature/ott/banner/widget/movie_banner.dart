@@ -45,6 +45,10 @@ class _MovieBannerState extends State<MovieBanner> {
       if (_currentIndex >= controller.banners.length) _currentIndex = 0;
       _scheduleNext();
     });
+
+    // ✅ Pause/Play state change par timer ko handle karne ke liye listener
+    _bannerPaused.addListener(_onPauseChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleNext());
   }
 
@@ -52,7 +56,31 @@ class _MovieBannerState extends State<MovieBanner> {
   void dispose() {
     _timer?.cancel();
     _bannersWorker?.dispose();
+    _bannerPaused.removeListener(_onPauseChanged);
     super.dispose();
+  }
+
+  // ✅ Screen switch hone par carousel timer cancel karo
+  @override
+  void didUpdateWidget(covariant MovieBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible != oldWidget.isVisible) {
+      if (widget.isVisible) {
+        _scheduleNext();
+      } else {
+        _timer?.cancel();
+      }
+    }
+  }
+
+  void _onPauseChanged() {
+    if (!_bannerPaused.value) {
+      // User ne resume kiya to safety timeout wapas start karo
+      _scheduleNext();
+    } else {
+      // User ne pause kiya to timer ko reset karke 4 sec par slide karwao
+      _scheduleNext();
+    }
   }
 
   bool _isPlayable(OttBannerModel b) =>
@@ -65,15 +93,19 @@ class _MovieBannerState extends State<MovieBanner> {
 
   void _scheduleNext() {
     _timer?.cancel();
-    if (!mounted || controller.banners.length <= 1) return;
-    final delay = _currentIsPlayable ? _videoSafetyTimeout : _imageDuration;
+    // Agar screen visible nahi hai to timer mat chalao
+    if (!mounted || controller.banners.length <= 1 || !widget.isVisible) return;
+
+    // ✅ Agar user ne video pause kiya hai, to usko image ki tarah treat karo (4 sec me slide karo)
+    final isPaused = _currentIsPlayable && _bannerPaused.value;
+    final delay = (_currentIsPlayable && !isPaused) ? _videoSafetyTimeout : _imageDuration;
+
     _timer = Timer(delay, _goNext);
   }
 
   void _goNext() {
-    if (!mounted || controller.banners.length <= 1) return;
+    if (!mounted || controller.banners.length <= 1 || !widget.isVisible) return;
     _timer?.cancel();
-    if (_bannerPaused.value && _currentIsPlayable) return;
     _carouselController.nextPage(
       duration: const Duration(milliseconds: 800),
       curve: Curves.easeInOut,
@@ -110,13 +142,13 @@ class _MovieBannerState extends State<MovieBanner> {
                 );
               }).toList(),
               options: CarouselOptions(
-                autoPlay: false,
+                autoPlay: false, // Manual timer use kar rahe hain
                 enlargeCenterPage: false,
                 enableInfiniteScroll: count > 1,
                 viewportFraction: 1.0,
                 height: 240,
                 onPageChanged: (index, reason) {
-                  _bannerPaused.value = false;
+                  _bannerPaused.value = false; // New slide par pause reset karo
                   setState(() => _currentIndex = index);
                   _scheduleNext();
                 },
@@ -169,7 +201,7 @@ class _MovieBannerState extends State<MovieBanner> {
           key: ValueKey('banner_video_${banner.id}'),
           videoUrl: banner.videoUrl!,
           poster: poster,
-          active: isCurrent && widget.isVisible, // ✅ Visibility logic yahan add kiya
+          active: isCurrent && widget.isVisible, // ✅ Visibility logic
           loop: singleBanner,
           onFinished: onVideoEnd,
           onFailed: () {
@@ -185,7 +217,7 @@ class _MovieBannerState extends State<MovieBanner> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Poster, Loader, Mute button, Pause icon, Seek bar (Same as before)
+// Baaki widgets (Poster, Loader, Mute button, Pause icon, Seek bar, Videos) same rahenge
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Poster extends StatelessWidget {

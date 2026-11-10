@@ -173,6 +173,7 @@ class ApiUrls {
   static const String ottSciFiDetail   = 'v1/ott/sci-fi/';
   static const String ottSportDetail   = 'v1/ott/sports/';
   static const String ottWebSeriesDetail = 'v1/ott/webseries/';
+  static const String ottTvShowsDetail    = 'v1/ott/tvshows/';   // ✅ NEW
   static const String ottReelList = 'v1/ott/reels/list/';
   static const String ottWebSeriesList = 'v1/ott/webseries/list/';
 
