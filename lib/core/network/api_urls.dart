@@ -361,4 +361,9 @@ class ApiUrls {
   static const String ottAdsList   = 'v1/ott/ads/list/';
   static const String ottAdsDetail = 'v1/ott/ads/'; // + id/
 
+  static const String recordVideoClasses = 'v1/school/record-videos/classes/';
+  static String recordVideoSubjects(int classId) => 'v1/school/record-videos/classes/$classId/subjects/';
+  static String recordVideoList(int classId, {int? subjectId}) =>
+      'v1/school/record-videos/classes/$classId/videos/${subjectId != null ? "?subject_id=$subjectId" : ""}';
+
 }

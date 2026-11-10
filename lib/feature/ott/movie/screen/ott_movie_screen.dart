@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:shimmer/shimmer.dart';
 import '../../category/controller/ott_category_controller.dart';
 import '../../category/widget/ott_category_widget.dart';
 import '../../content/controller/ott_content_controller.dart';
@@ -76,50 +76,104 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
   // ==================== BODY ====================
   Widget _buildBody() {
     return Obx(() {
-      // ── Initial Loader ──
-      if (contentCtrl.isLoading.value && contentCtrl.contents.isEmpty) {
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.red),
-        );
-      }
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
 
-      return Stack(
-        children: [
-          SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 16),
+            // ✅ Dynamic category tabs (shared with home)
+            const OttCategoryWidget(),
+            const SizedBox(height: 16),
 
-                // ✅ Dynamic category tabs (shared with home)
-                const OttCategoryWidget(),
-                const SizedBox(height: 16),
+            // ✅ Loading -> Shimmer | Empty -> Empty State | Success -> Grid
+            if (contentCtrl.isLoading.value)
+              _buildShimmerGrid()
+            else if (contentCtrl.contents.isEmpty)
+              _buildEmptyState()
+            else
+              _buildMovieGrid(contentCtrl.contents),
 
-                // ✅ Grid or empty state
-                if (contentCtrl.contents.isEmpty)
-                  _buildEmptyState()
-                else
-                  _buildMovieGrid(contentCtrl.contents),
-
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-
-          // ── Loading overlay on category switch ──
-          if (contentCtrl.isLoading.value && contentCtrl.contents.isNotEmpty)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.55),
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.red),
-                ),
-              ),
-            ),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       );
     });
+  }
+
+  // ==================== SHIMMER GRID (SKELETON) ====================
+  Widget _buildShimmerGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+          childAspectRatio: 0.8, // Same as real grid
+        ),
+        itemCount: 9, // Show 9 skeleton cards
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[900]!, // Dark base color
+            highlightColor: Colors.grey[700]!, // Shimmer highlight color
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, // This white color gets masked by Shimmer
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Mock Category Badge (Top Right)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      width: 45,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  // Mock Title (Bottom Left)
+                  Positioned(
+                    bottom: 8,
+                    left: 6,
+                    right: 35, // Leave room for duration
+                    child: Container(
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  // Mock Duration (Bottom Right)
+                  Positioned(
+                    bottom: 8,
+                    right: 6,
+                    child: Container(
+                      width: 25,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // ==================== EMPTY STATE ====================
@@ -247,23 +301,6 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
               ),
             ),
 
-            // // ── Flags top-left (only true shown) ──
-            // Positioned(
-            //   top: 6,
-            //   left: 6,
-            //   child: Column(
-            //     crossAxisAlignment: CrossAxisAlignment.start,
-            //     children: [
-            //       if (content.isTrending)
-            //         _miniBadge('🔥', Colors.orange),
-            //       if (content.isLock)
-            //         _miniBadge('🔒', Colors.purple),
-            //       if (content.isSomethingNew)
-            //         _miniBadge('✨', Colors.green),
-            //     ],
-            //   ),
-            // ),
-
             // ── Duration bottom-right ──
             if (content.videoDuration.isNotEmpty)
               Positioned(
@@ -305,22 +342,6 @@ class _OttMovieScreenState extends State<OttMovieScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ==================== SMALL FLAG BADGE ====================
-  Widget _miniBadge(String emoji, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 9),
       ),
     );
   }

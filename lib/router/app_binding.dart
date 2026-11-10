@@ -31,6 +31,7 @@ import '../feature/ott/content/controller/ott_webseries_controller.dart';
 import '../feature/ott/controller/ott_controller.dart';
 import '../feature/ott/controller/ott_reel_controller.dart';
 import '../feature/ott/controller/webseries_controller.dart';
+import '../feature/ott/school/controller/record_video_controller.dart';
 import '../feature/school/attendance/controller/student_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_attendance_controller.dart';
 import '../feature/school/attendance/controller/teacher_checkin_checkout_controller.dart';
@@ -107,6 +108,7 @@ class AppBindings implements Bindings {
     Get.lazyPut<OttAdsController>(() => OttAdsController(), fenix: true);
     Get.lazyPut<OttWebSeriesController>(() => OttWebSeriesController(), fenix: true);
     Get.lazyPut<OttTvShowsController>(() => OttTvShowsController(), fenix: true);
+    Get.put<RecordVideoController>(RecordVideoController(), permanent: true);
 
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shimmer/shimmer.dart'; // ✅ Added Shimmer Import
 import 'package:video_player/video_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../controller/ott_reel_controller.dart';
@@ -25,7 +26,6 @@ class _OttReelScreenState extends State<OttReelScreen> {
 
   // ✅ Common Refresh Function
   Future<void> _handleRefresh() async {
-    // Yahan apne controller ka fetch method call karein (e.g. fetchReels, getReels)
     await controller.fetchReels();
   }
 
@@ -39,17 +39,9 @@ class _OttReelScreenState extends State<OttReelScreen> {
         color: Colors.red,              // Spinner color
         backgroundColor: Colors.black,  // Spinner background color
         child: Obx(() {
-          // 1. LOADING STATE
+          // 1. LOADING STATE (SHIMMER)
           if (controller.isLoading.value && controller.reels.isEmpty) {
-            return const SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: SizedBox(
-                height: 600,
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              ),
-            );
+            return _buildShimmerReel();
           }
 
           // 2. EMPTY STATE
@@ -108,6 +100,68 @@ class _OttReelScreenState extends State<OttReelScreen> {
             },
           );
         }),
+      ),
+    );
+  }
+
+  // ==================== SHIMMER REEL (SKELETON) ====================
+  Widget _buildShimmerReel() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85, // Fill most of the screen
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey[900]!,
+          highlightColor: Colors.grey[700]!,
+          child: Container(
+            color: Colors.black, // Background
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Mock Video Area (Full Screen)
+                Container(
+                  color: Colors.white, // Gets masked by shimmer
+                ),
+                // Mock Play Icon in center
+                const Center(
+                  child: Icon(
+                    Icons.play_arrow,
+                    color: Colors.black12,
+                    size: 70,
+                  ),
+                ),
+                // Mock Title Text at bottom left (same layout as real reel)
+                Positioned(
+                  left: 14,
+                  right: 70,
+                  bottom: 24,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -275,6 +329,7 @@ class _ReelPlayerItemState extends State<ReelPlayerItem> {
               ),
             )
           else if (_isLoading || _videoController == null)
+          // Reel ke andar ka loading state (Sirf video init hone tak)
             const Center(
               child: CircularProgressIndicator(color: Colors.red),
             )
