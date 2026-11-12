@@ -8,6 +8,12 @@ import '../../history/model/ngo_history_model.dart';
 class NgoProfileScreen extends StatelessWidget {
   const NgoProfileScreen({super.key});
 
+  // ✅ Fallback helper — same as ModuleScreen / OttAccountScreen
+  String _getDisplayName(AuthController authController) {
+    final name = authController.getUserName.trim();
+    return name.isEmpty ? 'Suwidhaa User' : name;
+  }
+
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
@@ -51,19 +57,28 @@ class NgoProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              authController.getUserName,
+                            // ✅ Reactive name with fallback
+                            Obx(() => Text(
+                              _getDisplayName(authController),
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold),
-                            ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )),
                             const SizedBox(height: 4),
-                            Text(
-                              authController.getUserPhone,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 13),
-                            ),
+                            // ✅ Reactive phone
+                            Obx(() {
+                              final phone =
+                              authController.getUserPhone.trim();
+                              if (phone.isEmpty) return const SizedBox.shrink();
+                              return Text(
+                                phone,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 13),
+                              );
+                            }),
                           ],
                         ),
                       ),
@@ -298,7 +313,7 @@ class NgoProfileScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      "$donationCount times", // 👈 Ab sahi count dikhega
+                      "$donationCount times",
                       style: const TextStyle(
                           color: Colors.green,
                           fontSize: 11,

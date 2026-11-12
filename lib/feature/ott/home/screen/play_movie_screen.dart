@@ -13,13 +13,20 @@ import '../../ads/controller/ott_ads_controller.dart';
 import '../../ads/model/ott_ads_model.dart';
 import '../../content/controller/ott_content_controller.dart';
 import '../../content/model/ott_content_model.dart';
+import '../../peyment/screen/ott_plain_screen.dart'; // ✅ added import
 
 class PlayMovieScreen extends StatefulWidget {
   final OttContentModel content;
 
+  /// ✅ जब OttPlainScreen (payment flow) से PlayMovieScreen खुले,
+  /// तो true भेजें — back press पर existing OttPlainScreen पर pop होगा
+  /// (नया push नहीं करेगा).
+  final bool fromOttPlainScreen;
+
   const PlayMovieScreen({
     super.key,
     required this.content,
+    this.fromOttPlainScreen = false,
   });
 
   @override
@@ -45,6 +52,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   Timer? _skipTimer;
   OttAdsModel? _activeAd;
   int _adSecondsRemaining = 15;
+  int _adTotalSeconds = 15;           // ✅ progress bar के लिए
   bool _wasPlayingBeforeAd = false;
 
   // Ad video
@@ -56,18 +64,21 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   // Skip button visibility
   bool _canSkipAd = false;
 
-  // 🆕 Dynamic mid-roll thresholds (computed from video duration)
+  // 🆕 Dynamic mid-roll thresholds
   List<double> _thresholds = [];
   bool _thresholdsReady = false;
   int _nextThresholdIndex = 0;
   DateTime? _lastAdEndTime;
 
-  // 🆕 Guards to prevent double-trigger
   bool _adStarting = false;
-
   bool _isNavigating = false;
 
-  // ── ALL ads (is_home true & false both) ──
+  // 🆕 Back-navigation during ad helpers
+  bool _isNavigatingToOttPlain = false;
+  int _adBackCount = 0;
+  int _savedAdRemaining = 0;
+  bool _savedCanSkip = false;
+
   List<OttAdsModel> get _allAds => adsCtrl.ads;
 
   OttAdsModel? _pickRandomAd() {
@@ -76,16 +87,17 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     return list[Random().nextInt(list.length)];
   }
 
+  /// ✅ Ad progress (0.0 → 1.0) bottom progress bar के लिए
+  double get _adProgress {
+    if (_adTotalSeconds <= 0) return 0.0;
+    final elapsed = _adTotalSeconds - _adSecondsRemaining;
+    return (elapsed / _adTotalSeconds).clamp(0.0, 1.0);
+  }
+
   @override
   void initState() {
     super.initState();
-
-    // Ads load in background (only needed for mid-rolls now)
-    if (adsCtrl.ads.isEmpty) {
-      adsCtrl.fetchAds();
-    }
-
-    // ✅ Video plays immediately — no pre-roll
+    if (adsCtrl.ads.isEmpty) adsCtrl.fetchAds();
     if (widget.content.videoUrl.isNotEmpty) {
       _initVideo(widget.content.videoUrl);
     }
@@ -107,13 +119,12 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   }
 
   // ================= THRESHOLD COMPUTATION =================
-  /// Compute how many mid-rolls to show based on video length
   List<double> _computeThresholds(Duration dur) {
     final sec = dur.inSeconds;
-    if (sec < 30) return []; // too short
-    if (sec < 60) return [50]; // 1 ad at halfway
-    if (sec < 180) return [33, 66]; // 2 ads
-    return [20, 40, 60, 80]; // 4 ads evenly
+    if (sec < 30) return [];
+    if (sec < 60) return [50];
+    if (sec < 180) return [33, 66];
+    return [20, 40, 60, 80];
   }
 
   void _ensureThresholds() {
@@ -124,7 +135,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     _thresholdsReady = true;
   }
 
-  // ================= MID-ROLL CHECKER =================
   void _checkForMidRollAd() {
     if (_adStarting) return;
     if (_activeAd != null) return;
@@ -138,7 +148,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     final dur = vc.value.duration;
     if (dur.inMilliseconds < 1000) return;
 
-    // Cooldown: at least 3 sec of content between ads
     if (_lastAdEndTime != null &&
         DateTime.now().difference(_lastAdEndTime!).inSeconds < 3) {
       return;
@@ -148,7 +157,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     final pct = (pos.inMilliseconds / dur.inMilliseconds) * 100;
     final threshold = _thresholds[_nextThresholdIndex];
 
-    // User seeked far past → skip this threshold silently
     if (pct > threshold + 15) {
       _nextThresholdIndex++;
       return;
@@ -161,16 +169,14 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     }
   }
 
-  // ================= START AD (guaranteed pause) =================
+  // ================= START AD =================
   Future<void> _startAd(OttAdsModel ad) async {
     if (_adStarting) return;
     _adStarting = true;
 
     try {
-      // 1. Capture whether content was playing (for resume)
       _wasPlayingBeforeAd = _videoController?.value.isPlaying ?? false;
 
-      // 2. ✅ Pause the main video FIRST and await it
       _hideControlsTimer?.cancel();
       final vc = _videoController;
       if (vc != null && vc.value.isInitialized) {
@@ -179,29 +185,30 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
         } catch (_) {}
       }
 
-      // 3. Bail if unmounted
       if (!mounted) return;
 
-      // 4. Show ad overlay
       _disposeAdVideo();
       setState(() {
         _activeAd = ad;
         _canSkipAd = false;
+        _adBackCount = 0;                 // ✅ reset
         _adSecondsRemaining = 15;
+        _adTotalSeconds = 15;
       });
 
-      // 5. Skip button appears after 6 sec
       _skipTimer?.cancel();
-      _skipTimer = Timer(const Duration(seconds: 6), () {
-        if (mounted && _activeAd != null) {
-          setState(() => _canSkipAd = true);
-        }
-      });
 
-      // 6. Load ad media
       if (ad.hasVideo) {
+        // ✅ Video ad — skip timer will be set after duration known
         _initAdVideo(ad.videoUrl!);
       } else {
+        // ✅ Image ad — skip at 10s, total 15s
+        _adTotalSeconds = 15;
+        _skipTimer = Timer(const Duration(seconds: 10), () {
+          if (mounted && _activeAd != null) {
+            setState(() => _canSkipAd = true);
+          }
+        });
         _startAdCountdown(15);
       }
     } finally {
@@ -278,11 +285,28 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       ctrl.addListener(_onAdVideoTick);
 
       _adVideoController?.dispose();
+
+      // ✅ Video ad — skip at 50% of duration
+      final skipSec = (videoSec / 2).floor();
+
       if (mounted) {
         setState(() {
           _adVideoController = ctrl;
           _adVideoLoading = false;
+          _adTotalSeconds = videoSec;
         });
+
+        if (skipSec <= 0) {
+          setState(() => _canSkipAd = true);
+        } else {
+          _skipTimer?.cancel();
+          _skipTimer = Timer(Duration(seconds: skipSec), () {
+            if (mounted && _activeAd != null) {
+              setState(() => _canSkipAd = true);
+            }
+          });
+        }
+
         _startAdCountdown(videoSec);
       }
     } catch (_) {
@@ -290,6 +314,14 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
         setState(() {
           _adVideoError = true;
           _adVideoLoading = false;
+          _adTotalSeconds = 15;
+        });
+        // ✅ Fallback image-like skip at 10s
+        _skipTimer?.cancel();
+        _skipTimer = Timer(const Duration(seconds: 10), () {
+          if (mounted && _activeAd != null) {
+            setState(() => _canSkipAd = true);
+          }
         });
         _startAdCountdown(15);
       }
@@ -303,7 +335,10 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     final v = vc.value;
     if (!v.isInitialized) return;
 
-    if (!_canSkipAd && v.position.inSeconds >= 6) {
+    // ✅ Skip after 50% of video duration (backup safety)
+    if (!_canSkipAd &&
+        v.duration > Duration.zero &&
+        v.position.inMilliseconds >= v.duration.inMilliseconds / 2) {
       setState(() => _canSkipAd = true);
     }
 
@@ -322,7 +357,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     _adVideoError = false;
   }
 
-  // ================= END AD (guaranteed resume) =================
   void _endAd() {
     _adCountdownTimer?.cancel();
     _skipTimer?.cancel();
@@ -330,6 +364,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
     if (!mounted) return;
 
     _lastAdEndTime = DateTime.now();
+    _adBackCount = 0; // ✅ reset
 
     final shouldResume = _wasPlayingBeforeAd;
     _wasPlayingBeforeAd = false;
@@ -339,7 +374,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       _canSkipAd = false;
     });
 
-    // Resume content if it was playing before ad
     if (shouldResume &&
         _videoController != null &&
         _videoController!.value.isInitialized &&
@@ -358,6 +392,82 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   void _toggleAdMute() {
     setState(() => _adMuted = !_adMuted);
     _adVideoController?.setVolume(_adMuted ? 0 : 1);
+  }
+
+  // ================= 🆕 BACK DURING AD → OttPlainScreen =================
+  Future<void> _handleAdBack() async {
+    if (_isNavigatingToOttPlain) return;
+
+    // ✅ दूसरी बार back → असल में PlayMovieScreen pop करो
+    if (_adBackCount >= 1 || widget.fromOttPlainScreen) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _adBackCount++;
+    _isNavigatingToOttPlain = true;
+
+    // Save state
+    _savedAdRemaining = _adSecondsRemaining;
+    _savedCanSkip = _canSkipAd;
+
+    // Pause ad
+    _adVideoController?.pause();
+    _adCountdownTimer?.cancel();
+    _skipTimer?.cancel();
+
+    // ✅ Push OttPlainScreen (PlayMovieScreen stack में बना रहेगा)
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OttPlainScreen(fromVideoAd: true),
+      ),
+    );
+
+    _isNavigatingToOttPlain = false;
+
+    // ✅ Return → ad resume करो जहाँ से छोड़ा था
+    if (mounted && _activeAd != null) {
+      setState(() {
+        _adSecondsRemaining = _savedAdRemaining;
+        _canSkipAd = _savedCanSkip;
+      });
+
+      _adVideoController?.play();
+
+      // Restart countdown
+      _adCountdownTimer?.cancel();
+      _adCountdownTimer =
+          Timer.periodic(const Duration(seconds: 1), (timer) {
+            if (!mounted || _activeAd == null) {
+              timer.cancel();
+              return;
+            }
+            if (_adSecondsRemaining > 1) {
+              setState(() => _adSecondsRemaining--);
+            } else {
+              _endAd();
+            }
+          });
+
+      // Restart skip timer if not yet skippable
+      if (!_canSkipAd) {
+        _skipTimer?.cancel();
+        final skipAtSec = _activeAd!.hasVideo
+            ? (_adTotalSeconds / 2).floor()
+            : 10;
+        final elapsed = _adTotalSeconds - _savedAdRemaining;
+        final remaining = (skipAtSec - elapsed).ceil();
+        if (remaining <= 0) {
+          setState(() => _canSkipAd = true);
+        } else {
+          _skipTimer = Timer(Duration(seconds: remaining), () {
+            if (mounted && _activeAd != null) {
+              setState(() => _canSkipAd = true);
+            }
+          });
+        }
+      }
+    }
   }
 
   // ================= SIMILAR CONTENT =================
@@ -387,7 +497,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
   // ================= VIDEO LOGIC =================
   void _onVideoTick() {
     if (!mounted) return;
-    if (_activeAd != null) return; // skip while ad is showing
+    if (_activeAd != null) return;
     setState(() {});
     _checkForMidRollAd();
   }
@@ -466,8 +576,6 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       newController.setLooping(false);
       newController.setVolume(_isMuted ? 0 : 1);
       newController.addListener(_onVideoTick);
-
-      // ✅ Always auto-play (no pre-roll gating)
       newController.play();
 
       _videoController?.removeListener(_onVideoTick);
@@ -476,7 +584,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       setState(() {
         _videoController = newController;
         _isVideoLoading = false;
-        _thresholdsReady = false; // recompute on new video
+        _thresholdsReady = false;
       });
       _startHideControlsTimer();
     } catch (e) {
@@ -564,13 +672,12 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ AD OVERLAY — special back handling
     if (_activeAd != null) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) {
-            FlutterToast.warning("Please wait for the ad to finish");
-          }
+        onPopInvokedWithResult: (didPop, result) async {
+          if (!didPop) await _handleAdBack();
         },
         child: Scaffold(
           backgroundColor: Colors.black,
@@ -653,7 +760,24 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
 
         Container(color: Colors.black.withOpacity(0.25)),
 
-        // Ad mute button (top-left)
+        // ✅ Tap-to-navigate layer — BEHIND buttons (fixes skip button tap)
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (ad.navigateScreen != null &&
+                ad.navigateScreen!.isNotEmpty) {
+              Get.snackbar(
+                'Navigate',
+                'Go to ${ad.navigateScreen}',
+                backgroundColor: Colors.white,
+                colorText: Colors.black,
+              );
+            }
+          },
+          child: Container(color: Colors.transparent),
+        ),
+
+        // Ad mute button
         if (hasVideo && !_adVideoError && _adVideoController != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -676,7 +800,7 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
             ),
           ),
 
-        // Skip button / countdown (top-right)
+        // Skip button / countdown
         Positioned(
           top: MediaQuery.of(context).padding.top + 16,
           right: 16,
@@ -703,7 +827,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.skip_next, color: Colors.white, size: 16),
+                  Icon(Icons.skip_next,
+                      color: Colors.white, size: 16),
                 ],
               ),
             ),
@@ -786,14 +911,17 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
           ),
         ),
 
-        GestureDetector(
-          onTap: () {
-            if (ad.navigateScreen != null && ad.navigateScreen!.isNotEmpty) {
-              Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}',
-                  backgroundColor: Colors.white, colorText: Colors.black);
-            }
-          },
-          child: Container(color: Colors.transparent),
+        // ✅ Bottom progress bar — TOPMOST so always visible
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: LinearProgressIndicator(
+            value: _adProgress,
+            backgroundColor: Colors.white24,
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+            minHeight: 5,
+          ),
         ),
       ],
     );
@@ -838,8 +966,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
       );
     }
     return const Center(
-        child:
-        Icon(Icons.image_not_supported, color: Colors.white54, size: 50));
+        child: Icon(Icons.image_not_supported,
+            color: Colors.white54, size: 50));
   }
 
   // ================= DETAILS =================
@@ -911,7 +1039,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                   onTap: () {
                     if (ad.navigateScreen != null &&
                         ad.navigateScreen!.isNotEmpty) {
-                      Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}');
+                      Get.snackbar(
+                          'Navigate', 'Go to ${ad.navigateScreen}');
                     }
                   },
                 ),
@@ -1017,7 +1146,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                   _initVideo(widget.content.videoUrl);
                 }
               },
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+              child:
+              const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1125,7 +1255,9 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                           IconButton(
                             onPressed: _toggleMute,
                             icon: Icon(
-                              _isMuted ? Icons.volume_off : Icons.volume_up,
+                              _isMuted
+                                  ? Icons.volume_off
+                                  : Icons.volume_up,
                               color: Colors.white,
                             ),
                           ),
@@ -1144,7 +1276,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                         ),
                         SizedBox(width: isFullScreen ? 24 : 16),
                         value.isBuffering
-                            ? const CircularProgressIndicator(color: Colors.red)
+                            ? const CircularProgressIndicator(
+                            color: Colors.red)
                             : IconButton(
                           iconSize: isFullScreen ? 64 : 48,
                           onPressed: _togglePlayPause,
@@ -1158,7 +1291,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                         SizedBox(width: isFullScreen ? 24 : 16),
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
-                          onPressed: () => _seekBy(const Duration(seconds: 10)),
+                          onPressed: () =>
+                              _seekBy(const Duration(seconds: 10)),
                           icon: const Icon(Icons.forward_10,
                               color: Colors.white),
                         ),
@@ -1173,7 +1307,8 @@ class _PlayMovieScreenState extends State<PlayMovieScreen> {
                           VideoProgressIndicator(
                             _videoController!,
                             allowScrubbing: true,
-                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 6),
                             colors: const VideoProgressColors(
                               playedColor: Colors.red,
                               bufferedColor: Colors.white38,

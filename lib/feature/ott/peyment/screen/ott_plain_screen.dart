@@ -26,7 +26,12 @@ class PlanData {
 }
 
 class OttPlainScreen extends StatefulWidget {
-  const OttPlainScreen({super.key});
+  final bool fromVideoAd;
+
+  const OttPlainScreen({
+    super.key,
+    this.fromVideoAd = false,
+  });
 
   @override
   State<OttPlainScreen> createState() => _OttPlainScreenState();
@@ -135,6 +140,7 @@ class _OttPlainScreenState extends State<OttPlainScreen> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -54,12 +54,10 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   Get.find<NgoHistoryController>();
   final NgoAdsController _adsController = Get.find<NgoAdsController>();
 
-  // Reactive state
   NgoServiceData? _service;
   bool _isLoading = true;
   String? _error;
 
-  // Sponsored ad (random is_home = false)
   NgoAdsModel? _sponsoredAd;
 
   @override
@@ -78,7 +76,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     _loadService();
     _loadStaff();
 
-    // Sponsored ad — pick once ads are loaded
     _tryPickSponsoredAd();
     if (_adsController.ads.isEmpty && !_adsController.isLoading.value) {
       _adsController.fetchAds();
@@ -142,9 +139,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════════════
+  // ── HELPERS ──
   double get _raised => _service?.progress.totalAmount ?? 0;
   int get _target => _service?.progress.targetAmount ?? 0;
   int get _donor => _service?.progress.donor ?? 0;
@@ -158,9 +153,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   List<int> get _chooseAmounts => _service?.chooseAmount ?? [];
   List<NgoKeyItem> get _keyItems => _service?.keys ?? [];
 
-  // ═══════════════════════════════════════════════════════════════
-  // BUILD
-  // ═══════════════════════════════════════════════════════════════
+  // ── BUILD ──
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -302,9 +295,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // HEADER IMAGE
-  // ═══════════════════════════════════════════════════════════════
+  // ── HEADER IMAGE ──
   Widget _buildHeaderImage() {
     final images = _bannerImages;
     if (images.isEmpty) {
@@ -441,9 +432,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 1: ABOUT
-  // ═══════════════════════════════════════════════════════════════
+  // ── TAB 1: ABOUT ──
   Widget _buildAboutTab() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
@@ -457,8 +446,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
         _buildAmountSection(),
         const SizedBox(height: 12),
         if ((_service?.description ?? '').isNotEmpty) _buildAboutSection(),
-
-        // Sponsored ad (random is_home = false)
         if (_sponsoredAd != null) ...[
           const SizedBox(height: 12),
           _SponsoredAdCard(
@@ -471,9 +458,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 2: GALLERY
-  // ═══════════════════════════════════════════════════════════════
+  // ── TAB 2: GALLERY ──
   Widget _buildGalleryTab() {
     final gallery = _galleryImages;
     if (gallery.isEmpty) {
@@ -543,9 +528,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 3: STAFF
-  // ═══════════════════════════════════════════════════════════════
+  // ── TAB 3: STAFF ──
   Widget _buildStaffTab() {
     return Obx(() {
       if (_staffController.isLoading.value &&
@@ -758,9 +741,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // PROGRESS CARD
-  // ═══════════════════════════════════════════════════════════════
+  // ── PROGRESS CARD ──
   Widget _buildProgressCard() {
     return _card(
       child: Column(
@@ -900,9 +881,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     return const [25, 50, 75, 100];
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // KEYS SECTION
-  // ═══════════════════════════════════════════════════════════════
+  // ── KEYS SECTION ──
   Widget _buildKeysSection() {
     return _card(
       child: Column(
@@ -975,9 +954,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // ABOUT SECTION
-  // ═══════════════════════════════════════════════════════════════
+  // ── ABOUT SECTION ──
   Widget _buildAboutSection() {
     return _card(
       child: Column(
@@ -1001,9 +978,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AMOUNT
-  // ═══════════════════════════════════════════════════════════════
+  // ── AMOUNT ──
   Widget _buildAmountSection() {
     return _card(
       child: Column(
@@ -1080,9 +1055,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // STICKY DONATE BAR
-  // ═══════════════════════════════════════════════════════════════
+  // ── STICKY DONATE BAR ──
   Widget _buildStickyDonateBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -1187,9 +1160,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // AMOUNT CHIP
-  // ═══════════════════════════════════════════════════════════════
+  // ── AMOUNT CHIP ──
   Widget _buildAmountChip(String label, String value) {
     final isSelected = _selectedAmount == value;
     return GestureDetector(
@@ -1223,9 +1194,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // SHARED WIDGETS
-  // ═══════════════════════════════════════════════════════════════
+  // ── SHARED WIDGETS ──
   Widget _card({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1266,9 +1235,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // GALLERY VIEWER
-  // ═══════════════════════════════════════════════════════════════
+  // ── GALLERY VIEWER ──
   void _openFullScreenGallery(List<String> images, int initialIndex) {
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -1283,9 +1250,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // DIALOGS
-  // ═══════════════════════════════════════════════════════════════
+  // ── DIALOGS ──
   void _showDonationDialog(BuildContext context, String amount) {
     showDialog(
       context: context,
@@ -1409,8 +1374,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SPONSORED AD CARD — random is_home = false
-// bg: Colors.grey.shade100 | play/pause + audio buttons
+// SPONSORED AD CARD — image placeholder while video loads
 // ═══════════════════════════════════════════════════════════════════
 String? _extractYoutubeIdLocal(String raw) {
   final uri = Uri.tryParse(raw.trim());
@@ -1581,14 +1545,23 @@ class _SponsoredAdCardState extends State<_SponsoredAdCard>
   @override
   Widget build(BuildContext context) {
     final showIframe = kIsWeb && _ytCtrl != null;
+
     final showVideo = !showIframe &&
         widget.ad.hasVideo &&
         _videoReady &&
         _video != null &&
         !_videoFailed;
-    final showImage = !showIframe && !showVideo && widget.ad.hasImage;
-    final showControls =
-        (widget.ad.hasVideo && !_videoFailed) || showIframe;
+
+    final isLoadingVideo =
+        widget.ad.hasVideo && !_videoReady && !_videoFailed;
+
+    // ✅ Image दिखेगी: video loading के दौरान / no video / failed
+    final showImage = !showIframe &&
+        !showVideo &&
+        widget.ad.hasImage &&
+        (isLoadingVideo || !widget.ad.hasVideo || _videoFailed);
+
+    final showControls = showVideo || showIframe;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1606,7 +1579,7 @@ class _SponsoredAdCardState extends State<_SponsoredAdCard>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // ── Media ──
+            // ── Content ──
             if (showIframe)
               FittedBox(
                 fit: BoxFit.cover,
@@ -1638,8 +1611,9 @@ class _SponsoredAdCardState extends State<_SponsoredAdCard>
               else
                 Container(color: Colors.grey.shade100),
 
-            // Dark overlay for legibility
-            Container(color: Colors.grey.shade50),
+            // ✅ Subtle loading tint (image साफ़ दिखती रहती है)
+            if (isLoadingVideo)
+              Container(color: Colors.black.withOpacity(0.08)),
 
             // SPONSORED chip
             Positioned(
@@ -1664,7 +1638,7 @@ class _SponsoredAdCardState extends State<_SponsoredAdCard>
               ),
             ),
 
-            // 🔊 Play/Pause + Audio
+            // Play/Pause + Audio
             if (showControls)
               Positioned(
                 top: 6,

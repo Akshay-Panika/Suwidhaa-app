@@ -651,7 +651,15 @@ class OttSchoolScreen extends StatefulWidget {
 }
 
 class _OttSchoolScreenState extends State<OttSchoolScreen> {
-  final RecordVideoController controller = Get.put(RecordVideoController());
+  // final RecordVideoController controller = Get.put(RecordVideoController());
+  late final RecordVideoController controller;
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<RecordVideoController>()
+        ? Get.find<RecordVideoController>()
+        : Get.put(RecordVideoController());
+  }
 
   static const Color _bg = Color(0xFF0B0B0F);
 

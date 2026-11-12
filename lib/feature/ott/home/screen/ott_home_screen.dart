@@ -48,10 +48,8 @@ class OttHomeScreen extends StatefulWidget {
 
 class _OttHomeScreenState extends State<OttHomeScreen>
     with WidgetsBindingObserver {
-  // Ads dismiss state
   bool isAdsVisible = true;
 
-  // Banner visibility
   bool _isBannerVisible = true;
   bool _scrollHidden = false;
   bool _routeHidden = false;
@@ -59,13 +57,17 @@ class _OttHomeScreenState extends State<OttHomeScreen>
 
   final ScrollController _scrollController = ScrollController();
 
-  // 🔁 Shared scroll notifier (for video playback)
   final ValueNotifier<bool> _isScrolling = ValueNotifier<bool>(false);
   Timer? _scrollDebounce;
 
   final categoryCtrl = Get.find<OttCategoryController>();
   final contentCtrl = Get.find<OttContentController>();
   final adsCtrl = Get.find<OttAdsController>();
+
+  // 🔒 Cached ad placement — computed ONCE per ads list, not on every rebuild
+  String _adSignature = '';
+  OttAdsModel? _topAd;
+  final Map<int, OttAdsModel> _inlineAdBySection = {};
 
   void _updateBannerVisibility() {
     final newValue = !_scrollHidden && !_routeHidden && !_appHidden;
@@ -85,7 +87,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     }
   }
 
-  // ── Scroll listener for banner AND video pause ──
   bool _onScrollNotification(ScrollNotification n) {
     if (n is ScrollStartNotification || n is ScrollUpdateNotification) {
       _scrollDebounce?.cancel();
@@ -98,6 +99,34 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       });
     }
     return false;
+  }
+
+  // 🔒 Compute ad placements ONCE per ads list — stable across rebuilds
+  void _computeAdPlacements() {
+    final homeAds = adsCtrl.homeAds;
+    final sig = homeAds.map((a) => a.id).join(',');
+    if (sig == _adSignature) return; // no change — keep existing placement
+    _adSignature = sig;
+
+    _topAd = null;
+    _inlineAdBySection.clear();
+
+    if (homeAds.isEmpty) return;
+
+    _topAd = homeAds.first;
+    final remaining = homeAds.skip(1).toList();
+    if (remaining.isEmpty) return;
+
+    // Deterministic seed = same ads → same placement (no reshuffle)
+    final seed = homeAds.fold<int>(
+        0, (s, a) => s * 31 + a.id + a.title.length);
+    final rng = Random(seed);
+
+    final slots = List<int>.generate(6, (i) => i)..shuffle(rng);
+
+    for (int i = 0; i < remaining.length && i < slots.length; i++) {
+      _inlineAdBySection[slots[i]] = remaining[i];
+    }
   }
 
   @override
@@ -117,11 +146,16 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       contentCtrl.getContents(categoryId: id);
     });
 
+    // Recompute ad placements only when ads actually change
+    ever(adsCtrl.ads, (_) => _computeAdPlacements());
+
     Future.microtask(() {
       contentCtrl.getContents(
           categoryId: categoryCtrl.selectedCategoryId.value);
       if (adsCtrl.ads.isEmpty) {
         adsCtrl.fetchAds();
+      } else {
+        _computeAdPlacements();
       }
     });
   }
@@ -201,36 +235,30 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                  // Banner
                   SliverToBoxAdapter(
                     child: MovieBanner(isVisible: _isBannerVisible),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                  // ── Top Ad (isHome only) ──
+                  // ── Top Ad (cached) ──
                   SliverToBoxAdapter(
                     child: Obx(() {
-                      if (adsCtrl.isLoading.value && adsCtrl.ads.isEmpty) {
+                      _computeAdPlacements();
+                      if (_topAd == null || !isAdsVisible) {
                         return const SizedBox.shrink();
                       }
-                      final homeAds = adsCtrl.homeAds;
-                      if (homeAds.isNotEmpty && isAdsVisible) {
-                        final ad = homeAds.first;
-                        return _OttAdPlayer(
-                          key: ValueKey('ott_top_ad_${ad.id}'),
-                          ad: ad,
-                          compact: false,
-                          isScrolling: _isScrolling,
-                          onTap: () => _handleAdTap(ad),
-                          onClose: () =>
-                              setState(() => isAdsVisible = false),
-                        );
-                      }
-                      return const SizedBox.shrink();
+                      return _OttAdPlayer(
+                        key: ValueKey('ott_top_ad_${_topAd!.id}'),
+                        ad: _topAd!,
+                        compact: false,
+                        isScrolling: _isScrolling,
+                        onTap: () => _handleAdTap(_topAd!),
+                        onClose: () =>
+                            setState(() => isAdsVisible = false),
+                      );
                     }),
                   ),
 
-                  // Sections + inline ads
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -242,7 +270,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
             ),
           ),
 
-          // Global loading overlay
           Obx(() {
             if (contentCtrl.isLoading.value &&
                 contentCtrl.contents.isNotEmpty) {
@@ -260,7 +287,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-  // ==================== APP BAR ====================
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: Colors.black,
@@ -323,9 +349,11 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-  // ==================== ALL SECTIONS ====================
   Widget _buildAllSections() {
     return Obx(() {
+      // Ads list hi cached hai, isliye rebuild pe reshuffle nahi hoga
+      _computeAdPlacements();
+
       if (contentCtrl.isLoading.value && contentCtrl.contents.isEmpty) {
         return const Center(
           child: Padding(
@@ -354,73 +382,88 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       final family = all.where((c) => c.isFamily).toList();
       final premium = all.where((c) => c.isLock).toList();
 
-      final List<Widget> contentSections = [];
+      // Build sections with STABLE keys (based on title, not index)
+      final List<(String, Widget)> contentSections = [];
 
-      contentSections.add(_buildContentSection(
+      contentSections.add((
+      'all',
+      _buildContentSection(
         title: 'Watch Now',
         items: all,
         filterType: 'all',
+      ),
       ));
       if (trending.isNotEmpty) {
-        contentSections.add(_buildContentSection(
+        contentSections.add((
+        'trending',
+        _buildContentSection(
           title: 'Trending Now',
           items: trending,
           filterType: 'trending',
+        ),
         ));
       }
       if (recommended.isNotEmpty) {
-        contentSections.add(_buildContentSection(
+        contentSections.add((
+        'recommended',
+        _buildContentSection(
           title: 'Recommended',
           items: recommended,
           filterType: 'recommended',
+        ),
         ));
       }
       if (newItems.isNotEmpty) {
-        contentSections.add(_buildContentSection(
+        contentSections.add((
+        'new',
+        _buildContentSection(
           title: 'New Arrivals',
           items: newItems,
           filterType: 'new',
+        ),
         ));
       }
       if (family.isNotEmpty) {
-        contentSections.add(_buildContentSection(
+        contentSections.add((
+        'family',
+        _buildContentSection(
           title: 'Family Friendly',
           items: family,
           filterType: 'family',
+        ),
         ));
       }
       if (premium.isNotEmpty) {
-        contentSections.add(_buildContentSection(
+        contentSections.add((
+        'premium',
+        _buildContentSection(
           title: 'Premium',
           items: premium,
           filterType: 'premium',
+        ),
         ));
       }
 
-      // ✅ Only isHome=true ads (skip first one used as top banner)
-      final allHomeAds = adsCtrl.homeAds;
-      final List<OttAdsModel> inlineAds = allHomeAds.length > 1
-          ? (allHomeAds.skip(1).toList()..shuffle(Random()))
-          : <OttAdsModel>[];
-
       final List<Widget> finalList = [];
-      int adIdx = 0;
 
       for (int i = 0; i < contentSections.length; i++) {
-        finalList.add(contentSections[i]);
-        if (adIdx < inlineAds.length) {
-          final isLast = i == contentSections.length - 1;
-          if (Random().nextBool() || isLast) {
-            final ad = inlineAds[adIdx];
-            finalList.add(_OttAdPlayer(
-              key: ValueKey('ott_inline_ad_${ad.id}_$i'),
-              ad: ad,
-              compact: true,
-              isScrolling: _isScrolling,
-              onTap: () => _handleAdTap(ad),
-            ));
-            adIdx++;
-          }
+        final (sectionKey, widget) = contentSections[i];
+        finalList.add(KeyedSubtree(
+          key: ValueKey('section_$sectionKey'),
+          child: widget,
+        ));
+
+        // Ad from cached placement (index-based)
+        final ad = _inlineAdBySection[i];
+        if (ad != null) {
+          finalList.add(_OttAdPlayer(
+            // ✅ Stable key — ad.id based, NOT section index
+            key: ValueKey('ott_inline_ad_${ad.id}'),
+            ad: ad,
+            compact: true,
+            isScrolling: _isScrolling,
+            onTap: () => _handleAdTap(ad),
+          ));
         }
       }
 
@@ -487,6 +530,8 @@ class _OttHomeScreenState extends State<OttHomeScreen>
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: items.length,
+              // ✅ Keep alive + stable keys = no scroll jump
+              addAutomaticKeepAlives: true,
               itemBuilder: (context, index) {
                 return _buildContentCard(items[index]);
               },
@@ -497,9 +542,10 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-  // ==================== CONTENT CARD ====================
   Widget _buildContentCard(OttContentModel content) {
     return GestureDetector(
+      // ✅ Stable key based on content ID, NOT index
+      key: ValueKey('content_${content.id}'),
       onTap: () => _pauseNavigate(
             () async => Get.to(() => PlayDashboardScreen(content: content)),
       ),
@@ -577,11 +623,11 @@ class _OttHomeScreenState extends State<OttHomeScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SHARED AD PLAYER — video/image, muted autoplay, play/pause + audio
+// AD PLAYER — visibility-gated autoplay, muted by default
 // ═══════════════════════════════════════════════════════════════
 class _OttAdPlayer extends StatefulWidget {
   final OttAdsModel ad;
-  final bool compact; // false = top 160px, true = inline 120px
+  final bool compact;
   final ValueNotifier<bool> isScrolling;
   final VoidCallback onTap;
   final VoidCallback? onClose;
@@ -679,8 +725,10 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
       if (!mounted) return;
       await ctrl.setLooping(true);
       await ctrl.setVolume(_isMuted ? 0 : 1);
-      if (mounted) setState(() => _videoReady = true);
-      _syncPlayback();
+      if (mounted) {
+        setState(() => _videoReady = true);
+        _syncPlayback();
+      }
     } catch (_) {
       if (mounted) setState(() => _videoFailed = true);
     }
@@ -696,7 +744,7 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
     final v = _video;
     if (v != null && v.value.isInitialized) {
       if (shouldPlay) {
-        if (!v.value.isPlaying) v.play();
+        if (!v.value.isPlaying) _tryPlayMobile(v);
       } else {
         if (v.value.isPlaying) v.pause();
       }
@@ -709,6 +757,20 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
       } else {
         yt.pauseVideo();
       }
+    }
+  }
+
+  void _tryPlayMobile(VideoPlayerController v) {
+    try {
+      v.play();
+    } catch (_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && v.value.isInitialized && !v.value.isPlaying) {
+          try {
+            v.play();
+          } catch (_) {}
+        }
+      });
     }
   }
 
@@ -747,7 +809,6 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
     super.dispose();
   }
 
-  // ── Render media layer (video iframe / video / image / placeholder) ──
   Widget _buildMedia() {
     final showIframe = _isWebYouTube;
     final showVideo = !showIframe &&
@@ -824,13 +885,9 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Media
               _buildMedia(),
-
-              // Dark overlay
               Container(color: Colors.black.withOpacity(0.28)),
 
-              // ── Play/Pause + Audio (top-left) ──
               if (_showControls)
                 Positioned(
                   top: 8,
@@ -855,7 +912,6 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
                   ),
                 ),
 
-              // ── Top-right corner ──
               Positioned(
                 top: 8,
                 right: 8,
@@ -864,7 +920,6 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
                     : _buildCloseButton(),
               ),
 
-              // ── Bottom content ──
               Positioned(
                 bottom: 12,
                 left: 16,
@@ -970,7 +1025,6 @@ class _OttAdPlayerState extends State<_OttAdPlayer>
   }
 }
 
-// ==================== SLIVER DELEGATE ====================
 class _SliverCategoryDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   _SliverCategoryDelegate({required this.child});

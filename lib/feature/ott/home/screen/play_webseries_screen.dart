@@ -15,13 +15,18 @@ import '../../content/controller/ott_content_controller.dart';
 import '../../content/controller/ott_webseries_controller.dart';
 import '../../content/model/ott_content_model.dart';
 import '../../content/model/ott_webseries_model.dart';
+import '../../peyment/screen/ott_plain_screen.dart';
 
 class PlayWebSeriesScreen extends StatefulWidget {
   final OttContentModel content;
 
+
+  final bool fromOttPlainScreen;
+
   const PlayWebSeriesScreen({
     super.key,
     required this.content,
+    this.fromOttPlainScreen = false,
   });
 
   @override
@@ -53,6 +58,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
   Timer? _skipTimer;
   OttAdsModel? _activeAd;
   int _adSecondsRemaining = 15;
+  int _adTotalSeconds = 15;              // ✅ progress bar के लिए
   bool _wasPlayingBeforeAd = false;
 
   VideoPlayerController? _adVideoController;
@@ -71,12 +77,25 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
 
   bool _isNavigating = false;
 
+  // 🆕 Back-navigation-during-ad helpers
+  bool _isNavigatingToOttPlain = false;
+  int _adBackCount = 0;
+  int _savedAdRemaining = 0;
+  bool _savedCanSkip = false;
+
   List<OttAdsModel> get _allAds => adsCtrl.ads;
 
   OttAdsModel? _pickRandomAd() {
     final list = _allAds;
     if (list.isEmpty) return null;
     return list[Random().nextInt(list.length)];
+  }
+
+  /// ✅ Ad progress (0.0 → 1.0) for bottom progress bar
+  double get _adProgress {
+    if (_adTotalSeconds <= 0) return 0.0;
+    final elapsed = _adTotalSeconds - _adSecondsRemaining;
+    return (elapsed / _adTotalSeconds).clamp(0.0, 1.0);
   }
 
   @override
@@ -197,7 +216,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     }
   }
 
-  // ================= START AD (guaranteed pause) =================
+  // ================= START AD =================
   Future<void> _startAd(OttAdsModel ad) async {
     if (_adStarting) return;
     _adStarting = true;
@@ -219,19 +238,24 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
       setState(() {
         _activeAd = ad;
         _canSkipAd = false;
+        _adBackCount = 0;              // ✅ reset
         _adSecondsRemaining = 15;
+        _adTotalSeconds = 15;          // ✅ reset
       });
 
       _skipTimer?.cancel();
-      _skipTimer = Timer(const Duration(seconds: 6), () {
-        if (mounted && _activeAd != null) {
-          setState(() => _canSkipAd = true);
-        }
-      });
 
       if (ad.hasVideo) {
+        // ✅ Video ad — skip timer set after duration known
         _initAdVideo(ad.videoUrl!);
       } else {
+        // ✅ Image ad — skip at 10s, total 15s
+        _adTotalSeconds = 15;
+        _skipTimer = Timer(const Duration(seconds: 10), () {
+          if (mounted && _activeAd != null) {
+            setState(() => _canSkipAd = true);
+          }
+        });
         _startAdCountdown(15);
       }
     } finally {
@@ -308,11 +332,28 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
       ctrl.addListener(_onAdVideoTick);
 
       _adVideoController?.dispose();
+
+      // ✅ Video ad — skip at 50% of video duration
+      final skipSec = (videoSec / 2).floor();
+
       if (mounted) {
         setState(() {
           _adVideoController = ctrl;
           _adVideoLoading = false;
+          _adTotalSeconds = videoSec;
         });
+
+        if (skipSec <= 0) {
+          setState(() => _canSkipAd = true);
+        } else {
+          _skipTimer?.cancel();
+          _skipTimer = Timer(Duration(seconds: skipSec), () {
+            if (mounted && _activeAd != null) {
+              setState(() => _canSkipAd = true);
+            }
+          });
+        }
+
         _startAdCountdown(videoSec);
       }
     } catch (_) {
@@ -320,6 +361,14 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
         setState(() {
           _adVideoError = true;
           _adVideoLoading = false;
+          _adTotalSeconds = 15;
+        });
+        // ✅ Fallback — treat as image ad (10s skip, 15s total)
+        _skipTimer?.cancel();
+        _skipTimer = Timer(const Duration(seconds: 10), () {
+          if (mounted && _activeAd != null) {
+            setState(() => _canSkipAd = true);
+          }
         });
         _startAdCountdown(15);
       }
@@ -333,7 +382,10 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     final v = vc.value;
     if (!v.isInitialized) return;
 
-    if (!_canSkipAd && v.position.inSeconds >= 6) {
+    // ✅ Backup safety — skip after 50% of video
+    if (!_canSkipAd &&
+        v.duration > Duration.zero &&
+        v.position.inMilliseconds >= v.duration.inMilliseconds / 2) {
       setState(() => _canSkipAd = true);
     }
 
@@ -359,6 +411,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     if (!mounted) return;
 
     _lastAdEndTime = DateTime.now();
+    _adBackCount = 0;                    // ✅ reset
+
     final shouldResume = _wasPlayingBeforeAd;
     _wasPlayingBeforeAd = false;
 
@@ -385,6 +439,82 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
   void _toggleAdMute() {
     setState(() => _adMuted = !_adMuted);
     _adVideoController?.setVolume(_adMuted ? 0 : 1);
+  }
+
+  // ================= 🆕 BACK DURING AD → OttPlainScreen =================
+  Future<void> _handleAdBack() async {
+    if (_isNavigatingToOttPlain) return;
+
+    // ✅ 2nd back press OR came from OttPlainScreen → actually pop
+    if (_adBackCount >= 1 || widget.fromOttPlainScreen) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _adBackCount++;
+    _isNavigatingToOttPlain = true;
+
+    // Save current ad state
+    _savedAdRemaining = _adSecondsRemaining;
+    _savedCanSkip = _canSkipAd;
+
+    // Pause ad
+    _adVideoController?.pause();
+    _adCountdownTimer?.cancel();
+    _skipTimer?.cancel();
+
+    // ✅ Push OttPlainScreen (this screen stays alive in stack)
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>  OttPlainScreen(),
+      ),
+    );
+
+    _isNavigatingToOttPlain = false;
+
+    // ✅ Return → resume ad from where it was left
+    if (mounted && _activeAd != null) {
+      setState(() {
+        _adSecondsRemaining = _savedAdRemaining;
+        _canSkipAd = _savedCanSkip;
+      });
+
+      _adVideoController?.play();
+
+      // Restart countdown
+      _adCountdownTimer?.cancel();
+      _adCountdownTimer =
+          Timer.periodic(const Duration(seconds: 1), (timer) {
+            if (!mounted || _activeAd == null) {
+              timer.cancel();
+              return;
+            }
+            if (_adSecondsRemaining > 1) {
+              setState(() => _adSecondsRemaining--);
+            } else {
+              _endAd();
+            }
+          });
+
+      // Restart skip timer if not yet skippable
+      if (!_canSkipAd) {
+        _skipTimer?.cancel();
+        final skipAtSec = _activeAd!.hasVideo
+            ? (_adTotalSeconds / 2).floor()
+            : 10;
+        final elapsed = _adTotalSeconds - _savedAdRemaining;
+        final remaining = (skipAtSec - elapsed).ceil();
+        if (remaining <= 0) {
+          setState(() => _canSkipAd = true);
+        } else {
+          _skipTimer = Timer(Duration(seconds: remaining), () {
+            if (mounted && _activeAd != null) {
+              setState(() => _canSkipAd = true);
+            }
+          });
+        }
+      }
+    }
   }
 
   // ================= VIDEO LOGIC =================
@@ -429,7 +559,6 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
     _currentVideoUrl = videoUrl;
     final videoId = _extractYouTubeId(videoUrl);
 
-    // 🔁 Reset mid-roll thresholds for new episode
     _resetThresholds();
 
     if (mounted) {
@@ -586,13 +715,12 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
+    // ✅ AD OVERLAY — special back handling
     if (_activeAd != null) {
       return PopScope(
         canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) {
-            FlutterToast.warning("Please wait for the ad to finish");
-          }
+        onPopInvokedWithResult: (didPop, result) async {
+          if (!didPop) await _handleAdBack();
         },
         child: Scaffold(
           backgroundColor: Colors.black,
@@ -676,6 +804,24 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
 
         Container(color: Colors.black.withOpacity(0.25)),
 
+        // ✅ Tap-to-navigate layer — BEHIND buttons (fixes skip button tap)
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (ad.navigateScreen != null &&
+                ad.navigateScreen!.isNotEmpty) {
+              Get.snackbar(
+                'Navigate',
+                'Go to ${ad.navigateScreen}',
+                backgroundColor: Colors.white,
+                colorText: Colors.black,
+              );
+            }
+          },
+          child: Container(color: Colors.transparent),
+        ),
+
+        // Ad mute button
         if (hasVideo && !_adVideoError && _adVideoController != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -698,6 +844,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
             ),
           ),
 
+        // Skip button / countdown
         Positioned(
           top: MediaQuery.of(context).padding.top + 16,
           right: 16,
@@ -724,7 +871,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.skip_next, color: Colors.white, size: 16),
+                  Icon(Icons.skip_next,
+                      color: Colors.white, size: 16),
                 ],
               ),
             ),
@@ -759,6 +907,7 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
           ),
         ),
 
+        // Bottom info
         Positioned(
           bottom: MediaQuery.of(context).padding.bottom + 40,
           left: 20,
@@ -803,14 +952,17 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
           ),
         ),
 
-        GestureDetector(
-          onTap: () {
-            if (ad.navigateScreen != null && ad.navigateScreen!.isNotEmpty) {
-              Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}',
-                  backgroundColor: Colors.white, colorText: Colors.black);
-            }
-          },
-          child: Container(color: Colors.transparent),
+        // ✅ Bottom progress bar — TOPMOST so always visible
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: LinearProgressIndicator(
+            value: _adProgress,
+            backgroundColor: Colors.white24,
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+            minHeight: 5,
+          ),
         ),
       ],
     );
@@ -908,8 +1060,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                 if (widget.content.releaseDate.isNotEmpty)
                   _chip(Icons.calendar_today, widget.content.releaseDate,
                       Colors.white),
-                _chip(Icons.category, widget.content.categoryName.toUpperCase(),
-                    Colors.white),
+                _chip(Icons.category,
+                    widget.content.categoryName.toUpperCase(), Colors.white),
                 if (widget.content.isFamily)
                   _chip(Icons.family_restroom, 'Family', Colors.green),
                 if (widget.content.isLock)
@@ -1035,7 +1187,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
           child: SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red),
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Colors.red),
           ),
         ),
       );
@@ -1050,11 +1203,13 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
+            const Icon(Icons.error_outline,
+                color: Colors.redAccent, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(wsCtrl.errorMessage.value,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12)),
             ),
             TextButton(
               onPressed: () => wsCtrl.fetchWebSeriesDetail(widget.content.id),
@@ -1117,8 +1272,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                   onTap: () => wsCtrl.selectSeason(s.seasonNumber),
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.red : Colors.grey[800],
                       borderRadius: BorderRadius.circular(6),
@@ -1128,8 +1283,9 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -1205,7 +1361,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                             isPlaying
                                 ? Icons.graphic_eq
                                 : Icons.play_circle_fill,
-                            color: isPlaying ? Colors.red : Colors.white70,
+                            color:
+                            isPlaying ? Colors.red : Colors.white70,
                             size: 32,
                           ),
                         ),
@@ -1247,7 +1404,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
             ),
             const SizedBox(height: 2),
             Text(ep.duration,
-                style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                style:
+                const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
       ),
@@ -1272,7 +1430,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                   _initVideo(_currentVideoUrl);
                 }
               },
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+              child:
+              const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1380,7 +1539,9 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                           IconButton(
                             onPressed: _toggleMute,
                             icon: Icon(
-                              _isMuted ? Icons.volume_off : Icons.volume_up,
+                              _isMuted
+                                  ? Icons.volume_off
+                                  : Icons.volume_up,
                               color: Colors.white,
                             ),
                           ),
@@ -1392,13 +1553,15 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                       children: [
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
-                          onPressed: () => _seekBy(const Duration(seconds: -10)),
-                          icon:
-                          const Icon(Icons.replay_10, color: Colors.white),
+                          onPressed: () =>
+                              _seekBy(const Duration(seconds: -10)),
+                          icon: const Icon(Icons.replay_10,
+                              color: Colors.white),
                         ),
                         SizedBox(width: isFullScreen ? 24 : 16),
                         value.isBuffering
-                            ? const CircularProgressIndicator(color: Colors.red)
+                            ? const CircularProgressIndicator(
+                            color: Colors.red)
                             : IconButton(
                           iconSize: isFullScreen ? 64 : 48,
                           onPressed: _togglePlayPause,
@@ -1412,9 +1575,10 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                         SizedBox(width: isFullScreen ? 24 : 16),
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
-                          onPressed: () => _seekBy(const Duration(seconds: 10)),
-                          icon:
-                          const Icon(Icons.forward_10, color: Colors.white),
+                          onPressed: () =>
+                              _seekBy(const Duration(seconds: 10)),
+                          icon: const Icon(Icons.forward_10,
+                              color: Colors.white),
                         ),
                       ],
                     ),
@@ -1427,7 +1591,8 @@ class _PlayWebSeriesScreenState extends State<PlayWebSeriesScreen> {
                           VideoProgressIndicator(
                             _videoController!,
                             allowScrubbing: true,
-                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 6),
                             colors: const VideoProgressColors(
                               playedColor: Colors.red,
                               bufferedColor: Colors.white38,
@@ -1556,7 +1721,8 @@ class _BottomBannerAdState extends State<_BottomBannerAd> {
         try {
           final yt = YoutubeExplode();
           try {
-            final manifest = await yt.videos.streamsClient.getManifest(ytId);
+            final manifest =
+            await yt.videos.streamsClient.getManifest(ytId);
             final muxed = manifest.muxed.sortByVideoQuality();
             final stream = muxed.firstWhere(
                     (s) => s.videoResolution.height <= 720,
@@ -1683,7 +1849,8 @@ class _BottomBannerAdState extends State<_BottomBannerAd> {
               Image.network(
                 widget.ad.image!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.black),
+                errorBuilder: (_, __, ___) =>
+                    Container(color: Colors.black),
               )
             else
               Container(color: Colors.black),

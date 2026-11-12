@@ -59,7 +59,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   void initState() {
     super.initState();
     if (adsController.ads.isEmpty) {
-      adsController.fetchAds();
+      adsController.fetchAds(isHome: true);
     }
   }
 
@@ -90,7 +90,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
         controller.fetchCategories(),
         bannerController.fetchBanners(),
         serviceController.fetchServices(),
-        adsController.fetchAds(),
+        adsController.fetchAds(isHome: true),
       ]);
     } catch (e) {
       debugPrint("Refresh Error: $e");
@@ -296,7 +296,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AD BANNER — play/pause + audio toggle + auto play/pause
+// AD BANNER — image shows while video loads, then video plays
 // ═══════════════════════════════════════════════════════════════
 class _NgoAdBanner extends StatefulWidget {
   final NgoAdsModel ad;
@@ -326,7 +326,7 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
   bool _isVisible = false;
   bool _isMuted = true;
   bool _appPaused = false;
-  bool _userPaused = false;   // ✅ NEW: manual pause by user
+  bool _userPaused = false;
 
   @override
   void initState() {
@@ -429,7 +429,6 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
     }
   }
 
-  // ✅ NEW: manual play/pause
   void _togglePlayPause() {
     setState(() => _userPaused = !_userPaused);
     _syncPlayback();
@@ -468,12 +467,26 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
   @override
   Widget build(BuildContext context) {
     final showIframe = kIsWeb && _ytCtrl != null;
-    final showVideo =
-        !showIframe && widget.ad.hasVideo && _videoReady && _video != null;
-    final showImageFallback =
-        !showIframe && !showVideo && widget.ad.hasImage;
-    final showControls =
-        (widget.ad.hasVideo && !_videoFailed) || showIframe;
+
+    // ✅ Video is ready to display
+    final showVideo = !showIframe &&
+        widget.ad.hasVideo &&
+        _videoReady &&
+        _video != null &&
+        !_videoFailed;
+
+    // ✅ While loading (hasVideo true but not ready)
+    final isLoadingVideo =
+        widget.ad.hasVideo && !_videoReady && !_videoFailed;
+
+    // ✅ Image shows: image-only OR loading placeholder OR failed fallback
+    final showImage = !showIframe &&
+        !showVideo &&
+        widget.ad.hasImage &&
+        (isLoadingVideo || !widget.ad.hasVideo || _videoFailed);
+
+    // ✅ Controls only when video/iframe actually ready
+    final showControls = showVideo || showIframe;
 
     return VisibilityDetector(
       key: Key('ngo_ad_visibility_${widget.ad.id}'),
@@ -492,12 +505,13 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.teal, width: 0.3),
+            // border: Border.all(color: Colors.teal, width: 0.3),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             fit: StackFit.expand,
             children: [
+              // ── 1. Content layer ──
               if (showIframe)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -522,7 +536,7 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
                     child: VideoPlayer(_video!),
                   ),
                 )
-              else if (showImageFallback)
+              else if (showImage)
                   Image.network(
                     widget.ad.image!,
                     fit: BoxFit.cover,
@@ -532,9 +546,9 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
                 else
                   Container(color: Colors.grey.shade300),
 
-              Container(color :Colors.grey.shade100,),
+              // ✅ Image अब video load होने तक साफ़ दिखती है (grey overlay हटा दिया)
 
-              // SPONSORED chip
+              // ── 2. SPONSORED chip ──
               Positioned(
                 top: 8,
                 left: 8,
@@ -557,7 +571,7 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
                 ),
               ),
 
-              // ✅ Play/Pause + Audio buttons (top-right row)
+              // ── 3. Play/Pause + Audio (only when video ready) ──
               if (showControls)
                 Positioned(
                   top: 6,
@@ -606,7 +620,7 @@ class _NgoAdBannerState extends State<_NgoAdBanner>
                   ),
                 ),
 
-              // Title
+              // ── 4. Title ──
               Positioned(
                 bottom: 12,
                 left: 12,
