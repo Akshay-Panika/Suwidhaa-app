@@ -17,10 +17,10 @@ class OttAdsController extends GetxController {
     fetchAds();
   }
 
-  Future<void> fetchAds() async {
+  Future<void> fetchAds({bool? isHome}) async {
     try {
       isLoading.value = true;
-      final list = await _repo.getAds();
+      final list = await _repo.getAds(isHome: isHome);
       ads.assignAll(list);
     } catch (e) {
       FlutterToast.error('Failed to load ads');
@@ -29,13 +29,15 @@ class OttAdsController extends GetxController {
     }
   }
 
-  // ✅ Sirf Update rahega (Create hata diya gaya hai)
+  /// Only ads tagged `is_home = true`
+  List<OttAdsModel> get homeAds => ads.where((a) => a.isHome).toList();
+
   Future<bool> updateAd({
     required int id,
     required String title,
     required String videoUrl,
     required String navigateScreen,
-    required bool isActive,
+    required bool isHome,
     PlatformFile? imageFile,
   }) async {
     isSaving.value = true;
@@ -45,7 +47,7 @@ class OttAdsController extends GetxController {
         title: title,
         videoUrl: videoUrl,
         navigateScreen: navigateScreen,
-        isActive: isActive,
+        isHome: isHome,
         imageFile: imageFile,
       );
       final idx = ads.indexWhere((a) => a.id == id);

@@ -1,570 +1,217 @@
+// ngo_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../../auth/controller/auth_controller.dart';
-import '../../services/controller/ngo_history_controller.dart';
-import '../../services/controller/ngo_service_controller.dart';
-import '../../services/model/ngo_history_model.dart';
-import '../../services/model/ngo_service_model.dart';
+import '../../history/controller/ngo_history_controller.dart';
+import '../../history/model/ngo_history_model.dart';
 
-class NgoProfileScreen extends StatefulWidget {
+class NgoProfileScreen extends StatelessWidget {
   const NgoProfileScreen({super.key});
 
   @override
-  State<NgoProfileScreen> createState() => _NgoProfileScreenState();
-}
-
-class _NgoProfileScreenState extends State<NgoProfileScreen> {
-  final AuthController authController = Get.find<AuthController>();
-  final NgoHistoryController historyController =
-  Get.find<NgoHistoryController>();
-  final NgoServiceController serviceController =
-  Get.find<NgoServiceController>();
-
-  /// 🗺️ serviceId → full NgoServiceData (already fetched)
-  final Map<int, NgoServiceData> _serviceCache = {};
-
-  /// Track which service IDs we're currently fetching (avoid duplicate calls)
-  final Set<int> _fetching = {};
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      historyController.loadMyHistory().then((_) {
-        _fetchServiceDetails();
-      });
-    });
-  }
-
-  /// 🔥 Fetch full service data for each unique service_id in history
-  Future<void> _fetchServiceDetails() async {
-    final ids = historyController.historyList
-        .map((h) => h.service)
-        .where((id) => id != null)
-        .cast<int>()
-        .toSet();
-
-    for (final id in ids) {
-      if (_serviceCache.containsKey(id) || _fetching.contains(id)) continue;
-
-      _fetching.add(id);
-      try {
-        final service = await serviceController.fetchServiceById(id);
-        if (service != null && mounted) {
-          setState(() {
-            _serviceCache[id] = service;
-          });
-        }
-      } catch (_) {
-        // silent — fallback to snapshot data
-      } finally {
-        _fetching.remove(id);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final filtered = historyController.historyList;
+    final authController = Get.find<AuthController>();
+    final historyController = Get.find<NgoHistoryController>();
 
-      // Refresh service cache when history changes
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _fetchServiceDetails();
-      });
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            margin: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade400, Colors.teal.shade700],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.teal.withOpacity(0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  spacing: 10,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                        image: const DecorationImage(
-                          image: NetworkImage(
-                            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-                          ),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          authController.getUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.location_on,
-                                  color: Colors.white, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                "Singrauli, MP",
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.95),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  height: 1,
-                  color: Colors.white.withOpacity(0.2),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatItem(
-                      "₹${historyController.totalDonated.value.toStringAsFixed(0)}",
-                      "Donated",
-                      Icons.volunteer_activism,
-                    ),
-                    _verticalDivider(),
-                    _buildStatItem(
-                      "${historyController.totalDonations.value}",
-                      "Donations",
-                      Icons.campaign_outlined,
-                    ),
-                    _verticalDivider(),
-                    _buildStatItem(
-                      "${historyController.uniqueServices.value}",
-                      "Services",
-                      Icons.workspace_premium_outlined,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Card(
-              elevation: 0.3,
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          "Recent Donations",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          "${filtered.length} items",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Total: ₹${historyController.totalDonated.value.toStringAsFixed(0)}",
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.teal,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Filter chips
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildFilterChip("Today", "today"),
-                          const SizedBox(width: 8),
-                          _buildFilterChip("This Week", "week"),
-                          const SizedBox(width: 8),
-                          _buildFilterChip("This Month", "month"),
-                          const SizedBox(width: 8),
-                          _buildFilterChip("All", "all"),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // List / loading / empty
-                    if (historyController.isLoading.value)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.teal,
-                          ),
-                        ),
-                      )
-                    else if (filtered.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.receipt_long_outlined,
-                                size: 48,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "No donations in this period",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            return _buildRecentDonation(filtered[index]);
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // RECENT DONATION CARD (with image + progress from service detail)
-  // ═══════════════════════════════════════════════════════════════
-  Widget _buildRecentDonation(NgoHistoryModel item) {
-    // ✅ service_id se cached full data
-    final service = item.service != null ? _serviceCache[item.service!] : null;
-
-    // Image — prefer live service, fallback to history snapshot
-    final imageUrl = (service?.images.isNotEmpty == true)
-        ? service!.images.first
-        : item.serviceImage;
-
-    // Progress — prefer live service, fallback to history snapshot
-    final target = service?.progress.targetAmount ??
-        item.serviceProgress?.targetAmount ??
-        0;
-    final total = service?.progress.totalAmount ??
-        item.serviceProgress?.totalAmount ??
-        0.0;
-    final donor = service?.progress.donor ??
-        item.serviceProgress?.donor ??
-        0;
-
-    final ratio = target == 0 ? 0.0 : (total / target).clamp(0.0, 1.0);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.teal, width: 0.3),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ─── Row: thumbnail + info + amount ───
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🖼️ Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: (imageUrl ?? '').isNotEmpty
-                      ? Image.network(
-                    imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _thumbFallback(),
-                    loadingBuilder: (context, child, p) {
-                      if (p == null) return child;
-                      return Container(
-                        color: Colors.teal.withOpacity(0.08),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.teal,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                      : _thumbFallback(),
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              // 📝 Name + category + time
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service?.name ?? item.serviceName ?? "Donation",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    if ((service?.categoryName ?? item.categoryName ?? '')
-                        .isNotEmpty)
-                      Text(
-                        service?.categoryName ?? item.categoryName!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.schedule,
-                            size: 11, color: Colors.grey[500]),
-                        const SizedBox(width: 3),
-                        Text(
-                          _formatDate(item.createdAt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // 💰 Your donation
-              const SizedBox(width: 8),
-              Text(
-                "₹${item.donateAmount.toStringAsFixed(0)}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-
-          // ─── Progress bar (target vs raised) ───
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: ratio,
-              backgroundColor: Colors.grey.shade200,
-              color: Colors.teal,
-              minHeight: 5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "₹${total.toStringAsFixed(0)} raised",
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.teal,
-                ),
-              ),
-              Text(
-                "Target: ₹$target",
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "$donor donors",
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[600],
-                ),
-              ),
-              Text(
-                "${(ratio * 100).toStringAsFixed(0)}% funded",
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.teal,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _thumbFallback() {
-    return Container(
-      color: Colors.teal.withOpacity(0.1),
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.volunteer_activism,
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: RefreshIndicator(
+        onRefresh: () => historyController.loadMyHistory(),
         color: Colors.teal,
-        size: 24,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            // 1. Top Summary Card
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.teal,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.teal.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        child:
+                        Icon(Icons.person, size: 36, color: Colors.teal),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authController.getUserName,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              authController.getUserPhone,
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Obx(() => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _statItem(
+                          "₹${historyController.totalDonated.value.toStringAsFixed(0)}",
+                          "Total Donated"),
+                      _statItem(
+                          "${historyController.totalDonations.value}",
+                          "Donations"),
+                      _statItem(
+                          "${historyController.uniqueServices.value}",
+                          "Services"),
+                    ],
+                  )),
+                ],
+              ),
+            ),
+
+            // 2. Filter Chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip(historyController, "Today", "today"),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                        historyController, "This Week", "week"),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                        historyController, "This Month", "month"),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(historyController, "All", "all"),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text("My Donation History",
+                  style:
+                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 8),
+
+            // 3. Dynamic History List
+            Obx(() {
+              if (historyController.isLoading.value &&
+                  historyController.groupedHistoryList.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 50),
+                  child: Center(
+                      child: CircularProgressIndicator(color: Colors.teal)),
+                );
+              }
+
+              if (historyController.groupedHistoryList.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.receipt_long_outlined,
+                            size: 50, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        const Text("No donations in this period",
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                  if (historyController.isLoading.value)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.teal, strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: historyController.groupedHistoryList.length,
+                    itemBuilder: (context, index) {
+                      final item =
+                      historyController.groupedHistoryList[index];
+                      return _buildGroupedHistoryCard(item);
+                    },
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════════════
-
-  Widget _verticalDivider() {
-    return Container(
-      width: 1,
-      height: 36,
-      color: Colors.white.withOpacity(0.2),
-    );
-  }
-
-  Widget _buildStatItem(String value, String label, IconData icon) {
+  Widget _statItem(String value, String label) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.9), size: 18),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.75),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildFilterChip(String label, String filterKey) {
-    final selected = historyController.selectedFilter.value == filterKey;
+  Widget _buildFilterChip(
+      NgoHistoryController controller, String label, String filterKey) {
+    final selected = controller.selectedFilter.value == filterKey;
     return GestureDetector(
-      onTap: () => historyController.applyFilter(filterKey),
+      onTap: () => controller.applyFilter(filterKey),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? Colors.teal : Colors.teal.withOpacity(0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? Colors.teal : Colors.transparent,
-            width: 1.2,
-          ),
+          border:
+          Border.all(color: selected ? Colors.teal : Colors.transparent),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
             color: selected ? Colors.white : Colors.teal,
           ),
@@ -573,20 +220,155 @@ class _NgoProfileScreenState extends State<NgoProfileScreen> {
     );
   }
 
-  String _formatDate(String isoDate) {
-    if (isoDate.isEmpty) return "";
-    try {
-      final dt = DateTime.parse(isoDate).toLocal();
-      final now = DateTime.now();
-      final diff = now.difference(dt);
+  // ✅ UPDATED: Now uses helper methods from the model
+  Widget _buildGroupedHistoryCard(GroupedServiceDonationModel item) {
+    final service = item.service;
 
-      if (diff.inMinutes < 1) return "Just now";
-      if (diff.inMinutes < 60) return "${diff.inMinutes} min ago";
-      if (diff.inHours < 24) return "${diff.inHours} hrs ago";
-      if (diff.inDays < 30) return "${diff.inDays} days ago";
-      return "${dt.day}/${dt.month}/${dt.year}";
-    } catch (_) {
-      return "";
-    }
+    // Helper properties se seedha data lein
+    final int donationCount = item.myDonationCount;
+    final double totalDonated = item.myTotalDonated;
+    final List<double> donationAmounts = item.myDonationAmounts;
+
+    final target = service.serviceProgress.targetAmount;
+    final raised = service.serviceProgress.totalAmount;
+    final ratio = target == 0 ? 0.0 : (raised / target).clamp(0.0, 1.0);
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300, width: 0.1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header (Image + Name)
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: service.serviceImage.isNotEmpty
+                      ? Image.network(service.serviceImage,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _imgFallback())
+                      : _imgFallback(),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(service.serviceName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 2),
+                      Text(service.categoryName,
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+
+            // Donation Details
+            if (donationCount > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "You donated: ₹${totalDonated.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      "$donationCount times", // 👈 Ab sahi count dikhega
+                      style: const TextStyle(
+                          color: Colors.green,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: donationAmounts.map((amount) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      "₹${amount.toStringAsFixed(0)}",
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+            ],
+
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                  value: ratio,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Colors.teal,
+                  minHeight: 6),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("₹${raised.toStringAsFixed(0)} raised",
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.teal,
+                        fontWeight: FontWeight.bold)),
+                Text("Target: ₹$target",
+                    style: TextStyle(
+                        fontSize: 11, color: Colors.grey.shade700)),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _imgFallback() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: Colors.teal.withOpacity(0.1),
+      child: const Icon(Icons.volunteer_activism,
+          color: Colors.teal, size: 30),
+    );
   }
 }

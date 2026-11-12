@@ -17,9 +17,10 @@ import '../feature/it_service/home/controller/it_service_banner_controller.dart'
 import '../feature/it_service/home/controller/it_service_category_controller.dart';
 import '../feature/it_service/service/controller/it_service_controller.dart';
 import '../feature/location/controller/location_controller.dart';
+import '../feature/ngo/ads/controller/ngo_ads_controller.dart';
 import '../feature/ngo/home/controller/ngo_banner_controller.dart';
 import '../feature/ngo/home/controller/ngo_category_controller.dart';
-import '../feature/ngo/services/controller/ngo_history_controller.dart';
+import '../feature/ngo/history/controller/ngo_history_controller.dart';
 import '../feature/ngo/services/controller/ngo_service_controller.dart';
 import '../feature/ngo/services/controller/ngo_staff_controller.dart';
 import '../feature/ott/ads/controller/ott_ads_controller.dart';
@@ -109,6 +110,7 @@ class AppBindings implements Bindings {
     Get.lazyPut<OttWebSeriesController>(() => OttWebSeriesController(), fenix: true);
     Get.lazyPut<OttTvShowsController>(() => OttTvShowsController(), fenix: true);
     Get.put<RecordVideoController>(RecordVideoController(), permanent: true);
+    Get.put<NgoAdsController>(NgoAdsController(), permanent: true);
 
   }
 }

@@ -32,7 +32,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
   final OttContentController contentCtrl = Get.find<OttContentController>();
   final OttAdsController adsCtrl = Get.find<OttAdsController>();
 
-  // per-screen TV Shows controller (unique tag)
   late final OttTvShowsController tvCtrl;
   late final String _tvTag;
 
@@ -46,25 +45,45 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
   Timer? _hideControlsTimer;
   static final Map<String, String> _streamUrlCache = {};
 
-  // current video url (retry ke liye) + race condition token
   String _currentVideoUrl = '';
   int _initToken = 0;
 
   // ================= AD STATES =================
-  Timer? _adScheduleTimer;
   Timer? _adCountdownTimer;
+  Timer? _skipTimer;
   OttAdsModel? _activeAd;
-  int _adSecondsRemaining = 60;
+  int _adSecondsRemaining = 15;
   bool _wasPlayingBeforeAd = false;
 
-  // double tap / fast tap se bachne ke liye
+  // Ad video
+  VideoPlayerController? _adVideoController;
+  bool _adVideoLoading = false;
+  bool _adVideoError = false;
+  bool _adMuted = false;
+
+  bool _canSkipAd = false;
+
+  // 🆕 Dynamic mid-roll thresholds — reset per episode
+  List<double> _thresholds = [];
+  bool _thresholdsReady = false;
+  int _nextThresholdIndex = 0;
+  DateTime? _lastAdEndTime;
+  bool _adStarting = false;
+
   bool _isNavigating = false;
+
+  List<OttAdsModel> get _allAds => adsCtrl.ads;
+
+  OttAdsModel? _pickRandomAd() {
+    final list = _allAds;
+    if (list.isEmpty) return null;
+    return list[Random().nextInt(list.length)];
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // Unique tag: same content dobara khule to bhi controller conflict na ho
     _tvTag = 'tv_${widget.content.id}_${DateTime.now().microsecondsSinceEpoch}';
     tvCtrl = Get.put<OttTvShowsController>(
       OttTvShowsController(),
@@ -76,9 +95,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
 
     _currentVideoUrl = widget.content.videoUrl;
     if (_currentVideoUrl.isNotEmpty) _initVideo(_currentVideoUrl);
-
-    // Ad scheduler start
-    _scheduleNextAd();
   }
 
   @override
@@ -86,31 +102,32 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
     Get.delete<OttTvShowsController>(tag: _tvTag, force: true);
 
     _hideControlsTimer?.cancel();
-    _adScheduleTimer?.cancel();
     _adCountdownTimer?.cancel();
+    _skipTimer?.cancel();
     _videoController?.removeListener(_onVideoTick);
     _videoController?.dispose();
+    _adVideoController?.removeListener(_onAdVideoTick);
+    _adVideoController?.dispose();
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
-  // ================= MORE TV SHOWS PLAY (FIXED) =================
+  // ================= MORE TV SHOWS PLAY =================
   Future<void> _playSimilar(OttContentModel item) async {
     if (_isNavigating) return;
     _isNavigating = true;
 
     _hideControlsTimer?.cancel();
-    _adScheduleTimer?.cancel();
     _adCountdownTimer?.cancel();
+    _skipTimer?.cancel();
     _videoController?.pause();
 
-    // MAIN FIX: GetX same route ko duplicate samajh ke ignore kar deta tha.
-    // preventDuplicates: false se har baar play hoga.
     await Get.off(
           () => PlayTvshowsScreen(
-        key: ValueKey('play_tv_${item.id}_${DateTime.now().microsecondsSinceEpoch}'),
+        key: ValueKey(
+            'play_tv_${item.id}_${DateTime.now().microsecondsSinceEpoch}'),
         content: item,
       ),
       preventDuplicates: false,
@@ -121,42 +138,113 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
     _isNavigating = false;
   }
 
-  // ================= AD LOGIC =================
-  void _scheduleNextAd() {
-    _adScheduleTimer?.cancel();
-    // Random gap: 60 se 120 seconds
-    final randomSeconds = 60 + Random().nextInt(61);
-
-    _adScheduleTimer = Timer(Duration(seconds: randomSeconds), () {
-      if (!mounted) return;
-      _playRandomAd();
-    });
+  // ================= THRESHOLD COMPUTATION =================
+  List<double> _computeThresholds(Duration dur) {
+    final sec = dur.inSeconds;
+    if (sec < 30) return [];
+    if (sec < 60) return [50];
+    if (sec < 180) return [33, 66];
+    return [20, 40, 60, 80];
   }
 
-  void _playRandomAd() {
-    final activeAds = adsCtrl.ads.where((a) => a.isActive).toList();
-    if (activeAds.isEmpty) {
-      _scheduleNextAd();
+  void _ensureThresholds() {
+    if (_thresholdsReady) return;
+    final vc = _videoController;
+    if (vc == null || !vc.value.isInitialized) return;
+    _thresholds = _computeThresholds(vc.value.duration);
+    _thresholdsReady = true;
+  }
+
+  void _resetThresholds() {
+    _thresholds = [];
+    _thresholdsReady = false;
+    _nextThresholdIndex = 0;
+    _lastAdEndTime = null;
+  }
+
+  // ================= MID-ROLL CHECKER =================
+  void _checkForMidRollAd() {
+    if (_adStarting) return;
+    if (_activeAd != null) return;
+
+    _ensureThresholds();
+    if (_nextThresholdIndex >= _thresholds.length) return;
+
+    final vc = _videoController;
+    if (vc == null || !vc.value.isInitialized) return;
+
+    final dur = vc.value.duration;
+    if (dur.inMilliseconds < 1000) return;
+
+    if (_lastAdEndTime != null &&
+        DateTime.now().difference(_lastAdEndTime!).inSeconds < 3) {
       return;
     }
 
-    final randomAd = activeAds[Random().nextInt(activeAds.length)];
+    final pos = vc.value.position;
+    final pct = (pos.inMilliseconds / dur.inMilliseconds) * 100;
+    final threshold = _thresholds[_nextThresholdIndex];
 
-    _wasPlayingBeforeAd = _videoController?.value.isPlaying ?? false;
-
-    setState(() {
-      _activeAd = randomAd;
-      _adSecondsRemaining = 60;
-    });
-
-    if (_videoController != null && _videoController!.value.isPlaying) {
-      _videoController!.pause();
-      _hideControlsTimer?.cancel();
+    if (pct > threshold + 15) {
+      _nextThresholdIndex++;
+      return;
     }
 
+    if (pct >= threshold) {
+      _nextThresholdIndex++;
+      final ad = _pickRandomAd();
+      if (ad != null) _startAd(ad);
+    }
+  }
+
+  // ================= START AD (guaranteed pause) =================
+  Future<void> _startAd(OttAdsModel ad) async {
+    if (_adStarting) return;
+    _adStarting = true;
+
+    try {
+      _wasPlayingBeforeAd = _videoController?.value.isPlaying ?? false;
+
+      _hideControlsTimer?.cancel();
+      final vc = _videoController;
+      if (vc != null && vc.value.isInitialized) {
+        try {
+          await vc.pause();
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+
+      _disposeAdVideo();
+      setState(() {
+        _activeAd = ad;
+        _canSkipAd = false;
+        _adSecondsRemaining = 15;
+      });
+
+      _skipTimer?.cancel();
+      _skipTimer = Timer(const Duration(seconds: 6), () {
+        if (mounted && _activeAd != null) {
+          setState(() => _canSkipAd = true);
+        }
+      });
+
+      if (ad.hasVideo) {
+        _initAdVideo(ad.videoUrl!);
+      } else {
+        _startAdCountdown(15);
+      }
+    } finally {
+      _adStarting = false;
+    }
+  }
+
+  void _startAdCountdown(int seconds) {
     _adCountdownTimer?.cancel();
+    if (mounted) setState(() => _adSecondsRemaining = seconds);
+
     _adCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
+      if (!mounted || _activeAd == null) {
         timer.cancel();
         return;
       }
@@ -168,26 +256,143 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
     });
   }
 
+  Future<void> _initAdVideo(String videoUrl) async {
+    final videoId = _extractYouTubeId(videoUrl);
+    if (mounted) {
+      setState(() {
+        _adVideoLoading = true;
+        _adVideoError = false;
+      });
+    }
+
+    try {
+      String resolvedUrl = videoUrl;
+      if (videoId != null) {
+        final cacheKey = 'ad_$videoId';
+        final cached = _streamUrlCache[cacheKey];
+        if (cached != null) {
+          resolvedUrl = cached;
+        } else {
+          final yt = YoutubeExplode();
+          try {
+            final manifest =
+            await yt.videos.streamsClient.getManifest(videoId);
+            final muxed = manifest.muxed.sortByVideoQuality();
+            final stream = muxed.firstWhere(
+                    (s) => s.videoResolution.height <= 720,
+                orElse: () => muxed.first);
+            resolvedUrl = stream.url.toString();
+            _streamUrlCache[cacheKey] = resolvedUrl;
+          } finally {
+            yt.close();
+          }
+        }
+      }
+
+      final ctrl = VideoPlayerController.networkUrl(
+        Uri.parse(resolvedUrl),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+      await ctrl.initialize();
+
+      if (!mounted || _activeAd == null) {
+        await ctrl.dispose();
+        return;
+      }
+
+      ctrl.setLooping(false);
+      ctrl.setVolume(_adMuted ? 0 : 1);
+      await ctrl.play();
+
+      final videoSec = ctrl.value.duration.inSeconds + 1;
+      ctrl.addListener(_onAdVideoTick);
+
+      _adVideoController?.dispose();
+      if (mounted) {
+        setState(() {
+          _adVideoController = ctrl;
+          _adVideoLoading = false;
+        });
+        _startAdCountdown(videoSec);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _adVideoError = true;
+          _adVideoLoading = false;
+        });
+        _startAdCountdown(15);
+      }
+    }
+  }
+
+  void _onAdVideoTick() {
+    if (!mounted || _activeAd == null) return;
+    final vc = _adVideoController;
+    if (vc == null) return;
+    final v = vc.value;
+    if (!v.isInitialized) return;
+
+    if (!_canSkipAd && v.position.inSeconds >= 6) {
+      setState(() => _canSkipAd = true);
+    }
+
+    if (v.duration > Duration.zero &&
+        v.position >= v.duration - const Duration(milliseconds: 500) &&
+        !v.isPlaying) {
+      _endAd();
+    }
+  }
+
+  void _disposeAdVideo() {
+    _adVideoController?.removeListener(_onAdVideoTick);
+    _adVideoController?.dispose();
+    _adVideoController = null;
+    _adVideoLoading = false;
+    _adVideoError = false;
+  }
+
   void _endAd() {
     _adCountdownTimer?.cancel();
+    _skipTimer?.cancel();
+    _disposeAdVideo();
     if (!mounted) return;
+
+    _lastAdEndTime = DateTime.now();
+    final shouldResume = _wasPlayingBeforeAd;
+    _wasPlayingBeforeAd = false;
+
     setState(() {
       _activeAd = null;
+      _canSkipAd = false;
     });
 
-    if (_wasPlayingBeforeAd &&
+    if (shouldResume &&
         _videoController != null &&
+        _videoController!.value.isInitialized &&
         !_videoController!.value.isPlaying) {
       _videoController!.play();
       _startHideControlsTimer();
     }
+  }
 
-    _scheduleNextAd();
+  void _skipAd() {
+    if (!_canSkipAd) return;
+    _endAd();
+    FlutterToast.success('Ad skipped');
+  }
+
+  void _toggleAdMute() {
+    setState(() => _adMuted = !_adMuted);
+    _adVideoController?.setVolume(_adMuted ? 0 : 1);
   }
 
   // ================= VIDEO LOGIC =================
   void _onVideoTick() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (_activeAd != null) return;
+    setState(() {});
+    _checkForMidRollAd();
   }
 
   String? _extractYouTubeId(String url) {
@@ -199,12 +404,18 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
       if (uri.host.contains('youtube.com')) {
         if (uri.pathSegments.contains('shorts')) {
           final idx = uri.pathSegments.indexOf('shorts');
-          if (idx + 1 < uri.pathSegments.length) return uri.pathSegments[idx + 1];
+          if (idx + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[idx + 1];
+          }
         }
-        if (uri.queryParameters.containsKey('v')) return uri.queryParameters['v'];
+        if (uri.queryParameters.containsKey('v')) {
+          return uri.queryParameters['v'];
+        }
         if (uri.pathSegments.contains('embed')) {
           final idx = uri.pathSegments.indexOf('embed');
-          if (idx + 1 < uri.pathSegments.length) return uri.pathSegments[idx + 1];
+          if (idx + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[idx + 1];
+          }
         }
       }
       return null;
@@ -214,9 +425,12 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
   }
 
   Future<void> _initVideo(String videoUrl) async {
-    final myToken = ++_initToken; // naya request, purane ko ignore karne ke liye
+    final myToken = ++_initToken;
     _currentVideoUrl = videoUrl;
     final videoId = _extractYouTubeId(videoUrl);
+
+    // 🔁 Reset mid-roll thresholds for new video
+    _resetThresholds();
 
     if (mounted) {
       setState(() {
@@ -234,12 +448,12 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
         } else {
           final yt = YoutubeExplode();
           try {
-            final manifest = await yt.videos.streamsClient.getManifest(videoId);
+            final manifest =
+            await yt.videos.streamsClient.getManifest(videoId);
             final muxedStreams = manifest.muxed.sortByVideoQuality();
             final streamInfo = muxedStreams.firstWhere(
-                  (s) => s.videoResolution.height <= 720,
-              orElse: () => muxedStreams.first,
-            );
+                    (s) => s.videoResolution.height <= 720,
+                orElse: () => muxedStreams.first);
             resolvedUrl = streamInfo.url.toString();
             _streamUrlCache[videoId] = resolvedUrl;
           } finally {
@@ -254,7 +468,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
       );
       await newController.initialize();
 
-      // Screen band ho gayi ya koi naya episode select ho gaya
       if (!mounted || myToken != _initToken) {
         newController.dispose();
         return;
@@ -264,7 +477,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
       newController.setVolume(_isMuted ? 0 : 1);
       newController.addListener(_onVideoTick);
 
-      // Agar ad chal raha hai to video peeche play na ho
       if (_activeAd != null) {
         _wasPlayingBeforeAd = true;
       } else {
@@ -362,7 +574,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
     return '${two(d.inMinutes)}:${two(d.inSeconds.remainder(60))}';
   }
 
-  // Play episode from list
   void _playEpisode(OttTvShowsEpisodeModel ep) {
     if (ep.videoUrl.isEmpty) {
       FlutterToast.error('No video URL for this episode');
@@ -375,7 +586,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    // Ad chal raha hai to poori screen par ad dikhao
     if (_activeAd != null) {
       return PopScope(
         canPop: false,
@@ -456,30 +666,74 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
 
   // ================= FULL SCREEN AD OVERLAY =================
   Widget _buildFullScreenAdOverlay() {
+    final ad = _activeAd!;
+    final hasVideo = ad.hasVideo;
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_activeAd!.image != null && _activeAd!.image!.isNotEmpty)
-          Image.network(
-            _activeAd!.image!,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.image_not_supported,
-                    color: Colors.white54, size: 50)),
-          )
-        else
-          const Center(
-              child: Icon(Icons.image_not_supported,
-                  color: Colors.white54, size: 50)),
+        if (hasVideo) _buildAdVideo() else _buildAdImage(ad),
 
-        Container(color: Colors.black.withOpacity(0.4)),
+        Container(color: Colors.black.withOpacity(0.25)),
 
-        // Timer badge (top right)
+        // Ad mute button
+        if (hasVideo && !_adVideoError && _adVideoController != null)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            child: GestureDetector(
+              onTap: _toggleAdMute,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Icon(
+                  _adMuted ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+
+        // Skip button / countdown
         Positioned(
           top: MediaQuery.of(context).padding.top + 16,
           right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: _canSkipAd
+              ? GestureDetector(
+            onTap: _skipAd,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.75),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white54),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Skip Ad',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.skip_next, color: Colors.white, size: 16),
+                ],
+              ),
+            ),
+          )
+              : Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(20),
@@ -507,7 +761,7 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
           ),
         ),
 
-        // Ad details (bottom)
+        // Bottom info
         Positioned(
           bottom: MediaQuery.of(context).padding.bottom + 40,
           left: 20,
@@ -529,7 +783,7 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                _activeAd!.title,
+                ad.title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -537,8 +791,8 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
                   shadows: [Shadow(color: Colors.black, blurRadius: 10)],
                 ),
               ),
-              if (_activeAd!.navigateScreen != null &&
-                  _activeAd!.navigateScreen!.isNotEmpty) ...[
+              if (ad.navigateScreen != null &&
+                  ad.navigateScreen!.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text(
                   'Tap to know more',
@@ -552,12 +806,10 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
           ),
         ),
 
-        // Tap area (poori screen cover karta hai)
         GestureDetector(
           onTap: () {
-            if (_activeAd!.navigateScreen != null &&
-                _activeAd!.navigateScreen!.isNotEmpty) {
-              Get.snackbar('Navigate', 'Go to ${_activeAd!.navigateScreen}',
+            if (ad.navigateScreen != null && ad.navigateScreen!.isNotEmpty) {
+              Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}',
                   backgroundColor: Colors.white, colorText: Colors.black);
             }
           },
@@ -565,6 +817,49 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildAdVideo() {
+    if (_adVideoLoading) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.amber),
+            const SizedBox(height: 12),
+            Text('Loading ad...',
+                style: TextStyle(color: Colors.white.withOpacity(0.8))),
+          ],
+        ),
+      );
+    }
+    if (_adVideoError || _adVideoController == null) {
+      return _buildAdImage(_activeAd!);
+    }
+    final v = _adVideoController!.value;
+    if (!v.isInitialized) return _buildAdImage(_activeAd!);
+
+    return Center(
+      child: AspectRatio(
+        aspectRatio: v.aspectRatio,
+        child: VideoPlayer(_adVideoController!),
+      ),
+    );
+  }
+
+  Widget _buildAdImage(OttAdsModel ad) {
+    if (ad.image != null && ad.image!.isNotEmpty) {
+      return Image.network(
+        ad.image!,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.image_not_supported,
+                color: Colors.white54, size: 50)),
+      );
+    }
+    return const Center(
+        child:
+        Icon(Icons.image_not_supported, color: Colors.white54, size: 50));
   }
 
   // ================= DETAILS =================
@@ -626,71 +921,22 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ── Sponsored Banner Ad ──
+            // ── Bottom banner ad ──
             Obx(() {
-              final activeAds = adsCtrl.ads.where((a) => a.isActive).toList();
-              if (activeAds.isEmpty) return const SizedBox.shrink();
-              final ad = activeAds.first;
+              final ads = adsCtrl.ads;
+              if (ads.isEmpty) return const SizedBox.shrink();
+              final ad = ads.first;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 20),
-                child: GestureDetector(
+                child: _BottomBannerAd(
+                  key: ValueKey('banner_tv_${ad.id}'),
+                  ad: ad,
                   onTap: () {
                     if (ad.navigateScreen != null &&
                         ad.navigateScreen!.isNotEmpty) {
                       Get.snackbar('Navigate', 'Go to ${ad.navigateScreen}');
                     }
                   },
-                  child: Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white12),
-                      image: ad.image != null && ad.image!.isNotEmpty
-                          ? DecorationImage(
-                        image: NetworkImage(ad.image!),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                            Colors.black.withOpacity(0.4),
-                            BlendMode.darken),
-                      )
-                          : null,
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text('SPONSORED',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 8,
-                          left: 12,
-                          right: 12,
-                          child: Text(ad.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               );
             }),
@@ -736,7 +982,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
                   itemBuilder: (context, index) {
                     final item = similar[index];
                     return GestureDetector(
-                      // FIXED: ab har baar play hoga
                       onTap: () => _playSimilar(item),
                       child: Container(
                         width: 120,
@@ -861,7 +1106,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
         ),
         const SizedBox(height: 10),
 
-        // Season tabs (only if > 1 season)
         if (show.seasons.length > 1)
           SizedBox(
             height: 34,
@@ -898,7 +1142,6 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
           ),
         if (show.seasons.length > 1) const SizedBox(height: 10),
 
-        // Episode cards
         SizedBox(
           height: 155,
           child: ListView.separated(
@@ -1153,7 +1396,8 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
                           onPressed: () => _seekBy(const Duration(seconds: -10)),
-                          icon: const Icon(Icons.replay_10, color: Colors.white),
+                          icon:
+                          const Icon(Icons.replay_10, color: Colors.white),
                         ),
                         SizedBox(width: isFullScreen ? 24 : 16),
                         value.isBuffering
@@ -1172,13 +1416,14 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
                         IconButton(
                           iconSize: isFullScreen ? 44 : 34,
                           onPressed: () => _seekBy(const Duration(seconds: 10)),
-                          icon: const Icon(Icons.forward_10, color: Colors.white),
+                          icon:
+                          const Icon(Icons.forward_10, color: Colors.white),
                         ),
                       ],
                     ),
                     Padding(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1262,6 +1507,270 @@ class _PlayTvshowsScreenState extends State<PlayTvshowsScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOTTOM BANNER AD CARD — video support, muted by default
+// ═══════════════════════════════════════════════════════════════
+class _BottomBannerAd extends StatefulWidget {
+  final OttAdsModel ad;
+  final VoidCallback onTap;
+
+  const _BottomBannerAd({
+    super.key,
+    required this.ad,
+    required this.onTap,
+  });
+
+  @override
+  State<_BottomBannerAd> createState() => _BottomBannerAdState();
+}
+
+class _BottomBannerAdState extends State<_BottomBannerAd> {
+  VideoPlayerController? _video;
+  bool _videoReady = false;
+  bool _videoFailed = false;
+  bool _isMuted = true;
+  bool _userPaused = false;
+
+  static final Map<String, String> _streamCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.ad.hasVideo) {
+      _initVideo(widget.ad.videoUrl!);
+    }
+  }
+
+  Future<void> _initVideo(String rawUrl) async {
+    final ytId = _extractYoutubeId(rawUrl);
+    var resolved = rawUrl;
+
+    if (ytId != null) {
+      final cacheKey = 'banner_$ytId';
+      final cached = _streamCache[cacheKey];
+      if (cached != null) {
+        resolved = cached;
+      } else {
+        try {
+          final yt = YoutubeExplode();
+          try {
+            final manifest = await yt.videos.streamsClient.getManifest(ytId);
+            final muxed = manifest.muxed.sortByVideoQuality();
+            final stream = muxed.firstWhere(
+                    (s) => s.videoResolution.height <= 720,
+                orElse: () => muxed.first);
+            resolved = stream.url.toString();
+            _streamCache[cacheKey] = resolved;
+          } finally {
+            yt.close();
+          }
+        } catch (_) {
+          if (mounted) setState(() => _videoFailed = true);
+          return;
+        }
+      }
+    }
+
+    final ctrl = VideoPlayerController.networkUrl(
+      Uri.parse(resolved),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+
+    try {
+      await ctrl.initialize();
+      if (!mounted) {
+        await ctrl.dispose();
+        return;
+      }
+      ctrl.setLooping(true);
+      ctrl.setVolume(_isMuted ? 0 : 1);
+      await ctrl.play();
+      if (mounted) {
+        setState(() {
+          _video = ctrl;
+          _videoReady = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _videoFailed = true);
+    }
+  }
+
+  String? _extractYoutubeId(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.contains('youtu.be')) {
+        return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+      }
+      if (uri.host.contains('youtube.com')) {
+        if (uri.pathSegments.contains('shorts')) {
+          final idx = uri.pathSegments.indexOf('shorts');
+          if (idx + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[idx + 1];
+          }
+        }
+        if (uri.queryParameters.containsKey('v')) {
+          return uri.queryParameters['v'];
+        }
+        if (uri.pathSegments.contains('embed')) {
+          final idx = uri.pathSegments.indexOf('embed');
+          if (idx + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[idx + 1];
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _togglePlayPause() {
+    if (_video == null) return;
+    setState(() => _userPaused = !_userPaused);
+    if (_userPaused) {
+      _video!.pause();
+    } else {
+      _video!.play();
+    }
+  }
+
+  void _toggleMute() {
+    if (_video == null) return;
+    setState(() => _isMuted = !_isMuted);
+    _video!.setVolume(_isMuted ? 0 : 1);
+  }
+
+  @override
+  void dispose() {
+    _video?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasVideo = widget.ad.hasVideo && _videoReady && _video != null;
+    final hasImageOnly = !widget.ad.hasVideo && widget.ad.hasImage;
+    final imageFallback =
+        widget.ad.hasVideo && !hasVideo && widget.ad.hasImage;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        height: 120,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (hasVideo)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _video!.value.size.width,
+                  height: _video!.value.size.height,
+                  child: VideoPlayer(_video!),
+                ),
+              )
+            else if (hasImageOnly || imageFallback)
+              Image.network(
+                widget.ad.image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: Colors.black),
+              )
+            else
+              Container(color: Colors.black),
+
+            Container(color: Colors.black.withOpacity(0.25)),
+
+            if (hasVideo)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _roundBtn(
+                      icon: _userPaused
+                          ? Icons.play_arrow_rounded
+                          : Icons.pause_rounded,
+                      onTap: _togglePlayPause,
+                    ),
+                    const SizedBox(width: 6),
+                    _roundBtn(
+                      icon: _isMuted
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
+                      onTap: _toggleMute,
+                    ),
+                  ],
+                ),
+              ),
+
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'SPONSORED',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+
+            Positioned(
+              bottom: 8,
+              left: 12,
+              right: 12,
+              child: Text(
+                widget.ad.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _roundBtn({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 14),
       ),
     );
   }

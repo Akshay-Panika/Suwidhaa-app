@@ -13,12 +13,13 @@ import '../model/ott_banner_model.dart';
 
 const String kYoutubeOrigin = 'https://www.youtube-nocookie.com';
 const double kYtZoom = 1.5;
+const Duration kControlsAutoHide = Duration(seconds: 3);
 
-final ValueNotifier<bool> _bannerMuted = ValueNotifier<bool>(false);
+// ✅ Default Audio OFF
+final ValueNotifier<bool> _bannerMuted = ValueNotifier<bool>(true);
 final ValueNotifier<bool> _bannerPaused = ValueNotifier<bool>(false);
 
 class MovieBanner extends StatefulWidget {
-  // ✅ Screen se visibility track karne ke liye naya parameter
   final bool isVisible;
 
   const MovieBanner({super.key, this.isVisible = true});
@@ -45,10 +46,7 @@ class _MovieBannerState extends State<MovieBanner> {
       if (_currentIndex >= controller.banners.length) _currentIndex = 0;
       _scheduleNext();
     });
-
-    // ✅ Pause/Play state change par timer ko handle karne ke liye listener
     _bannerPaused.addListener(_onPauseChanged);
-
     WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleNext());
   }
 
@@ -60,7 +58,6 @@ class _MovieBannerState extends State<MovieBanner> {
     super.dispose();
   }
 
-  // ✅ Screen switch hone par carousel timer cancel karo
   @override
   void didUpdateWidget(covariant MovieBanner oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -74,11 +71,11 @@ class _MovieBannerState extends State<MovieBanner> {
   }
 
   void _onPauseChanged() {
-    if (!_bannerPaused.value) {
-      // User ne resume kiya to safety timeout wapas start karo
-      _scheduleNext();
+    // ✅ Paused -> cancel timer so carousel doesn't auto-advance
+    //    Resumed -> schedule again
+    if (_bannerPaused.value) {
+      _timer?.cancel();
     } else {
-      // User ne pause kiya to timer ko reset karke 4 sec par slide karwao
       _scheduleNext();
     }
   }
@@ -93,13 +90,12 @@ class _MovieBannerState extends State<MovieBanner> {
 
   void _scheduleNext() {
     _timer?.cancel();
-    // Agar screen visible nahi hai to timer mat chalao
     if (!mounted || controller.banners.length <= 1 || !widget.isVisible) return;
 
-    // ✅ Agar user ne video pause kiya hai, to usko image ki tarah treat karo (4 sec me slide karo)
-    final isPaused = _currentIsPlayable && _bannerPaused.value;
-    final delay = (_currentIsPlayable && !isPaused) ? _videoSafetyTimeout : _imageDuration;
+    // ✅ If user paused the current video, don't auto-advance
+    if (_currentIsPlayable && _bannerPaused.value) return;
 
+    final delay = _currentIsPlayable ? _videoSafetyTimeout : _imageDuration;
     _timer = Timer(delay, _goNext);
   }
 
@@ -142,13 +138,13 @@ class _MovieBannerState extends State<MovieBanner> {
                 );
               }).toList(),
               options: CarouselOptions(
-                autoPlay: false, // Manual timer use kar rahe hain
+                autoPlay: false,
                 enlargeCenterPage: false,
                 enableInfiniteScroll: count > 1,
                 viewportFraction: 1.0,
                 height: 240,
                 onPageChanged: (index, reason) {
-                  _bannerPaused.value = false; // New slide par pause reset karo
+                  _bannerPaused.value = false;
                   setState(() => _currentIndex = index);
                   _scheduleNext();
                 },
@@ -201,7 +197,7 @@ class _MovieBannerState extends State<MovieBanner> {
           key: ValueKey('banner_video_${banner.id}'),
           videoUrl: banner.videoUrl!,
           poster: poster,
-          active: isCurrent && widget.isVisible, // ✅ Visibility logic
+          active: isCurrent && widget.isVisible,
           loop: singleBanner,
           onFinished: onVideoEnd,
           onFailed: () {
@@ -216,8 +212,6 @@ class _MovieBannerState extends State<MovieBanner> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Baaki widgets (Poster, Loader, Mute button, Pause icon, Seek bar, Videos) same rahenge
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Poster extends StatelessWidget {
@@ -353,11 +347,15 @@ class _SeekBar extends StatefulWidget {
   final double progress;
   final Duration duration;
   final ValueChanged<double> onSeek;
+  final VoidCallback? onInteractionStart;
+  final VoidCallback? onInteractionEnd;
 
   const _SeekBar({
     required this.progress,
     required this.duration,
     required this.onSeek,
+    this.onInteractionStart,
+    this.onInteractionEnd,
   });
 
   @override
@@ -388,17 +386,27 @@ class _SeekBarState extends State<_SeekBar> {
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapUp: (d) => widget.onSeek(frac(d.localPosition.dx)),
-            onHorizontalDragStart: (d) =>
-                setState(() => _drag = frac(d.localPosition.dx)),
+            onTapUp: (d) {
+              widget.onInteractionStart?.call();
+              widget.onSeek(frac(d.localPosition.dx));
+              widget.onInteractionEnd?.call();
+            },
+            onHorizontalDragStart: (d) {
+              widget.onInteractionStart?.call();
+              setState(() => _drag = frac(d.localPosition.dx));
+            },
             onHorizontalDragUpdate: (d) =>
                 setState(() => _drag = frac(d.localPosition.dx)),
             onHorizontalDragEnd: (_) {
               final v = _drag;
               setState(() => _drag = null);
               if (v != null) widget.onSeek(v);
+              widget.onInteractionEnd?.call();
             },
-            onHorizontalDragCancel: () => setState(() => _drag = null),
+            onHorizontalDragCancel: () {
+              setState(() => _drag = null);
+              widget.onInteractionEnd?.call();
+            },
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -559,6 +567,10 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
   double _progress = 0;
   Duration _duration = Duration.zero;
 
+  // ✅ Controls (seekbar + mute) visibility
+  bool _controlsVisible = false;
+  Timer? _controlsTimer;
+
   @override
   void initState() {
     super.initState();
@@ -573,12 +585,14 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
     _paused = false;
     _progress = 0;
     _duration = Duration.zero;
-    _bannerPaused.value = false;
+    _controlsVisible = false;
+    _controlsTimer?.cancel();
 
     final c = YoutubePlayerController.fromVideoId(
       videoId: widget.videoId,
       autoPlay: true,
       params: YoutubePlayerParams(
+        // ✅ Uses _bannerMuted which defaults to true => audio OFF
         mute: _bannerMuted.value,
         showControls: false,
         showFullscreenButton: false,
@@ -619,6 +633,7 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
   void _stop() {
     _startTimeout?.cancel();
     _soundFallback?.cancel();
+    _controlsTimer?.cancel();
     _bannerMuted.removeListener(_onMuteChanged);
     _sub?.cancel();
     _posSub?.cancel();
@@ -639,6 +654,30 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
     } else {
       c.unMute();
     }
+  }
+
+  // ✅ Tap logic
+  void _onVideoTap() {
+    if (_paused) {
+      // Paused -> resume and keep controls visible
+      _togglePlayPause();
+      setState(() => _controlsVisible = true);
+    } else if (_controlsVisible) {
+      // Playing + controls visible -> pause
+      _togglePlayPause();
+    } else {
+      // Playing + controls hidden -> just show controls
+      setState(() => _controlsVisible = true);
+    }
+    _resetControlsTimer();
+  }
+
+  void _resetControlsTimer() {
+    _controlsTimer?.cancel();
+    if (_paused) return; // Don't auto-hide when paused
+    _controlsTimer = Timer(kControlsAutoHide, () {
+      if (mounted) setState(() => _controlsVisible = false);
+    });
   }
 
   void _togglePlayPause() {
@@ -662,6 +701,7 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
     c.seekTo(seconds: seconds, allowSeekAhead: true);
     if (fraction < 0.98) _finished = false;
     setState(() => _progress = fraction);
+    _resetControlsTimer();
   }
 
   void _onValue(YoutubePlayerValue value) {
@@ -764,6 +804,8 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
     if (c == null) return widget.poster;
 
     final showVideo = widget.active && _started;
+    // ✅ Controls (seekbar + mute) only when tapped, or when paused
+    final showControls = _controlsVisible || _paused;
 
     return Stack(
       fit: StackFit.expand,
@@ -775,7 +817,7 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: _togglePlayPause,
+            onTap: _onVideoTap,
           ),
         ),
         _PosterOverlay(
@@ -784,12 +826,14 @@ class _YoutubeVideoState extends State<_YoutubeVideo> {
           showLoader: widget.active && !showVideo,
         ),
         if (showVideo) _PauseIcon(visible: _paused),
-        if (showVideo) const _MuteButton(),
-        if (showVideo)
+        if (showVideo && showControls) const _MuteButton(),
+        if (showVideo && showControls)
           _SeekBar(
             progress: _progress,
             duration: _duration,
             onSeek: _seekTo,
+            onInteractionStart: () => _controlsTimer?.cancel(),
+            onInteractionEnd: _resetControlsTimer,
           ),
       ],
     );
@@ -823,6 +867,10 @@ class _DirectVideoState extends State<_DirectVideo> {
   bool _finishedFired = false;
   bool _userPaused = false;
 
+  // ✅ Controls visibility
+  bool _controlsVisible = false;
+  Timer? _controlsTimer;
+
   @override
   void initState() {
     super.initState();
@@ -832,6 +880,34 @@ class _DirectVideoState extends State<_DirectVideo> {
 
   void _applyVolume() {
     _controller?.setVolume(_bannerMuted.value ? 0 : 1);
+  }
+
+  // ✅ Tap logic
+  void _onVideoTap() {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) return;
+
+    if (!c.value.isPlaying) {
+      // Paused -> resume and keep controls visible
+      _togglePlayPause();
+      setState(() => _controlsVisible = true);
+    } else if (_controlsVisible) {
+      // Playing + controls visible -> pause
+      _togglePlayPause();
+    } else {
+      // Playing + controls hidden -> just show controls
+      setState(() => _controlsVisible = true);
+    }
+    _resetControlsTimer();
+  }
+
+  void _resetControlsTimer() {
+    _controlsTimer?.cancel();
+    final c = _controller;
+    if (c == null || !c.value.isPlaying) return; // Don't auto-hide when paused
+    _controlsTimer = Timer(kControlsAutoHide, () {
+      if (mounted) setState(() => _controlsVisible = false);
+    });
   }
 
   void _togglePlayPause() {
@@ -855,6 +931,7 @@ class _DirectVideoState extends State<_DirectVideo> {
     final target = c.value.duration * fraction;
     c.seekTo(target);
     if (fraction < 0.98) _finishedFired = false;
+    _resetControlsTimer();
   }
 
   @override
@@ -867,6 +944,8 @@ class _DirectVideoState extends State<_DirectVideo> {
     if (widget.active && !oldWidget.active) {
       _finishedFired = false;
       _userPaused = false;
+      _controlsVisible = false;
+      _controlsTimer?.cancel();
       c.seekTo(Duration.zero);
       c.play();
     }
@@ -874,6 +953,8 @@ class _DirectVideoState extends State<_DirectVideo> {
       c.pause();
       c.seekTo(Duration.zero);
       _userPaused = false;
+      _controlsVisible = false;
+      _controlsTimer?.cancel();
     }
   }
 
@@ -886,6 +967,7 @@ class _DirectVideoState extends State<_DirectVideo> {
       _controller = c;
       await c.initialize();
       await c.setLooping(widget.loop);
+      // ✅ Uses _bannerMuted which defaults to true => audio OFF
       await c.setVolume(_bannerMuted.value ? 0 : 1);
 
       if (!mounted) return;
@@ -919,6 +1001,7 @@ class _DirectVideoState extends State<_DirectVideo> {
 
   @override
   void dispose() {
+    _controlsTimer?.cancel();
     _bannerMuted.removeListener(_applyVolume);
     _controller?.removeListener(_onTick);
     _controller?.dispose();
@@ -933,6 +1016,9 @@ class _DirectVideoState extends State<_DirectVideo> {
     final ready = c != null && c.value.isInitialized;
     final showVideo =
         ready && widget.active && c.value.position > Duration.zero;
+
+    // ✅ Controls (seekbar + mute) only when tapped, or when paused
+    final showControls = _controlsVisible || !(c?.value.isPlaying ?? false);
 
     double progress = 0;
     Duration duration = Duration.zero;
@@ -959,7 +1045,7 @@ class _DirectVideoState extends State<_DirectVideo> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: _togglePlayPause,
+            onTap: _onVideoTap,
           ),
         ),
         _PosterOverlay(
@@ -967,13 +1053,16 @@ class _DirectVideoState extends State<_DirectVideo> {
           videoVisible: showVideo,
           showLoader: widget.active && !showVideo,
         ),
-        if (showVideo) _PauseIcon(visible: _userPaused),
-        if (showVideo) const _MuteButton(),
         if (showVideo)
+          _PauseIcon(visible: _userPaused || !(c?.value.isPlaying ?? true)),
+        if (showVideo && showControls) const _MuteButton(),
+        if (showVideo && showControls)
           _SeekBar(
             progress: progress,
             duration: duration,
             onSeek: _seekTo,
+            onInteractionStart: () => _controlsTimer?.cancel(),
+            onInteractionEnd: _resetControlsTimer,
           ),
       ],
     );

@@ -301,6 +301,7 @@ class OpenDonationWidget extends StatelessWidget {
                   width: double.infinity,
                   gaplessPlayback: true, // ✅ smooth image swap
                   errorBuilder: (_, __, ___) => Container(
+                    width: double.infinity,
                     color: color.withOpacity(0.1),
                     child: Icon(
                       Icons.image_not_supported,
@@ -312,6 +313,7 @@ class OpenDonationWidget extends StatelessWidget {
                       (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
+                      width: double.infinity,
                       color: color.withOpacity(0.06),
                       child: Center(
                         child: CircularProgressIndicator(

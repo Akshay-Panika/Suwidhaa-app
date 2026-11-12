@@ -1,6 +1,6 @@
+// ngo_history_controller.dart (unchanged)
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-
 import '../../../../core/widget/flutter_toast.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../model/ngo_history_model.dart';
@@ -11,57 +11,37 @@ class NgoHistoryController extends GetxController {
   final AuthController _authController = Get.find<AuthController>();
 
   final RxBool isLoading = false.obs;
-  final RxBool isDonating = false.obs;   // ✅ new
-  final RxList<NgoHistoryModel> historyList = <NgoHistoryModel>[].obs;
+  final RxBool isDonating = false.obs;
+
+  final RxList<GroupedServiceDonationModel> groupedHistoryList =
+      <GroupedServiceDonationModel>[].obs;
+
   final RxDouble totalDonated = 0.0.obs;
   final RxInt totalDonations = 0.obs;
   final RxInt uniqueServices = 0.obs;
   final RxString selectedFilter = "all".obs;
 
-  bool _initialLoadDone = false;
-
   @override
   void onInit() {
     super.onInit();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initialLoad();
+      loadMyHistory();
     });
-  }
-
-  Future<void> _initialLoad() async {
-    for (int i = 0; i < 10; i++) {
-      final id = _authController.getUserId;
-      if (id != null && id != 0) {
-        await loadMyHistory();
-        _initialLoadDone = true;
-        return;
-      }
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-    if (!_initialLoadDone) {
-      FlutterToast.error("User not logged in");
-    }
   }
 
   Future<void> loadMyHistory({String? from, String? to}) async {
     final raw = _authController.getUserId;
-    final int? donorId = raw is int
-        ? raw
-        : (raw != null ? int.tryParse(raw.toString()) : null);
+    final int? donorId =
+    raw is int ? raw : (raw != null ? int.tryParse(raw.toString()) : null);
 
-    if (donorId == null || donorId <= 0) {
-      debugPrint("⚠️ NgoHistory: donorId not ready yet ($raw)");
-      return;
-    }
+    if (donorId == null || donorId <= 0) return;
 
     try {
       isLoading.value = true;
-      final result = await _repository.getHistoryByDonor(
-        donorId,
-        from: from,
-        to: to,
-      );
-      historyList.assignAll(result.data);
+      final result = await _repository.getHistoryByDonor(donorId,
+          from: from, to: to);
+
+      groupedHistoryList.assignAll(result.data);
       totalDonated.value = result.summary.totalDonated;
       totalDonations.value = result.summary.totalDonations;
       uniqueServices.value = result.summary.uniqueServices;
@@ -72,8 +52,6 @@ class NgoHistoryController extends GetxController {
     }
   }
 
-  /// ✅ NEW — Create a donation
-  /// Returns `true` if successful
   Future<bool> donate({
     required int serviceId,
     required double amount,
@@ -81,15 +59,13 @@ class NgoHistoryController extends GetxController {
     String? donorContact,
   }) async {
     final raw = _authController.getUserId;
-    final int? donorId = raw is int
-        ? raw
-        : (raw != null ? int.tryParse(raw.toString()) : null);
+    final int? donorId =
+    raw is int ? raw : (raw != null ? int.tryParse(raw.toString()) : null);
 
     if (donorId == null || donorId <= 0) {
       FlutterToast.error("Please login to donate");
       return false;
     }
-
     if (amount <= 0) {
       FlutterToast.error("Invalid donation amount");
       return false;
@@ -97,7 +73,6 @@ class NgoHistoryController extends GetxController {
 
     try {
       isDonating.value = true;
-
       await _repository.createHistory(
         NgoHistoryCreateRequest(
           serviceId: serviceId,
@@ -107,10 +82,7 @@ class NgoHistoryController extends GetxController {
           donorContact: donorContact ?? _authController.getUserPhone,
         ),
       );
-
-      // Refresh history so UI updates immediately
       await loadMyHistory();
-
       return true;
     } catch (e) {
       FlutterToast.error(e.toString().replaceFirst('Exception: ', ''));
@@ -122,7 +94,6 @@ class NgoHistoryController extends GetxController {
 
   void applyFilter(String filter) {
     selectedFilter.value = filter;
-
     final now = DateTime.now();
     DateTime? from;
 
@@ -136,7 +107,6 @@ class NgoHistoryController extends GetxController {
       case 'month':
         from = now.subtract(const Duration(days: 30));
         break;
-      case 'all':
       default:
         from = null;
     }
@@ -146,9 +116,5 @@ class NgoHistoryController extends GetxController {
           ? "${from.year}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}"
           : null,
     );
-  }
-
-  Future<void> refreshHistory() async {
-    await loadMyHistory();
   }
 }

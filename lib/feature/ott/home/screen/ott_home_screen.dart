@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:untitled/feature/ott/home/screen/play_dashboard_screen.dart';
+import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../ads/controller/ott_ads_controller.dart';
 import '../../ads/model/ott_ads_model.dart';
 import '../../category/controller/ott_category_controller.dart';
@@ -11,6 +17,27 @@ import '../../content/model/ott_content_model.dart';
 import '../../search/screen/search_movie_screen.dart';
 import '../../banner/widget/movie_banner.dart';
 import 'ott_view_all_screen.dart';
+
+// ── YouTube helper ──
+String? _extractYoutubeId(String raw) {
+  final uri = Uri.tryParse(raw.trim());
+  if (uri == null || uri.host.isEmpty) return null;
+  final host = uri.host.toLowerCase();
+  String? id;
+  if (host == 'youtu.be' || host == 'www.youtu.be') {
+    id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+  } else if (host.endsWith('youtube.com') ||
+      host.endsWith('youtube-nocookie.com')) {
+    if (uri.queryParameters['v'] != null) {
+      id = uri.queryParameters['v'];
+    } else if (uri.pathSegments.length >= 2 &&
+        ['embed', 'shorts', 'live', 'v'].contains(uri.pathSegments.first)) {
+      id = uri.pathSegments[1];
+    }
+  }
+  if (id != null && RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(id)) return id;
+  return null;
+}
 
 class OttHomeScreen extends StatefulWidget {
   const OttHomeScreen({super.key});
@@ -24,7 +51,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
   // Ads dismiss state
   bool isAdsVisible = true;
 
-  // ✅ Banner visibility (combined from 3 sources)
+  // Banner visibility
   bool _isBannerVisible = true;
   bool _scrollHidden = false;
   bool _routeHidden = false;
@@ -32,11 +59,14 @@ class _OttHomeScreenState extends State<OttHomeScreen>
 
   final ScrollController _scrollController = ScrollController();
 
+  // 🔁 Shared scroll notifier (for video playback)
+  final ValueNotifier<bool> _isScrolling = ValueNotifier<bool>(false);
+  Timer? _scrollDebounce;
+
   final categoryCtrl = Get.find<OttCategoryController>();
   final contentCtrl = Get.find<OttContentController>();
   final adsCtrl = Get.find<OttAdsController>();
 
-  // ── Recompute banner visibility ──
   void _updateBannerVisibility() {
     final newValue = !_scrollHidden && !_routeHidden && !_appHidden;
     if (newValue != _isBannerVisible) {
@@ -44,7 +74,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     }
   }
 
-  // ✅ Navigation wrapper — route switch par banner pause/resume
   Future<T?> _pauseNavigate<T>(Future<T?> Function() nav) async {
     _routeHidden = true;
     _updateBannerVisibility();
@@ -56,12 +85,26 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     }
   }
 
+  // ── Scroll listener for banner AND video pause ──
+  bool _onScrollNotification(ScrollNotification n) {
+    if (n is ScrollStartNotification || n is ScrollUpdateNotification) {
+      _scrollDebounce?.cancel();
+      if (!_isScrolling.value) _isScrolling.value = true;
+    }
+    if (n is ScrollUpdateNotification || n is ScrollEndNotification) {
+      _scrollDebounce?.cancel();
+      _scrollDebounce = Timer(const Duration(milliseconds: 300), () {
+        _isScrolling.value = false;
+      });
+    }
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // ── Scroll listener ──
     _scrollController.addListener(() {
       final hidden = _scrollController.offset >= 200;
       if (hidden != _scrollHidden) {
@@ -70,12 +113,10 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       }
     });
 
-    // ── Category change ──
     ever(categoryCtrl.selectedCategoryId, (id) {
       contentCtrl.getContents(categoryId: id);
     });
 
-    // ── Initial fetch ──
     Future.microtask(() {
       contentCtrl.getContents(
           categoryId: categoryCtrl.selectedCategoryId.value);
@@ -88,11 +129,12 @@ class _OttHomeScreenState extends State<OttHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollDebounce?.cancel();
+    _isScrolling.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  // ── App lifecycle: background → pause ──
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final hidden = state == AppLifecycleState.paused ||
@@ -135,58 +177,68 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       appBar: _buildAppBar(),
       body: Stack(
         children: [
-          RefreshIndicator(
-            color: Colors.red,
-            backgroundColor: Colors.grey[900],
-            onRefresh: _refreshData,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // 1. Sticky category bar
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SliverCategoryDelegate(
-                    child: Container(
-                      color: Colors.black,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: OttCategoryWidget(),
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScrollNotification,
+            child: RefreshIndicator(
+              color: Colors.red,
+              backgroundColor: Colors.grey[900],
+              onRefresh: _refreshData,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SliverCategoryDelegate(
+                      child: Container(
+                        color: Colors.black,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: OttCategoryWidget(),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                // 2. Banner
-                SliverToBoxAdapter(
-                  child: MovieBanner(isVisible: _isBannerVisible),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                // 3. Top Ad
-                SliverToBoxAdapter(
-                  child: Obx(() {
-                    if (adsCtrl.isLoading.value && adsCtrl.ads.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-                    final activeAds =
-                    adsCtrl.ads.where((a) => a.isActive).toList();
-                    if (activeAds.isNotEmpty && isAdsVisible) {
-                      return _buildAdBanner(activeAds.first);
-                    }
-                    return const SizedBox.shrink();
-                  }),
-                ),
-
-                // 4. Sections + inline ads
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: _buildAllSections(),
+                  // Banner
+                  SliverToBoxAdapter(
+                    child: MovieBanner(isVisible: _isBannerVisible),
                   ),
-                ),
-              ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                  // ── Top Ad (isHome only) ──
+                  SliverToBoxAdapter(
+                    child: Obx(() {
+                      if (adsCtrl.isLoading.value && adsCtrl.ads.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      final homeAds = adsCtrl.homeAds;
+                      if (homeAds.isNotEmpty && isAdsVisible) {
+                        final ad = homeAds.first;
+                        return _OttAdPlayer(
+                          key: ValueKey('ott_top_ad_${ad.id}'),
+                          ad: ad,
+                          compact: false,
+                          isScrolling: _isScrolling,
+                          onTap: () => _handleAdTap(ad),
+                          onClose: () =>
+                              setState(() => isAdsVisible = false),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }),
+                  ),
+
+                  // Sections + inline ads
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: _buildAllSections(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -246,7 +298,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                // ✅ Wrap Search navigation with pause
                 onTap: () => _pauseNavigate(
                       () => Navigator.push(
                     context,
@@ -272,92 +323,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-  // ==================== TOP AD BANNER ====================
-  Widget _buildAdBanner(OttAdsModel ad) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: () => _handleAdTap(ad),
-        child: Container(
-          height: 160,
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
-            image: ad.image != null && ad.image!.isNotEmpty
-                ? DecorationImage(
-              image: NetworkImage(ad.image!),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.3),
-                BlendMode.darken,
-              ),
-            )
-                : null,
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 8,
-                right: 8,
-                child: GestureDetector(
-                  onTap: () => setState(() => isAdsVisible = false),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                    const Icon(Icons.close, color: Colors.white, size: 18),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 12,
-                left: 16,
-                right: 16,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'SPONSORED',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      ad.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 4)],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-// ==================== ALL SECTIONS ====================
+  // ==================== ALL SECTIONS ====================
   Widget _buildAllSections() {
     return Obx(() {
       if (contentCtrl.isLoading.value && contentCtrl.contents.isEmpty) {
@@ -390,7 +356,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
 
       final List<Widget> contentSections = [];
 
-      // ✅ filterType added to each section
       contentSections.add(_buildContentSection(
         title: 'Watch Now',
         items: all,
@@ -432,9 +397,10 @@ class _OttHomeScreenState extends State<OttHomeScreen>
         ));
       }
 
-      final allActiveAds = adsCtrl.ads.where((a) => a.isActive).toList();
-      final List<OttAdsModel> inlineAds = allActiveAds.length > 1
-          ? (allActiveAds.skip(1).toList()..shuffle(Random()))
+      // ✅ Only isHome=true ads (skip first one used as top banner)
+      final allHomeAds = adsCtrl.homeAds;
+      final List<OttAdsModel> inlineAds = allHomeAds.length > 1
+          ? (allHomeAds.skip(1).toList()..shuffle(Random()))
           : <OttAdsModel>[];
 
       final List<Widget> finalList = [];
@@ -445,7 +411,14 @@ class _OttHomeScreenState extends State<OttHomeScreen>
         if (adIdx < inlineAds.length) {
           final isLast = i == contentSections.length - 1;
           if (Random().nextBool() || isLast) {
-            finalList.add(_buildInterspersedAdCard(inlineAds[adIdx]));
+            final ad = inlineAds[adIdx];
+            finalList.add(_OttAdPlayer(
+              key: ValueKey('ott_inline_ad_${ad.id}_$i'),
+              ad: ad,
+              compact: true,
+              isScrolling: _isScrolling,
+              onTap: () => _handleAdTap(ad),
+            ));
             adIdx++;
           }
         }
@@ -461,7 +434,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
   Widget _buildContentSection({
     required String title,
     required List<OttContentModel> items,
-    String filterType = 'all',   // ✅ NEW param
+    String filterType = 'all',
   }) {
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -484,7 +457,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                   ),
                 ),
                 GestureDetector(
-                  // ✅ Navigate to View All
                   onTap: () => _pauseNavigate(
                         () => Navigator.push(
                       context,
@@ -492,7 +464,7 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                         builder: (_) => OttViewAllScreen(
                           title: title,
                           filterType: filterType,
-                          items: items,   // ✅ pass pre-filtered list
+                          items: items,
                         ),
                       ),
                     ),
@@ -525,95 +497,15 @@ class _OttHomeScreenState extends State<OttHomeScreen>
     );
   }
 
-
-  // ==================== INLINE AD CARD ====================
-  Widget _buildInterspersedAdCard(OttAdsModel ad) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
-      child: GestureDetector(
-        onTap: () => _handleAdTap(ad),
-        child: Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
-            image: ad.image != null && ad.image!.isNotEmpty
-                ? DecorationImage(
-              image: NetworkImage(ad.image!),
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.3),
-                BlendMode.darken,
-              ),
-            )
-                : null,
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'SPONSORED',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 12,
-                left: 16,
-                right: 16,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        ad.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(color: Colors.black, blurRadius: 4)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_ios,
-                        color: Colors.white, size: 14),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ==================== CONTENT CARD ====================
   Widget _buildContentCard(OttContentModel content) {
     return GestureDetector(
-      // ✅ Wrap navigation with pause
       onTap: () => _pauseNavigate(
             () async => Get.to(() => PlayDashboardScreen(content: content)),
       ),
       child: Container(
         width: 130,
-        margin: const EdgeInsets.only(right: 12),
+        margin: const EdgeInsets.only(right: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -636,27 +528,6 @@ class _OttHomeScreenState extends State<OttHomeScreen>
                         ),
                       ),
                     ),
-                    // Positioned(
-                    //   top: 6,
-                    //   left: 6,
-                    //   right: 6,
-                    //   child: Wrap(
-                    //     spacing: 4,
-                    //     runSpacing: 4,
-                    //     children: [
-                    //       if (content.isTrending)
-                    //         _buildBadge('🔥 Trending', Colors.redAccent),
-                    //       if (content.isRecommended)
-                    //         _buildBadge('⭐ Rec', Colors.blueAccent),
-                    //       if (content.isFamily)
-                    //         _buildBadge('👨‍👩‍👧 Family', Colors.green),
-                    //       if (content.isLock)
-                    //         _buildBadge('🔒 Premium', Colors.amber),
-                    //       if (content.isSomethingNew)
-                    //         _buildBadge('✨ New', Colors.purpleAccent),
-                    //     ],
-                    //   ),
-                    // ),
                     if (content.videoDuration.isNotEmpty)
                       Positioned(
                         bottom: 6,
@@ -703,21 +574,398 @@ class _OttHomeScreenState extends State<OttHomeScreen>
       ),
     );
   }
+}
 
-  Widget _buildBadge(String text, Color color) {
+// ═══════════════════════════════════════════════════════════════
+// SHARED AD PLAYER — video/image, muted autoplay, play/pause + audio
+// ═══════════════════════════════════════════════════════════════
+class _OttAdPlayer extends StatefulWidget {
+  final OttAdsModel ad;
+  final bool compact; // false = top 160px, true = inline 120px
+  final ValueNotifier<bool> isScrolling;
+  final VoidCallback onTap;
+  final VoidCallback? onClose;
+
+  const _OttAdPlayer({
+    super.key,
+    required this.ad,
+    required this.compact,
+    required this.isScrolling,
+    required this.onTap,
+    this.onClose,
+  });
+
+  @override
+  State<_OttAdPlayer> createState() => _OttAdPlayerState();
+}
+
+class _OttAdPlayerState extends State<_OttAdPlayer>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _video;
+  bool _videoReady = false;
+  bool _videoFailed = false;
+
+  YoutubePlayerController? _ytCtrl;
+  String? _ytId;
+
+  bool _isVisible = false;
+  bool _isMuted = true;
+  bool _appPaused = false;
+  bool _userPaused = false;
+
+  bool get _isWebYouTube => kIsWeb && _ytId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.isScrolling.addListener(_syncPlayback);
+
+    if (!widget.ad.hasVideo) return;
+
+    _ytId = _extractYoutubeId(widget.ad.videoUrl!);
+
+    if (_ytId != null && kIsWeb) {
+      _ytCtrl = YoutubePlayerController.fromVideoId(
+        videoId: _ytId!,
+        autoPlay: false,
+        params: const YoutubePlayerParams(
+          mute: true,
+          showControls: false,
+          showFullscreenButton: false,
+          loop: true,
+          playsInline: true,
+        ),
+      );
+    } else {
+      _initVideo(widget.ad.videoUrl!);
+    }
+  }
+
+  Future<void> _initVideo(String rawUrl) async {
+    var resolved = rawUrl;
+
+    if (_ytId != null) {
+      try {
+        final yt = YoutubeExplode();
+        try {
+          final manifest = await yt.videos.streamsClient
+              .getManifest(_ytId!)
+              .timeout(const Duration(seconds: 20));
+          final streams = manifest.muxed.toList();
+          if (streams.isEmpty) throw Exception('No playable stream');
+          streams.sort((a, b) =>
+              a.videoResolution.height.compareTo(b.videoResolution.height));
+          final upTo720 =
+          streams.where((s) => s.videoResolution.height <= 720).toList();
+          final chosen = upTo720.isNotEmpty ? upTo720.last : streams.first;
+          resolved = chosen.url.toString();
+        } finally {
+          yt.close();
+        }
+      } catch (_) {
+        if (mounted) setState(() => _videoFailed = true);
+        return;
+      }
+    }
+
+    final ctrl = VideoPlayerController.networkUrl(
+      Uri.parse(resolved),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _video = ctrl;
+    try {
+      await ctrl.initialize();
+      if (!mounted) return;
+      await ctrl.setLooping(true);
+      await ctrl.setVolume(_isMuted ? 0 : 1);
+      if (mounted) setState(() => _videoReady = true);
+      _syncPlayback();
+    } catch (_) {
+      if (mounted) setState(() => _videoFailed = true);
+    }
+  }
+
+  void _syncPlayback() {
+    if (!mounted) return;
+    final shouldPlay = _isVisible &&
+        !widget.isScrolling.value &&
+        !_appPaused &&
+        !_userPaused;
+
+    final v = _video;
+    if (v != null && v.value.isInitialized) {
+      if (shouldPlay) {
+        if (!v.value.isPlaying) v.play();
+      } else {
+        if (v.value.isPlaying) v.pause();
+      }
+    }
+
+    final yt = _ytCtrl;
+    if (yt != null) {
+      if (shouldPlay) {
+        yt.playVideo();
+      } else {
+        yt.pauseVideo();
+      }
+    }
+  }
+
+  void _togglePlayPause() {
+    setState(() => _userPaused = !_userPaused);
+    _syncPlayback();
+  }
+
+  void _toggleAudio() {
+    setState(() => _isMuted = !_isMuted);
+    final v = _video;
+    if (v != null && v.value.isInitialized) {
+      v.setVolume(_isMuted ? 0 : 1);
+    }
+    _ytCtrl?.setVolume(_isMuted ? 0 : 100);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _appPaused = true;
+    } else if (state == AppLifecycleState.resumed) {
+      _appPaused = false;
+    }
+    _syncPlayback();
+  }
+
+  @override
+  void dispose() {
+    widget.isScrolling.removeListener(_syncPlayback);
+    WidgetsBinding.instance.removeObserver(this);
+    _video?.dispose();
+    _ytCtrl?.close();
+    super.dispose();
+  }
+
+  // ── Render media layer (video iframe / video / image / placeholder) ──
+  Widget _buildMedia() {
+    final showIframe = _isWebYouTube;
+    final showVideo = !showIframe &&
+        widget.ad.hasVideo &&
+        _videoReady &&
+        _video != null &&
+        !_videoFailed;
+    final showImage = !showIframe && !showVideo && widget.ad.hasImage;
+
+    if (showIframe) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: 320,
+          height: 180,
+          child: YoutubePlayer(
+            controller: _ytCtrl!,
+            aspectRatio: 16 / 9,
+          ),
+        ),
+      );
+    }
+    if (showVideo) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: _video!.value.size.width,
+          height: _video!.value.size.height,
+          child: VideoPlayer(_video!),
+        ),
+      );
+    }
+    if (showImage) {
+      return Image.network(
+        widget.ad.image!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: Colors.grey[900]),
+      );
+    }
+    return Container(color: Colors.grey[900]);
+  }
+
+  bool get _showControls =>
+      (widget.ad.hasVideo && !_videoFailed) || _isWebYouTube;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = widget.compact ? 120.0 : 160.0;
+    final margin = widget.compact
+        ? const EdgeInsets.only(bottom: 24, left: 16, right: 16)
+        : const EdgeInsets.symmetric(horizontal: 16);
+
+    return VisibilityDetector(
+      key: Key(
+          'ott_ad_${widget.ad.id}_${widget.compact ? 'inline' : 'top'}'),
+      onVisibilityChanged: (info) {
+        final newVisible = info.visibleFraction > 0.5;
+        if (newVisible != _isVisible) {
+          _isVisible = newVisible;
+          _syncPlayback();
+        }
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          height: height,
+          margin: margin,
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Media
+              _buildMedia(),
+
+              // Dark overlay
+              Container(color: Colors.black.withOpacity(0.28)),
+
+              // ── Play/Pause + Audio (top-left) ──
+              if (_showControls)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _circleBtn(
+                        icon: _userPaused
+                            ? Icons.play_arrow_rounded
+                            : Icons.pause_rounded,
+                        onTap: _togglePlayPause,
+                      ),
+                      const SizedBox(width: 6),
+                      _circleBtn(
+                        icon: _isMuted
+                            ? Icons.volume_off_rounded
+                            : Icons.volume_up_rounded,
+                        onTap: _toggleAudio,
+                      ),
+                    ],
+                  ),
+                ),
+
+              // ── Top-right corner ──
+              Positioned(
+                top: 8,
+                right: 8,
+                child: widget.compact
+                    ? _buildSponsoredChip(compact: true)
+                    : _buildCloseButton(),
+              ),
+
+              // ── Bottom content ──
+              Positioned(
+                bottom: 12,
+                left: 16,
+                right: 16,
+                child: widget.compact
+                    ? _buildInlineContent()
+                    : _buildTopContent(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _circleBtn({required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
+      ),
+    );
+  }
+
+  Widget _buildCloseButton() {
+    return GestureDetector(
+      onTap: widget.onClose,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.close, color: Colors.white, size: 18),
+      ),
+    );
+  }
+
+  Widget _buildSponsoredChip({bool compact = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color,
+        color: compact ? Colors.black54 : Colors.red,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
+      child: const Text(
+        'SPONSORED',
+        style: TextStyle(
             color: Colors.white,
             fontSize: 9,
             fontWeight: FontWeight.bold),
       ),
+    );
+  }
+
+  Widget _buildTopContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSponsoredChip(),
+        const SizedBox(height: 6),
+        Text(
+          widget.ad.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineContent() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            widget.ad.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+      ],
     );
   }
 }

@@ -1,5 +1,5 @@
+// ngo_history_repository.dart (unchanged)
 import 'package:dio/dio.dart';
-
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_urls.dart';
 import '../model/ngo_history_model.dart';
@@ -7,7 +7,6 @@ import '../model/ngo_history_model.dart';
 class NgoHistoryRepository {
   final Dio _dio = ApiClient.dio;
 
-  /// GET /v1/ngo/history/donor/<donor_id>/
   Future<NgoDonorHistoryResponse> getHistoryByDonor(
       int donorId, {
         String? from,
@@ -36,19 +35,12 @@ class NgoHistoryRepository {
     }
   }
 
-  /// POST /v1/ngo/history/create/
-  /// Creates a new donation entry. Backend auto-updates the service's
-  /// progress (total_amount, donor count).
-  Future<NgoHistoryModel> createHistory(
-      NgoHistoryCreateRequest request,
-      ) async {
+  Future<NgoHistoryModel> createHistory(NgoHistoryCreateRequest request) async {
     try {
       final response = await _dio.post(
         ApiUrls.ngoHistoryCreate,
         data: request.toJson(),
-        options: Options(
-          contentType: Headers.jsonContentType,
-        ),
+        options: Options(contentType: Headers.jsonContentType),
       );
 
       if (response.statusCode == 201 && response.data['success'] == true) {
@@ -59,7 +51,6 @@ class NgoHistoryRepository {
         );
       }
     } on DioException catch (e) {
-      // Backend validation errors come back with `errors` map
       final data = e.response?.data;
       if (data is Map && data['errors'] != null) {
         final errors = data['errors'] as Map;

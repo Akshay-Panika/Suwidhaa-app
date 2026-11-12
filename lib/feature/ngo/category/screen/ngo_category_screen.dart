@@ -121,7 +121,7 @@ class _NGOCategoryScreenState extends State<NGOCategoryScreen> {
             children: [
               // ── LEFT: Category List ──
               Container(
-                width: 90,
+                width: 120,
                 color: Colors.white,
                 child: ListView.builder(
                   itemCount: categoryController.categories.length + 1,

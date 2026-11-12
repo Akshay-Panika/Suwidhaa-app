@@ -1,11 +1,10 @@
-
 class OttAdsModel {
   final int id;
   final String title;
   final String? image;
   final String? videoUrl;
   final String? navigateScreen;
-  final bool isActive;
+  final bool isHome;
   final String? createdAt;
   final String? updatedAt;
 
@@ -15,19 +14,22 @@ class OttAdsModel {
     this.image,
     this.videoUrl,
     this.navigateScreen,
-    required this.isActive,
+    this.isHome = false,
     this.createdAt,
     this.updatedAt,
   });
 
+  bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
+  bool get hasImage => image != null && image!.isNotEmpty;
+
   factory OttAdsModel.fromJson(Map<String, dynamic> json) {
     return OttAdsModel(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? '',
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: (json['title'] ?? '').toString(),
       image: json['image'] as String?,
       videoUrl: json['video_url'] as String?,
       navigateScreen: json['navigate_screen'] as String?,
-      isActive: json['is_active'] == true,
+      isHome: json['is_home'] == true,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );

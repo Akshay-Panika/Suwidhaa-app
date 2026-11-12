@@ -266,6 +266,10 @@ class ApiUrls {
   static const String ngoServiceList   = 'v1/ngo/service/list/';
   static const String ngoServiceDetail = 'v1/ngo/service/';
 
+  // ==================== NGO ADS ====================
+  static const String ngoAdsList   = 'v1/ngo/ads/list/';
+  static const String ngoAdsDetail = 'v1/ngo/ads/'; // + id/
+
   // ==================== NGO STAFF ====================
   static const String ngoStaffList   = 'v1/ngo/staff/list/';
   static const String ngoStaffCreate = 'v1/ngo/staff/create/';

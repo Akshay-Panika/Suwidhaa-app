@@ -1,10 +1,17 @@
+import 'dart:math';
 import 'package:carousel_slider_plus/carousel_slider_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../../core/widget/flutter_toast.dart';
 import '../../../auth/controller/auth_controller.dart';
-import '../controller/ngo_history_controller.dart';
+import '../../ads/controller/ngo_ads_controller.dart';
+import '../../ads/model/ngo_ads_model.dart';
+import '../../history/controller/ngo_history_controller.dart';
 import '../controller/ngo_service_controller.dart';
 import '../controller/ngo_staff_controller.dart';
 import '../model/ngo_service_model.dart';
@@ -34,7 +41,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   static const String currencySymbol = "₹";
 
   String? _selectedAmount;
-  final TextEditingController _customAmountController = TextEditingController();
+  final TextEditingController _customAmountController =
+  TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
@@ -44,11 +52,15 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   final NgoStaffController _staffController = Get.find<NgoStaffController>();
   final NgoHistoryController _historyController =
   Get.find<NgoHistoryController>();
+  final NgoAdsController _adsController = Get.find<NgoAdsController>();
 
   // Reactive state
   NgoServiceData? _service;
   bool _isLoading = true;
   String? _error;
+
+  // Sponsored ad (random is_home = false)
+  NgoAdsModel? _sponsoredAd;
 
   @override
   void initState() {
@@ -65,6 +77,37 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 
     _loadService();
     _loadStaff();
+
+    // Sponsored ad — pick once ads are loaded
+    _tryPickSponsoredAd();
+    if (_adsController.ads.isEmpty && !_adsController.isLoading.value) {
+      _adsController.fetchAds();
+    }
+    ever(_adsController.ads, (_) => _tryPickSponsoredAd());
+  }
+
+  void _tryPickSponsoredAd() {
+    if (_sponsoredAd != null) return;
+    if (_adsController.ads.isEmpty) return;
+    final ad = _adsController.pickRandomNonHomeAd();
+    if (ad != null && mounted) {
+      setState(() => _sponsoredAd = ad);
+    }
+  }
+
+  void _handleSponsoredAdTap(NgoAdsModel ad) {
+    final key = ad.navigateScreen?.toLowerCase().trim();
+    switch (key) {
+      case 'donate':
+      case 'donations':
+        _tabController.animateTo(0);
+        break;
+      case 'services':
+        Navigator.pop(context);
+        break;
+      default:
+        break;
+    }
   }
 
   Future<void> _loadService() async {
@@ -110,12 +153,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 
   List<String> get _bannerImages =>
       _service?.images.isNotEmpty == true ? _service!.images : [];
-
   List<String> get _galleryImages =>
       _service?.images.isNotEmpty == true ? _service!.images : [];
-
   List<int> get _chooseAmounts => _service?.chooseAmount ?? [];
-
   List<NgoKeyItem> get _keyItems => _service?.keys ?? [];
 
   // ═══════════════════════════════════════════════════════════════
@@ -267,7 +307,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   // ═══════════════════════════════════════════════════════════════
   Widget _buildHeaderImage() {
     final images = _bannerImages;
-
     if (images.isEmpty) {
       return Container(
         color: primaryColor.withOpacity(0.1),
@@ -323,13 +362,13 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             );
           },
         ),
-
         if (_service?.categoryName != null)
           Positioned(
             top: 12,
             left: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(20),
@@ -352,7 +391,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
               ),
             ),
           ),
-
         Positioned(
           top: 12,
           right: 12,
@@ -372,7 +410,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             ),
           ),
         ),
-
         if (images.length > 1)
           Positioned(
             bottom: 12,
@@ -420,6 +457,16 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
         _buildAmountSection(),
         const SizedBox(height: 12),
         if ((_service?.description ?? '').isNotEmpty) _buildAboutSection(),
+
+        // Sponsored ad (random is_home = false)
+        if (_sponsoredAd != null) ...[
+          const SizedBox(height: 12),
+          _SponsoredAdCard(
+            key: ValueKey('donation_sponsored_ad_${_sponsoredAd!.id}'),
+            ad: _sponsoredAd!,
+            onTap: () => _handleSponsoredAdTap(_sponsoredAd!),
+          ),
+        ],
       ],
     );
   }
@@ -594,7 +641,6 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                 ),
               );
             }
-
             final member = staff[index - 1];
             return _buildStaffCard(member);
           },
@@ -724,7 +770,8 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             icon: Icons.trending_up,
             title: "Donation Progress",
             trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -809,11 +856,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 
   List<Widget> _buildMilestoneDots(double progress) {
     final List<int> milestones = _getMilestones();
-
     return milestones.map((pct) {
       final reached = progress >= (pct / 100);
       final isFull = pct == 100;
-
       return Padding(
         padding: const EdgeInsets.only(left: 6),
         child: Column(
@@ -849,16 +894,10 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
 
   List<int> _getMilestones() {
     if (_target <= 0) return const [25, 50, 75, 100];
-
     if (_target <= 1000) {
       return const [10, 30, 50, 75, 100];
-    } else if (_target <= 10000) {
-      return const [25, 50, 75, 100];
-    } else if (_target <= 100000) {
-      return const [25, 50, 75, 100];
-    } else {
-      return const [25, 50, 75, 100];
     }
+    return const [25, 50, 75, 100];
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1014,8 +1053,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                     ),
                   ),
                 ),
-                prefixIconConstraints:
-                const BoxConstraints(minWidth: 0),
+                prefixIconConstraints: const BoxConstraints(minWidth: 0),
                 contentPadding:
                 const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                 suffixIcon: _customAmountController.text.isNotEmpty
@@ -1043,7 +1081,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // STICKY DONATE BAR (with loading state on the button)
+  // STICKY DONATE BAR
   // ═══════════════════════════════════════════════════════════════
   Widget _buildStickyDonateBar() {
     return Container(
@@ -1109,8 +1147,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                    primaryColor.withOpacity(0.6),
+                    disabledBackgroundColor: primaryColor.withOpacity(0.6),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -1247,7 +1284,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // DIALOGS — with real API call
+  // DIALOGS
   // ═══════════════════════════════════════════════════════════════
   void _showDonationDialog(BuildContext context, String amount) {
     showDialog(
@@ -1290,33 +1327,22 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogCtx);
-
-              // 🔥 Call the real API
               final success = await _historyController.donate(
                 serviceId: widget.serviceId,
                 amount: double.tryParse(amount) ?? 0,
                 donorName: donorName,
                 donorContact: donorPhone,
               );
-
               if (!mounted) return;
-
               if (success) {
-                // Refresh service so progress updates
                 await _loadService();
-
                 if (!mounted) return;
-
-                // Reset selection
                 setState(() {
                   _selectedAmount = null;
                   _customAmountController.clear();
                 });
-
-                // Show success
                 _showSuccessDialog(context, amount);
               }
-              // On error, the controller already showed a toast
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryColor,
@@ -1377,6 +1403,335 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen>
             child: const Text("Done"),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SPONSORED AD CARD — random is_home = false
+// bg: Colors.grey.shade100 | play/pause + audio buttons
+// ═══════════════════════════════════════════════════════════════════
+String? _extractYoutubeIdLocal(String raw) {
+  final uri = Uri.tryParse(raw.trim());
+  if (uri == null || uri.host.isEmpty) return null;
+  final host = uri.host.toLowerCase();
+  String? id;
+  if (host == 'youtu.be' || host == 'www.youtu.be') {
+    id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+  } else if (host.endsWith('youtube.com') ||
+      host.endsWith('youtube-nocookie.com')) {
+    if (uri.queryParameters['v'] != null) {
+      id = uri.queryParameters['v'];
+    } else if (uri.pathSegments.length >= 2 &&
+        ['embed', 'shorts', 'live', 'v'].contains(uri.pathSegments.first)) {
+      id = uri.pathSegments[1];
+    }
+  }
+  if (id != null && RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(id)) return id;
+  return null;
+}
+
+class _SponsoredAdCard extends StatefulWidget {
+  final NgoAdsModel ad;
+  final VoidCallback? onTap;
+  const _SponsoredAdCard({super.key, required this.ad, this.onTap});
+
+  @override
+  State<_SponsoredAdCard> createState() => _SponsoredAdCardState();
+}
+
+class _SponsoredAdCardState extends State<_SponsoredAdCard>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _video;
+  bool _videoReady = false;
+  bool _videoFailed = false;
+  bool _userPaused = false;
+  bool _isMuted = true;
+  bool _appPaused = false;
+
+  YoutubePlayerController? _ytCtrl;
+  String? _ytId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    final url = widget.ad.videoUrl;
+    if (url == null || url.isEmpty) return;
+
+    _ytId = _extractYoutubeIdLocal(url);
+
+    if (_ytId != null && kIsWeb) {
+      _ytCtrl = YoutubePlayerController.fromVideoId(
+        videoId: _ytId!,
+        autoPlay: true,
+        params: const YoutubePlayerParams(
+          mute: true,
+          showControls: false,
+          showFullscreenButton: false,
+          loop: true,
+          playsInline: true,
+        ),
+      );
+    } else {
+      _initVideo(url);
+    }
+  }
+
+  Future<void> _initVideo(String rawUrl) async {
+    var resolved = rawUrl;
+
+    if (_ytId != null) {
+      try {
+        final yt = YoutubeExplode();
+        try {
+          final manifest = await yt.videos.streamsClient
+              .getManifest(_ytId!)
+              .timeout(const Duration(seconds: 20));
+          final streams = manifest.muxed.toList();
+          if (streams.isEmpty) throw Exception('No stream');
+          streams.sort((a, b) =>
+              a.videoResolution.height.compareTo(b.videoResolution.height));
+          final upTo720 =
+          streams.where((s) => s.videoResolution.height <= 720).toList();
+          final chosen = upTo720.isNotEmpty ? upTo720.last : streams.first;
+          resolved = chosen.url.toString();
+        } finally {
+          yt.close();
+        }
+      } catch (_) {
+        if (mounted) setState(() => _videoFailed = true);
+        return;
+      }
+    }
+
+    final ctrl = VideoPlayerController.networkUrl(
+      Uri.parse(resolved),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _video = ctrl;
+    try {
+      await ctrl.initialize();
+      if (!mounted) return;
+      await ctrl.setLooping(true);
+      await ctrl.setVolume(_isMuted ? 0 : 1);
+      await ctrl.play();
+      if (mounted) setState(() => _videoReady = true);
+    } catch (_) {
+      if (mounted) setState(() => _videoFailed = true);
+    }
+  }
+
+  void _togglePlayPause() {
+    setState(() => _userPaused = !_userPaused);
+    final v = _video;
+    if (v != null && v.value.isInitialized) {
+      if (_userPaused) {
+        v.pause();
+      } else {
+        v.play();
+      }
+    }
+    final yt = _ytCtrl;
+    if (yt != null) {
+      if (_userPaused) {
+        yt.pauseVideo();
+      } else {
+        yt.playVideo();
+      }
+    }
+  }
+
+  void _toggleAudio() {
+    setState(() => _isMuted = !_isMuted);
+    final v = _video;
+    if (v != null && v.value.isInitialized) {
+      v.setVolume(_isMuted ? 0 : 1);
+    }
+    _ytCtrl?.setVolume(_isMuted ? 0 : 100);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _appPaused = true;
+      _video?.pause();
+      _ytCtrl?.pauseVideo();
+    } else if (state == AppLifecycleState.resumed) {
+      _appPaused = false;
+      if (!_userPaused) {
+        _video?.play();
+        _ytCtrl?.playVideo();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _video?.dispose();
+    _ytCtrl?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showIframe = kIsWeb && _ytCtrl != null;
+    final showVideo = !showIframe &&
+        widget.ad.hasVideo &&
+        _videoReady &&
+        _video != null &&
+        !_videoFailed;
+    final showImage = !showIframe && !showVideo && widget.ad.hasImage;
+    final showControls =
+        (widget.ad.hasVideo && !_videoFailed) || showIframe;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.teal.withOpacity(0.3),
+            width: 0.8,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // ── Media ──
+            if (showIframe)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: 320,
+                  height: 180,
+                  child: YoutubePlayer(
+                    controller: _ytCtrl!,
+                    aspectRatio: 16 / 9,
+                  ),
+                ),
+              )
+            else if (showVideo)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _video!.value.size.width,
+                  height: _video!.value.size.height,
+                  child: VideoPlayer(_video!),
+                ),
+              )
+            else if (showImage)
+                Image.network(
+                  widget.ad.image!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Container(color: Colors.grey.shade100),
+                )
+              else
+                Container(color: Colors.grey.shade100),
+
+            // Dark overlay for legibility
+            Container(color: Colors.grey.shade50),
+
+            // SPONSORED chip
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.teal,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'SPONSORED',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ),
+
+            // 🔊 Play/Pause + Audio
+            if (showControls)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _togglePlayPause,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _userPaused
+                              ? Icons.play_arrow_rounded
+                              : Icons.pause_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _toggleAudio,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isMuted
+                              ? Icons.volume_off_rounded
+                              : Icons.volume_up_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Title
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Text(
+                widget.ad.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

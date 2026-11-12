@@ -7,9 +7,12 @@ import '../model/ott_ads_model.dart';
 class OttAdsRepository {
   final Dio _dio = ApiClient.dio;
 
-  Future<List<OttAdsModel>> getAds() async {
+  Future<List<OttAdsModel>> getAds({bool? isHome}) async {
     try {
-      final res = await _dio.get(ApiUrls.ottAdsList);
+      final res = await _dio.get(
+        ApiUrls.ottAdsList,
+        queryParameters: isHome == null ? null : {'is_home': isHome},
+      );
       final data = res.data;
       if (data is Map<String, dynamic> && data['success'] == true) {
         final list = data['data'] as List<dynamic>? ?? const [];
@@ -23,13 +26,12 @@ class OttAdsRepository {
     }
   }
 
-  // ✅ Sirf Update rahega
   Future<OttAdsModel> updateAd({
     required int id,
     required String title,
     required String videoUrl,
     required String navigateScreen,
-    required bool isActive,
+    required bool isHome,
     PlatformFile? imageFile,
   }) async {
     try {
@@ -37,7 +39,7 @@ class OttAdsRepository {
         'title': title,
         'video_url': videoUrl,
         'navigate_screen': navigateScreen,
-        'is_active': isActive ? 'true' : 'false',
+        'is_home': isHome ? 'true' : 'false',
       };
 
       if (imageFile != null) {
@@ -95,7 +97,8 @@ class OttAdsRepository {
   }
 
   String _handleDioError(DioException e) {
-    if (e.response?.data is Map && (e.response!.data as Map)['errors'] != null) {
+    if (e.response?.data is Map &&
+        (e.response!.data as Map)['errors'] != null) {
       final errs = (e.response!.data as Map)['errors'];
       if (errs is Map && errs.isNotEmpty) {
         final first = errs.values.first;
